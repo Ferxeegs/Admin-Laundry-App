@@ -585,7 +585,7 @@ export default function SettingsForm() {
       {/* Appearance Settings */}
       <ComponentCard title="Appearance Settings" className="mb-6">
         <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2">
             <div>
               <Label>Site Logo</Label>
               <div className="space-y-2">
@@ -594,13 +594,13 @@ export default function SettingsForm() {
                     <img
                       src={logoPreview}
                       alt="Site Logo Preview"
-                      className="h-20 object-contain"
+                      className="h-16 sm:h-20 object-contain"
                     />
                     <button
                       type="button"
                       onClick={handleDeleteLogo}
                       disabled={!canUpdateSettings}
-                      className="p-1.5 bg-red-500 text-white rounded hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-2 sm:p-1.5 bg-red-500 text-white rounded hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
                       title="Hapus logo"
                     >
                       <TrashBinIcon className="w-4 h-4" />
@@ -612,7 +612,7 @@ export default function SettingsForm() {
                   accept="image/*"
                   onChange={handleLogoChange}
                   disabled={!canUpdateSettings}
-                  className="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 dark:bg-gray-900 dark:text-white/90 dark:border-gray-700 dark:focus:border-brand-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-11 w-full rounded-lg border border-gray-300 px-3 sm:px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 dark:bg-gray-900 dark:text-white/90 dark:border-gray-700 dark:focus:border-brand-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   Format: JPG, PNG, SVG. Maksimal 2MB
@@ -731,7 +731,7 @@ export default function SettingsForm() {
           <button
             type="submit"
             disabled={isSaving}
-            className="inline-flex items-center justify-center gap-2 rounded-lg transition px-5 py-3.5 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg transition px-5 py-3.5 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation"
           >
             {isSaving ? "Menyimpan..." : "Simpan Settings"}
           </button>

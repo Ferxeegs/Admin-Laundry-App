@@ -41,7 +41,6 @@ export default function DetailsTab({
             onChange={handleChange}
             placeholder="Enter firstname"
             disabled={isLoading}
-            required
           />
         </div>
 
@@ -56,7 +55,6 @@ export default function DetailsTab({
             onChange={handleChange}
             placeholder="Enter lastname"
             disabled={isLoading}
-            required
           />
         </div>
       </div>
@@ -72,7 +70,6 @@ export default function DetailsTab({
           onChange={handleChange}
           placeholder="Enter username"
           disabled={isLoading}
-          required
         />
       </div>
 
@@ -111,7 +108,6 @@ export default function DetailsTab({
           onChange={handleChange}
           placeholder="Enter email"
           disabled={isLoading}
-          required
         />
       </div>
 

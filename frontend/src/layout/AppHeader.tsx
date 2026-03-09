@@ -47,9 +47,9 @@ const AppHeader: React.FC = () => {
   return (
     <header className="sticky top-0 flex w-full bg-white border-gray-200 z-99999 dark:border-gray-800 dark:bg-gray-900 lg:border-b">
       <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
-        <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
+        <div className="flex items-center justify-between w-full gap-2 px-3 py-2.5 border-b border-gray-200 dark:border-gray-800 sm:gap-3 sm:py-3 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
           <button
-            className="items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-99999 dark:border-gray-800 lg:flex dark:text-gray-400 lg:h-11 lg:w-11 lg:border"
+            className="flex items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-99999 dark:border-gray-800 dark:text-gray-400 lg:h-11 lg:w-11 lg:border touch-manipulation"
             onClick={handleToggle}
             aria-label="Toggle Sidebar"
           >
@@ -87,9 +87,9 @@ const AppHeader: React.FC = () => {
             {/* Cross Icon */}
           </button>
 
-          <Link to="/" className="lg:hidden">
+          <Link to="/" className="lg:hidden max-w-[120px] sm:max-w-[150px]">
             <img
-              className="dark:hidden"
+              className="dark:hidden w-full h-auto"
               src={getLogoUrl(false)}
               alt="Logo"
               onError={(e) => {
@@ -103,7 +103,7 @@ const AppHeader: React.FC = () => {
               }}
             />
             <img
-              className="hidden dark:block"
+              className="hidden dark:block w-full h-auto"
               src={getLogoUrl(true)}
               alt="Logo"
               onError={(e) => {
@@ -120,7 +120,7 @@ const AppHeader: React.FC = () => {
 
           <button
             onClick={toggleApplicationMenu}
-            className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg z-99999 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden"
+            className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg z-99999 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden touch-manipulation"
           >
             <svg
               width="24"
@@ -176,14 +176,14 @@ const AppHeader: React.FC = () => {
         <div
           className={`${
             isApplicationMenuOpen ? "flex" : "hidden"
-          } items-center justify-between w-full gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
+          } items-center justify-between w-full gap-2 sm:gap-3 px-3 py-3 sm:px-4 sm:py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
         >
-          <div className="flex items-center gap-2 2xsm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             {/* <!-- Impersonate Indicator --> */}
             {isImpersonating && impersonatedBy && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-100 border border-yellow-300 rounded-lg dark:bg-yellow-900/30 dark:border-yellow-800">
+              <div className="flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 bg-yellow-100 border border-yellow-300 rounded-lg dark:bg-yellow-900/30 dark:border-yellow-800">
                 <svg
-                  className="w-4 h-4 text-yellow-600 dark:text-yellow-400"
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -195,16 +195,16 @@ const AppHeader: React.FC = () => {
                     d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                   />
                 </svg>
-                <span className="text-xs font-medium text-yellow-800 dark:text-yellow-300">
+                <span className="text-[10px] sm:text-xs font-medium text-yellow-800 dark:text-yellow-300 whitespace-nowrap">
                   Impersonating
                 </span>
               </div>
             )}
             {/* <!-- Role Badge --> */}
             {user?.roles && user.roles.length > 0 && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-100 border border-brand-300 rounded-lg dark:bg-brand-900/30 dark:border-brand-800">
+              <div className="flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 bg-brand-100 border border-brand-300 rounded-lg dark:bg-brand-900/30 dark:border-brand-800 max-w-[140px] sm:max-w-none">
                 <svg
-                  className="w-4 h-4 text-brand-600 dark:text-brand-400"
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-600 dark:text-brand-400 flex-shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -216,7 +216,7 @@ const AppHeader: React.FC = () => {
                     d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                   />
                 </svg>
-                <span className="text-xs font-medium text-brand-800 dark:text-brand-300">
+                <span className="text-[10px] sm:text-xs font-medium text-brand-800 dark:text-brand-300 truncate">
                   {user.roles.map(role => role.name).join(', ')}
                 </span>
               </div>

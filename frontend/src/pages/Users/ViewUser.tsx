@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
-import { userAPI, mediaAPI, getBaseUrl } from "../../utils/api";
+import { userAPI, getBaseUrl } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
 import { AngleLeftIcon, PencilIcon } from "../../icons";
 import Badge from "../../components/ui/badge/Badge";
@@ -38,14 +38,10 @@ export default function ViewUser() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [ktmPreview, setKtmPreview] = useState<string | null>(null);
-  const [ktmUrl, setKtmUrl] = useState<string | null>(null);
-  const [ktmMimeType, setKtmMimeType] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
       fetchUserData();
-      fetchKTM();
     }
   }, [id]);
 
@@ -72,34 +68,6 @@ export default function ViewUser() {
       console.error("Fetch user error:", err);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchKTM = async () => {
-    if (!id) return;
-
-    try {
-      const response = await mediaAPI.getMediaByModel('User', id, 'ktm');
-      if (response.success && response.data?.media && response.data.media.length > 0) {
-        const media = response.data.media[0];
-        const serverUrl = `${getBaseUrl()}${media.url}`;
-        setKtmUrl(serverUrl);
-        setKtmMimeType(media.mime_type);
-        if (media.mime_type.startsWith('image/')) {
-          setKtmPreview(serverUrl);
-        } else {
-          setKtmPreview(null); // PDF - will show download link
-        }
-      } else {
-        setKtmPreview(null);
-        setKtmUrl(null);
-        setKtmMimeType(null);
-      }
-    } catch (err) {
-      console.error('Error fetching KTM:', err);
-      setKtmPreview(null);
-      setKtmUrl(null);
-      setKtmMimeType(null);
     }
   };
 
@@ -175,19 +143,19 @@ export default function ViewUser() {
       <PageMeta title="View User" description="View user details and profile information" />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Link
             to="/users"
-            className="inline-flex items-center justify-center w-10 h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+            className="inline-flex items-center justify-center w-10 h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
           >
             <AngleLeftIcon className="w-5 h-5" />
           </Link>
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white truncate">
               {getFullName(user)}
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 hidden sm:block">
               View user details and profile information
             </p>
           </div>
@@ -195,7 +163,7 @@ export default function ViewUser() {
         {hasPermission(['update_user']) && (
           <Link
             to={`/users/${user.id}/edit`}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation w-full sm:w-auto"
           >
             <PencilIcon className="w-4 h-4" />
             Edit User
@@ -203,7 +171,7 @@ export default function ViewUser() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-3">
         {/* Left Sidebar - Profile Picture & Quick Info */}
         <div className="lg:col-span-1">
           <ComponentCard title="Profile">
@@ -214,17 +182,17 @@ export default function ViewUser() {
                   <img
                     src={profilePictureUrl}
                     alt="Profile"
-                    className="w-32 h-32 rounded-full object-cover border-4 border-gray-200 dark:border-gray-700"
+                    className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-gray-200 dark:border-gray-700"
                   />
                 ) : (
-                  <div className="w-32 h-32 rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-4xl border-4 border-gray-200 dark:border-gray-700">
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-3xl sm:text-4xl border-4 border-gray-200 dark:border-gray-700">
                     {getInitials(user)}
                   </div>
                 )}
-                <h3 className="mt-4 text-lg font-semibold text-gray-800 dark:text-white">
+                <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-semibold text-gray-800 dark:text-white text-center">
                   {getFullName(user)}
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center break-all">{user.email}</p>
               </div>
 
               {/* Quick Info */}
@@ -274,7 +242,7 @@ export default function ViewUser() {
         <div className="lg:col-span-2 space-y-5">
           {/* User Information & Profile */}
           <ComponentCard title="User Information">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Full Name</p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white">
@@ -300,7 +268,7 @@ export default function ViewUser() {
 
           {/* Metadata / Timestamps */}
           <ComponentCard title="Metadata">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Created At</p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white">
@@ -321,78 +289,6 @@ export default function ViewUser() {
               </div>
             </div>
           </ComponentCard>
-
-          {/* KTM Section */}
-          {(ktmPreview || ktmUrl) && (
-            <ComponentCard title="KTM (Kartu Tanda Mahasiswa)">
-              <div className="space-y-4">
-                {/* Image Preview */}
-                {ktmPreview && (
-                  <div className="relative rounded-lg border-2 border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-900">
-                    <img
-                      src={ktmPreview}
-                      alt="KTM"
-                      className="max-w-full h-auto max-h-96 object-contain mx-auto"
-                    />
-                  </div>
-                )}
-
-                {/* PDF/File Info Card */}
-                {!ktmPreview && ktmUrl && (
-                  <div className="p-4 border border-gray-200 rounded-lg dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                        <svg
-                          className="w-6 h-6 text-blue-600 dark:text-blue-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                          />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-                          KTM telah diupload
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                          Format: {ktmMimeType === 'application/pdf' ? 'PDF Document' : 'File'}
-                        </p>
-                        {ktmUrl && (
-                          <a
-                            href={ktmUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                              />
-                            </svg>
-                            Buka di tab baru
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </ComponentCard>
-          )}
 
           {/* Roles */}
           <ComponentCard title="Roles">

@@ -55,8 +55,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-md">
-      <div className="p-5 sm:p-6">
+    <Modal isOpen={isOpen} onClose={onClose} className="w-full max-w-md mx-auto">
+      <div className="p-4 sm:p-5 md:p-6">
         <div className="mb-5">
           <div className="flex items-center gap-3 mb-3">
             {icon && (
@@ -66,7 +66,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 </div>
               </div>
             )}
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white">
               {title}
             </h2>
           </div>
@@ -83,12 +83,12 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </div>
         </div>
         
-        <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-3.5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors"
+            className="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors touch-manipulation"
           >
             {cancelText}
           </button>
@@ -96,7 +96,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className={`px-3.5 py-2 text-sm font-medium text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${colorClasses[confirmButtonColor]}`}
+            className={`w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors touch-manipulation ${colorClasses[confirmButtonColor]}`}
           >
             {isLoading ? "Processing..." : confirmText}
           </button>

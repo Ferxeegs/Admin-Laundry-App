@@ -106,19 +106,19 @@ export default function RolesList() {
   return (
     <div className="space-y-6">
       {/* Search and Filters */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
           <input
             type="text"
             placeholder="Cari role (nama, guard name)..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-11 rounded-lg border border-gray-200 bg-transparent py-2.5 pl-12 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            className="w-full h-11 sm:h-11 rounded-lg border border-gray-200 bg-transparent py-2.5 pl-11 sm:pl-12 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
           />
           <svg
-            className="absolute -translate-y-1/2 left-4 top-1/2 fill-gray-500 dark:fill-gray-400"
-            width="20"
-            height="20"
+            className="absolute -translate-y-1/2 left-3.5 sm:left-4 top-1/2 fill-gray-500 dark:fill-gray-400"
+            width="18"
+            height="18"
             viewBox="0 0 20 20"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -131,7 +131,7 @@ export default function RolesList() {
             />
           </svg>
         </div>
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center sm:text-left">
           Total: {pagination.total} roles
         </div>
       </div>
@@ -143,8 +143,89 @@ export default function RolesList() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+      {/* Mobile Card View */}
+      <div className="block md:hidden space-y-3">
+        {isLoading && roles.length === 0 ? (
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="p-4 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 animate-pulse">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-gray-200 rounded-full dark:bg-gray-700"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2 dark:bg-gray-700"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2 dark:bg-gray-700"></div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-200 rounded w-full dark:bg-gray-700"></div>
+                  <div className="h-3 bg-gray-200 rounded w-2/3 dark:bg-gray-700"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : roles.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-500 dark:text-gray-400 text-sm text-center">
+              {search ? "Tidak ada role yang ditemukan" : "Belum ada role"}
+            </div>
+          </div>
+        ) : (
+          roles.map((role) => (
+            <div
+              key={role.id}
+              className="p-4 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+              onClick={() => {
+                if (hasPermission(['view_role', 'view_any_role'])) {
+                  navigate(`/roles/${String(role.id)}/edit`);
+                }
+              }}
+            >
+              <div className="flex items-start gap-3 mb-3">
+                <div className="h-12 w-12 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                  {role.name.substring(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-800 text-sm dark:text-white/90">
+                    {role.name}
+                  </p>
+                  <div className="mt-1">
+                    <Badge size="sm" color="info">
+                      {role.guard_name}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <Badge size="sm" color="primary">
+                    {role.permissions_count} Permissions
+                  </Badge>
+                  <Badge size="sm" color="success">
+                    {role.users_count} Users
+                  </Badge>
+                </div>
+              </div>
+              {hasPermission(['view_role', 'view_any_role']) && (
+                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/roles/${String(role.id)}/edit`);
+                    }}
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
+                  >
+                    <PencilIcon className="w-3.5 h-3.5" />
+                    Edit Role
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
         <div className="max-w-full overflow-x-auto">
           {isLoading && roles.length === 0 ? (
             <TableSkeleton rows={10} columns={6} showAvatar={true} />
@@ -299,22 +380,22 @@ export default function RolesList() {
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center sm:text-left">
             Menampilkan {((page - 1) * pagination.limit) + 1} - {Math.min(page * pagination.limit, pagination.total)} dari {pagination.total}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-center sm:justify-end">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
+              className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700 touch-manipulation"
             >
               Previous
             </button>
             <button
               onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
               disabled={page === pagination.totalPages}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
+              className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700 touch-manipulation"
             >
               Next
             </button>
