@@ -214,19 +214,19 @@ export default function UsersList() {
   return (
     <div className="space-y-6">
       {/* Search and Filters */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
           <input
             type="text"
             placeholder="Cari user (nama, email, username)..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-11 rounded-lg border border-gray-200 bg-transparent py-2.5 pl-12 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            className="w-full h-11 sm:h-11 rounded-lg border border-gray-200 bg-transparent py-2.5 pl-11 sm:pl-12 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
           />
           <svg
-            className="absolute -translate-y-1/2 left-4 top-1/2 fill-gray-500 dark:fill-gray-400"
-            width="20"
-            height="20"
+            className="absolute -translate-y-1/2 left-3.5 sm:left-4 top-1/2 fill-gray-500 dark:fill-gray-400"
+            width="18"
+            height="18"
             viewBox="0 0 20 20"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -239,27 +239,28 @@ export default function UsersList() {
             />
           </svg>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => {
               setShowDeleted(!showDeleted);
               setPage(1);
             }}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            className={`px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium rounded-lg transition-colors touch-manipulation ${
               showDeleted
                 ? "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white"
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
             }`}
           >
-            {showDeleted ? "Show Active Users" : "Show Deleted Users"}
+            <span className="hidden sm:inline">{showDeleted ? "Show Active Users" : "Show Deleted Users"}</span>
+            <span className="sm:hidden">{showDeleted ? "Active" : "Deleted"}</span>
           </button>
           {hasPermission('create_user') && (
             <button
               onClick={() => navigate("/users/create")}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 sm:w-auto"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
             >
               <svg
-                className="w-4 h-4"
+                className="w-3.5 h-3.5 sm:w-4 sm:h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -271,7 +272,8 @@ export default function UsersList() {
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-              Create User
+              <span className="hidden sm:inline">Create User</span>
+              <span className="sm:hidden">Create</span>
             </button>
           )}
         </div>
@@ -284,8 +286,146 @@ export default function UsersList() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+      {/* Mobile Card View */}
+      <div className="block md:hidden space-y-3">
+        {isLoading && users.length === 0 ? (
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="p-4 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 animate-pulse">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-gray-200 rounded-full dark:bg-gray-700"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2 dark:bg-gray-700"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2 dark:bg-gray-700"></div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-200 rounded w-full dark:bg-gray-700"></div>
+                  <div className="h-3 bg-gray-200 rounded w-2/3 dark:bg-gray-700"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : users.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-500 dark:text-gray-400 text-sm text-center">
+              {search 
+                ? `Tidak ada ${showDeleted ? "deleted " : ""}user yang ditemukan` 
+                : `Belum ada ${showDeleted ? "deleted " : ""}user`}
+            </div>
+          </div>
+        ) : (
+          users.map((user) => (
+            <div
+              key={user.id}
+              className="p-4 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+            >
+              <div className="flex items-start gap-3 mb-3">
+                <div 
+                  className="h-12 w-12 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
+                  onClick={() => navigate(`/users/${user.id}`)}
+                >
+                  {getInitials(user)}
+                </div>
+                <div className="flex-1 min-w-0" onClick={() => navigate(`/users/${user.id}`)}>
+                  <p className="font-medium text-gray-800 text-sm dark:text-white/90 truncate">
+                    {user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username}
+                  </p>
+                  <p className="text-gray-500 text-xs dark:text-gray-400 truncate mt-0.5">
+                    {user.email}
+                  </p>
+                  {user.phone_number && (
+                    <p className="text-gray-500 text-xs dark:text-gray-400 truncate">
+                      {user.phone_number}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2 mb-3">
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Username</p>
+                  <p className="text-sm text-gray-800 dark:text-white">{user.username}</p>
+                </div>
+                {user.roles && user.roles.length > 0 && (
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Roles</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {user.roles.map((role) => (
+                        <Badge key={role.id} size="sm" color="primary">
+                          {role.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Tanggal Daftar</p>
+                  <p className="text-sm text-gray-800 dark:text-white">{formatDate(user.created_at)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+                {!showDeleted && (
+                  <>
+                    {hasPermission(['view_user', 'view_any_user']) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/users/${user.id}`);
+                        }}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 touch-manipulation"
+                      >
+                        <EyeIcon className="w-3.5 h-3.5" />
+                        View
+                      </button>
+                    )}
+                    {hasPermission(['update_user']) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/users/${user.id}/edit`);
+                        }}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
+                      >
+                        <PencilIcon className="w-3.5 h-3.5" />
+                        Edit
+                      </button>
+                    )}
+                    {hasSuperAdminRole && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleImpersonateClick(user.id, user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username);
+                        }}
+                        disabled={impersonatingUserId === user.id}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed dark:text-blue-400 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 touch-manipulation"
+                      >
+                        <UserCircleIcon className="w-3.5 h-3.5" />
+                        Impersonate
+                      </button>
+                    )}
+                  </>
+                )}
+                {showDeleted && hasPermission(['force_delete_user', 'force_delete_any_user']) && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleForceDeleteClick(user.id, user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username);
+                    }}
+                    disabled={deletingUserId === user.id}
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                  >
+                    <TrashBinIcon className="w-3.5 h-3.5" />
+                    {deletingUserId === user.id ? "Deleting..." : "Force Delete"}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
         <div className="max-w-full overflow-x-auto custom-scrollbar">
           {isLoading && users.length === 0 ? (
             <TableSkeleton rows={10} columns={7} showAvatar={true} />
@@ -485,22 +625,22 @@ export default function UsersList() {
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center sm:text-left">
             Menampilkan {((page - 1) * pagination.limit) + 1} - {Math.min(page * pagination.limit, pagination.total)} dari {pagination.total}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-center sm:justify-end">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
+              className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700 touch-manipulation"
             >
               Previous
             </button>
             <button
               onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
               disabled={page === pagination.totalPages}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
+              className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700 touch-manipulation"
             >
               Next
             </button>

@@ -28,6 +28,7 @@ def init_roles(db: Session):
     roles = [
         {"name": "superadmin", "guard_name": "web"},
         {"name": "admin", "guard_name": "web"},
+        {"name": "staff", "guard_name": "web"},
         {"name": "auditor", "guard_name": "web"},
     ]
     
