@@ -4,7 +4,9 @@ Main FastAPI application.
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from app.core.config import settings
 from app.core.logging_config import root_logger
@@ -55,11 +57,13 @@ app.add_middleware(LoggingMiddleware)
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException):
     """Handle custom application exceptions."""
+    logger.error(f"AppException: {exc.detail} (status_code: {exc.status_code})")
     return JSONResponse(
         status_code=exc.status_code,
         content={
             "status": "error",
-            "message": exc.detail
+            "message": exc.detail,
+            "error": exc.detail  # Also include error field for frontend compatibility
         }
     )
 
@@ -79,6 +83,18 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# Mount static files for uploads
+upload_dir = Path(settings.UPLOAD_DIR)
+# Convert to absolute path if relative
+if not upload_dir.is_absolute():
+    # From: backend/app/main.py
+    # To: backend/
+    backend_dir = Path(__file__).parent.parent
+    upload_dir = backend_dir / upload_dir
+upload_dir.mkdir(parents=True, exist_ok=True)
+logger.info(f"Static files directory: {upload_dir} (absolute: {upload_dir.resolve()})")
+app.mount("/uploads", StaticFiles(directory=str(upload_dir)), name="uploads")
 
 
 @app.get("/", tags=["Health"])

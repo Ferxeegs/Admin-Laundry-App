@@ -9,6 +9,7 @@ import {
   HorizontaLDots,
   LockIcon,
   SettingsIcon,
+  UserIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
@@ -32,12 +33,18 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
+    path: "/",
   },
   {
     icon: <CalenderIcon />,
     name: "Calendar",
     path: "/calendar",
+  },
+  {
+    icon: <UserIcon />,
+    name: "Students",
+    path: "/students",
+    requiredPermission: ["view_student"],
   },
   {
     icon: <LockIcon />,
@@ -445,3 +452,4 @@ const AppSidebar: React.FC = () => {
 };
 
 export default AppSidebar;
+

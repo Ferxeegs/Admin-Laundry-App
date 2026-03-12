@@ -206,6 +206,11 @@ def update_current_user(
     for field, value in update_data.items():
         setattr(current_user, field, value)
     
+    # Set audit fields
+    from datetime import datetime, timezone
+    current_user.updated_by = current_user.id
+    current_user.updated_at = datetime.now(timezone.utc)
+    
     db.commit()
     db.refresh(current_user, ["roles"])
     # Refresh permissions for each role
@@ -348,6 +353,10 @@ def update_user(
     
     for field, value in update_data.items():
         setattr(user, field, value)
+    
+    # Set updated_at explicitly to ensure it's updated
+    from datetime import datetime, timezone
+    user.updated_at = datetime.now(timezone.utc)
     
     db.commit()
     db.refresh(user, ["roles"])

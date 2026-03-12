@@ -21,6 +21,10 @@ import CreateUser from "./pages/Users/CreateUser";
 import ViewUser from "./pages/Users/ViewUser";
 import Roles from "./pages/Roles/Roles";
 import EditRole from "./pages/Roles/EditRole";
+import Students from "./pages/Students/Students";
+import EditStudent from "./pages/Students/EditStudent";
+import CreateStudent from "./pages/Students/CreateStudent";
+import ViewStudent from "./pages/Students/ViewStudent";
 
 import Settings from "./pages/Settings/Settings";
 
@@ -96,6 +100,38 @@ export default function App() {
               element={
                 <ProtectedRoute requiredPermission={["view_role", "view_any_role"]}>
                   <EditRole />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/students"
+              element={
+                <ProtectedRoute>
+                  <Students />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/students/create"
+              element={
+                <ProtectedRoute>
+                  <CreateStudent />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/students/:id"
+              element={
+                <ProtectedRoute>
+                  <ViewStudent />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/students/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <EditStudent />
                 </ProtectedRoute>
               }
             />

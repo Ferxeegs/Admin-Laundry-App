@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Any, Optional, Generic, TypeVar
+from datetime import datetime
 
 T = TypeVar("T")
 
@@ -12,8 +13,11 @@ class MediaRead(BaseModel):
     id: int
     url: str
     collection: str
-    file_name: str
+    file_name: str  # Original filename from user
+    name: str  # Unique filename stored on server
     mime_type: str
+    size: int
+    created_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 

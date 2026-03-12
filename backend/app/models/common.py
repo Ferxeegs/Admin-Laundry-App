@@ -9,7 +9,8 @@ class Media(Base):
     model_id = Column(String(36), nullable=False)
     collection = Column(String(255), default="default")
     url = Column(String(255), nullable=False)
-    file_name = Column(String(255), nullable=False)
+    file_name = Column(String(255), nullable=False) # Original filename from user
+    name = Column(String(255), nullable=False) # Unique filename stored on server
     mime_type = Column(String(255), nullable=False)
     size = Column(Integer, nullable=False)
     created_at = Column(DateTime, server_default=func.now())

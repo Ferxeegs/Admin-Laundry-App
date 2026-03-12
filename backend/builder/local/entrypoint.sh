@@ -10,7 +10,7 @@ done
 # 2. Jalankan Migrasi (Membuat tabel)
 echo "Menjalankan migrasi database..."
 # Jika pakai Alembic:
-# alembic upgrade head
+alembic upgrade head
 # Jika tanpa Alembic (hanya untuk awal):
 # python -c "from app.db.base import Base; from app.db.session import engine; Base.metadata.create_all(bind=engine)"
 

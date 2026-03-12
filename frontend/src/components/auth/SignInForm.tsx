@@ -19,8 +19,8 @@ export default function SignInForm() {
   // Auto-fill credentials in development mode
   const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
   const [formData, setFormData] = useState({
-    email: isDevelopment ? (import.meta.env.VITE_DEV_ADMIN_EMAIL || "") : "",
-    password: isDevelopment ? (import.meta.env.VITE_DEV_ADMIN_PASSWORD || "") : "",
+    email: isDevelopment ? (import.meta.env.VITE_DEV_ADMIN_EMAIL || "admin@laundrypondok.com") : "",
+    password: isDevelopment ? (import.meta.env.VITE_DEV_ADMIN_PASSWORD || "12341234") : "",
   });
 
   // Check for success message from navigation state
