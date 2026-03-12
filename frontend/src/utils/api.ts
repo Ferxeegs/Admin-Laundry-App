@@ -6,11 +6,20 @@ const API_BASE_URL =
 
 /**
  * Get base URL without /api suffix (for static files)
+ * Returns empty string for relative URLs (same origin)
  */
 export const getBaseUrl = (): string => {
   const baseUrl = API_BASE_URL || '';
-  // Remove /api suffix if present
-  return baseUrl.replace(/\/api\/?$/, '');
+  // Remove /api and /api/v1 suffix if present
+  let result = baseUrl.replace(/\/api\/v1\/?$/, '');
+  result = result.replace(/\/api\/?$/, '');
+  
+  // If result is empty or just '/', return empty string for relative URLs
+  if (!result || result === '/') {
+    return '';
+  }
+  
+  return result;
 };
 
 export interface ApiResponse<T = any> {
@@ -1702,6 +1711,207 @@ export const curfewPermissionAPI = {
       };
     }>(endpoint, {
       method: 'GET',
+    });
+  },
+};
+
+/**
+ * Student API functions
+ */
+export const studentAPI = {
+  /**
+   * Get all students with pagination and search
+   */
+  getAllStudents: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    is_active?: boolean;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.is_active !== undefined) queryParams.append('is_active', params.is_active.toString());
+
+    const queryString = queryParams.toString();
+    const endpoint = `/students${queryString ? `?${queryString}` : ''}`;
+
+    return apiRequest<{
+      students: Array<{
+        id: string;
+        national_id_number: string;
+        fullname: string;
+        phone_number: string | null;
+        dormitory: string | null;
+        grade_level: string | null;
+        unique_code: string | null;
+        guardian_name: string | null;
+        qr_code: string | null;
+        is_active: boolean;
+        created_at: string | null;
+        updated_at: string | null;
+        deleted_at: string | null;
+        created_by: string | null;
+        deleted_by: string | null;
+      }>;
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
+    }>(endpoint, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Get student by ID
+   */
+  getStudentById: async (id: string) => {
+    return apiRequest<{
+      id: string;
+      national_id_number: string;
+      fullname: string;
+      phone_number: string | null;
+      dormitory: string | null;
+      grade_level: string | null;
+      unique_code: string | null;
+      guardian_name: string | null;
+      qr_code: string | null;
+      is_active: boolean;
+      created_at: string | null;
+      updated_at: string | null;
+      deleted_at: string | null;
+      created_by: string | null;
+      deleted_by: string | null;
+    }>(`/students/${id}`, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Create new student
+   */
+  createStudent: async (data: {
+    national_id_number: string;
+    fullname: string;
+    phone_number?: string | null;
+    dormitory?: string | null;
+    grade_level?: string | null;
+    unique_code?: string | null;
+    guardian_name?: string | null;
+    qr_code?: string | null;
+    is_active?: boolean;
+  }) => {
+    return apiRequest<{
+      id: string;
+      national_id_number: string;
+      fullname: string;
+      phone_number: string | null;
+      dormitory: string | null;
+      grade_level: string | null;
+      unique_code: string | null;
+      guardian_name: string | null;
+      qr_code: string | null;
+      is_active: boolean;
+      created_at: string;
+      updated_at: string;
+    }>('/students', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Update student by ID
+   */
+  updateStudent: async (id: string, data: {
+    national_id_number?: string;
+    fullname?: string;
+    phone_number?: string | null;
+    dormitory?: string | null;
+    grade_level?: string | null;
+    unique_code?: string | null;
+    guardian_name?: string | null;
+    qr_code?: string | null;
+    is_active?: boolean;
+  }) => {
+    return apiRequest<{
+      id: string;
+      national_id_number: string;
+      fullname: string;
+      phone_number: string | null;
+      dormitory: string | null;
+      grade_level: string | null;
+      unique_code: string | null;
+      guardian_name: string | null;
+      qr_code: string | null;
+      is_active: boolean;
+      created_at: string;
+      updated_at: string;
+    }>(`/students/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Get all deleted students
+   */
+  getDeletedStudents: async (params?: { page?: number; limit?: number; search?: string }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    
+    const queryString = queryParams.toString();
+    const endpoint = `/students/deleted${queryString ? `?${queryString}` : ''}`;
+    return apiRequest<{
+      students: Array<{
+        id: string;
+        national_id_number: string;
+        fullname: string;
+        phone_number: string | null;
+        dormitory: string | null;
+        grade_level: string | null;
+        unique_code: string | null;
+        guardian_name: string | null;
+        qr_code: string | null;
+        is_active: boolean;
+        created_at: string | null;
+        updated_at: string | null;
+        deleted_at: string | null;
+        created_by: string | null;
+        deleted_by: string | null;
+      }>;
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
+    }>(endpoint, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Delete student by ID (soft delete)
+   */
+  deleteStudent: async (id: string) => {
+    return apiRequest<null>(`/students/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /**
+   * Force delete student by ID (hard delete)
+   */
+  forceDeleteStudent: async (id: string) => {
+    return apiRequest<null>(`/students/${id}/force`, {
+      method: 'DELETE',
     });
   },
 };

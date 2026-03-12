@@ -74,9 +74,19 @@ def init_permissions(db: Session):
         "update_setting",
         "delete_setting",
     ]
+
+    # Permissions untuk Student model
+    student_permissions = [
+        "view_student",
+        "create_student",
+        "update_student",
+        "delete_student",
+        "restore_student",
+        "force_delete_student",
+    ]
     
     # Combine all permissions
-    all_permissions = user_permissions + role_permissions + setting_permissions
+    all_permissions = user_permissions + role_permissions + setting_permissions + student_permissions
     
     for perm_name in all_permissions:
         existing_perm = db.query(Permission).filter(Permission.name == perm_name).first()
