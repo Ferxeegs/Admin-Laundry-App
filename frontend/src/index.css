@@ -188,6 +188,44 @@ layer(base);
   body {
     @apply relative font-normal font-outfit z-1 bg-gray-50;
   }
+
+  /* Global thin scrollbar styling */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #d0d5dd transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 10px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #d0d5dd;
+    border-radius: 10px;
+    transition: background-color 0.2s ease;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: #98a2b3;
+  }
+
+  .dark * {
+    scrollbar-color: #475467 transparent;
+  }
+
+  .dark *::-webkit-scrollbar-thumb {
+    background-color: #475467;
+  }
+
+  .dark *::-webkit-scrollbar-thumb:hover {
+    background-color: #667085;
+  }
 }
 
 @utility menu-item {
@@ -265,19 +303,29 @@ layer(base);
 }
 @utility custom-scrollbar {
   &::-webkit-scrollbar {
-    @apply size-1.5;
+    width: 6px;
+    height: 6px;
   }
 
   &::-webkit-scrollbar-track {
-    @apply rounded-full;
+    @apply bg-transparent rounded-full;
   }
 
   &::-webkit-scrollbar-thumb {
-    @apply bg-gray-200 rounded-full dark:bg-gray-700;
+    @apply bg-gray-300 rounded-full transition-colors duration-200 dark:bg-gray-600;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
   }
 }
+
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #344054;
+  background-color: #475467;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #667085;
 }
 
 @layer utilities {

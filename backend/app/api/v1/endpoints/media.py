@@ -80,12 +80,18 @@ async def serve_media_file(
     Using :path to handle filenames with special characters.
     """
     try:
+        # Decode URL-encoded filename if needed
+        from urllib.parse import unquote
+        decoded_filename = unquote(filename)
+        
         logger.info(f"Serve request: model_type={model_type}, collection={collection}, filename={filename}")
+        logger.info(f"Decoded filename: {decoded_filename}")
         logger.info(f"Request URL: {request.url}")
         
         # Construct file path directly
         upload_base = get_upload_base_path()
-        file_path = upload_base / model_type.lower() / collection / filename
+        # Try with decoded filename first
+        file_path = upload_base / model_type.lower() / collection / decoded_filename
         
         # Normalize path for Windows
         file_path = Path(str(file_path).replace('/', '\\'))
@@ -96,12 +102,20 @@ async def serve_media_file(
         
         # Also try alternative path construction
         if not file_path.exists():
-            # Try using get_file_path_from_url
-            alt_path = get_file_path_from_url(f"/uploads/{model_type.lower()}/{collection}/{filename}")
-            logger.info(f"Alternative path: {alt_path} (absolute: {alt_path.resolve()})")
-            logger.info(f"Alternative path exists: {alt_path.exists()}")
-            if alt_path.exists():
-                file_path = alt_path
+            # Try with original filename (in case it wasn't encoded)
+            alt_file_path = upload_base / model_type.lower() / collection / filename
+            alt_file_path = Path(str(alt_file_path).replace('/', '\\'))
+            logger.info(f"Trying original filename: {alt_file_path} (absolute: {alt_file_path.resolve()})")
+            logger.info(f"Original filename exists: {alt_file_path.exists()}")
+            if alt_file_path.exists():
+                file_path = alt_file_path
+            else:
+                # Try using get_file_path_from_url
+                alt_path = get_file_path_from_url(f"/uploads/{model_type.lower()}/{collection}/{decoded_filename}")
+                logger.info(f"Alternative path: {alt_path} (absolute: {alt_path.resolve()})")
+                logger.info(f"Alternative path exists: {alt_path.exists()}")
+                if alt_path.exists():
+                    file_path = alt_path
         
         if not file_path.exists():
             logger.warning(f"File not found: {file_path}")

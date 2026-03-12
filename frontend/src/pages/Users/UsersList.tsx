@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "../../components/ui/table";
 import Badge from "../../components/ui/badge/Badge";
-import { userAPI } from "../../utils/api";
+import { userAPI, getBaseUrl, mediaAPI } from "../../utils/api";
 import { EyeIcon, PencilIcon, TrashBinIcon, UserCircleIcon } from "../../icons";
 import { useAuth } from "../../context/AuthContext";
 import TableSkeleton from "../../components/common/TableSkeleton";
@@ -25,6 +25,13 @@ interface User {
   phone_number: string | null;
   created_at: string | null;
   deleted_at?: string | null;
+  profile_picture?: {
+    id: number;
+    url: string;
+    collection: string;
+    file_name: string;
+    mime_type: string;
+  } | null;
   roles?: Array<{
     id: number;
     name: string;
@@ -54,12 +61,57 @@ export default function UsersList() {
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(null);
+  const [userProfilePictures, setUserProfilePictures] = useState<Record<string, string>>({});
   
   // Modal states
   const { isOpen: isImpersonateModalOpen, openModal: openImpersonateModal, closeModal: closeImpersonateModal } = useModal();
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
   const [selectedUserForImpersonate, setSelectedUserForImpersonate] = useState<{ id: string; name: string } | null>(null);
   const [selectedUserForDelete, setSelectedUserForDelete] = useState<{ id: string; name: string } | null>(null);
+
+  const fetchUserProfilePictures = async (usersList: User[]) => {
+    // Fetch profile pictures for all users in parallel
+    const picturePromises = usersList.map(async (user) => {
+      try {
+        const mediaResponse = await mediaAPI.getMediaByModel('User', user.id, 'profile-pictures');
+        
+        // Handle both array format and object with media property
+        let mediaArray: any[] = [];
+        if (mediaResponse.success && mediaResponse.data) {
+          if (Array.isArray(mediaResponse.data)) {
+            mediaArray = mediaResponse.data;
+          } else if (mediaResponse.data.media && Array.isArray(mediaResponse.data.media)) {
+            mediaArray = mediaResponse.data.media;
+          }
+        }
+        
+        if (mediaArray && mediaArray.length > 0) {
+          const media = mediaArray[0];
+          let mediaUrl = media.url;
+          // Remove /api/v1 or /api prefix if accidentally included
+          mediaUrl = mediaUrl.replace(/^\/api\/v1/, '').replace(/^\/api/, '');
+          // Ensure it starts with /
+          if (!mediaUrl.startsWith('/')) {
+            mediaUrl = `/${mediaUrl}`;
+          }
+          return { userId: user.id, url: `${getBaseUrl()}${mediaUrl}` };
+        }
+      } catch (err) {
+        // Silently fail for individual profile pictures
+        console.error(`Error fetching profile picture for user ${user.id}:`, err);
+      }
+      return null;
+    });
+    
+    const results = await Promise.all(picturePromises);
+    const picturesMap: Record<string, string> = {};
+    results.forEach((result) => {
+      if (result) {
+        picturesMap[result.userId] = result.url;
+      }
+    });
+    setUserProfilePictures(picturesMap);
+  };
 
   const fetchUsers = async (forceLoading = false) => {
     // Hanya set loading jika force loading atau benar-benar tidak ada data
@@ -96,6 +148,9 @@ export default function UsersList() {
           ...response.data.pagination,
           total: response.data.pagination.total - ((response.data.users as User[]).length - filteredUsers.length),
         });
+        
+        // Fetch profile pictures for all users
+        fetchUserProfilePictures(filteredUsers);
       } else {
         setError(response.message || "Gagal mengambil data users");
         console.error("Users response:", response);
@@ -212,19 +267,19 @@ export default function UsersList() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Search and Filters */}
-      <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Search and Filters - Compact for Mobile */}
+      <div className="flex flex-col gap-2 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
           <input
             type="text"
-            placeholder="Cari user (nama, email, username)..."
+            placeholder="Cari user..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-11 sm:h-11 rounded-lg border border-gray-200 bg-transparent py-2.5 pl-11 sm:pl-12 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            className="w-full h-10 sm:h-11 rounded-lg border border-gray-200 bg-transparent py-2 pl-10 sm:pl-12 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
           />
           <svg
-            className="absolute -translate-y-1/2 left-3.5 sm:left-4 top-1/2 fill-gray-500 dark:fill-gray-400"
+            className="absolute -translate-y-1/2 left-3 sm:left-4 top-1/2 fill-gray-500 dark:fill-gray-400"
             width="18"
             height="18"
             viewBox="0 0 20 20"
@@ -245,7 +300,7 @@ export default function UsersList() {
               setShowDeleted(!showDeleted);
               setPage(1);
             }}
-            className={`px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium rounded-lg transition-colors touch-manipulation ${
+            className={`px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors touch-manipulation ${
               showDeleted
                 ? "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white"
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
@@ -257,7 +312,7 @@ export default function UsersList() {
           {hasPermission('create_user') && (
             <button
               onClick={() => navigate("/users/create")}
-              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
             >
               <svg
                 className="w-3.5 h-3.5 sm:w-4 sm:h-4"
@@ -281,33 +336,29 @@ export default function UsersList() {
 
       {/* Error Message */}
       {error && (
-        <div className="p-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+        <div className="p-3 sm:p-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
           {error}
         </div>
       )}
 
-      {/* Mobile Card View */}
-      <div className="block md:hidden space-y-3">
+      {/* Mobile Card View - Compact Design */}
+      <div className="block md:hidden space-y-2">
         {isLoading && users.length === 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="p-4 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 animate-pulse">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 bg-gray-200 rounded-full dark:bg-gray-700"></div>
+              <div key={i} className="p-3 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 animate-pulse">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full dark:bg-gray-700"></div>
                   <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2 dark:bg-gray-700"></div>
+                    <div className="h-3.5 bg-gray-200 rounded w-3/4 mb-1.5 dark:bg-gray-700"></div>
                     <div className="h-3 bg-gray-200 rounded w-1/2 dark:bg-gray-700"></div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="h-3 bg-gray-200 rounded w-full dark:bg-gray-700"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3 dark:bg-gray-700"></div>
                 </div>
               </div>
             ))}
           </div>
         ) : users.length === 0 ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-8">
             <div className="text-gray-500 dark:text-gray-400 text-sm text-center">
               {search 
                 ? `Tidak ada ${showDeleted ? "deleted " : ""}user yang ditemukan` 
@@ -318,52 +369,78 @@ export default function UsersList() {
           users.map((user) => (
             <div
               key={user.id}
-              className="p-4 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+              className="p-3 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 active:bg-gray-50 dark:active:bg-gray-700/50 transition-colors"
+              onClick={() => navigate(`/users/${user.id}`)}
             >
-              <div className="flex items-start gap-3 mb-3">
+              {/* Main Info Row */}
+              <div className="flex items-start gap-2.5 mb-2.5">
                 <div 
-                  className="h-12 w-12 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
-                  onClick={() => navigate(`/users/${user.id}`)}
+                  className="h-10 w-10 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 mt-0.5"
                 >
-                  {getInitials(user)}
-                </div>
-                <div className="flex-1 min-w-0" onClick={() => navigate(`/users/${user.id}`)}>
-                  <p className="font-medium text-gray-800 text-sm dark:text-white/90 truncate">
-                    {user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username}
-                  </p>
-                  <p className="text-gray-500 text-xs dark:text-gray-400 truncate mt-0.5">
-                    {user.email}
-                  </p>
-                  {user.phone_number && (
-                    <p className="text-gray-500 text-xs dark:text-gray-400 truncate">
-                      {user.phone_number}
-                    </p>
+                  {userProfilePictures[user.id] ? (
+                    <img
+                      src={userProfilePictures[user.id]}
+                      alt={user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback to initials if image fails to load
+                        const target = e.currentTarget;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          parent.textContent = getInitials(user);
+                        }
+                      }}
+                    />
+                  ) : (
+                    getInitials(user)
                   )}
                 </div>
-              </div>
-              <div className="space-y-2 mb-3">
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Username</p>
-                  <p className="text-sm text-gray-800 dark:text-white">{user.username}</p>
-                </div>
-                {user.roles && user.roles.length > 0 && (
-                  <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Roles</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {user.roles.map((role) => (
-                        <Badge key={role.id} size="sm" color="primary">
-                          {role.name}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="font-semibold text-gray-800 text-sm dark:text-white/90 truncate flex-1">
+                      {user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username}
+                    </p>
+                    {user.roles && user.roles.length > 0 && (
+                      <div className="flex-shrink-0">
+                        <Badge size="sm" color="primary">
+                          {user.roles.length === 1 ? user.roles[0].name : `${user.roles.length} roles`}
                         </Badge>
-                      ))}
-                    </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-gray-500 text-xs dark:text-gray-400 break-all">
+                      {user.email}
+                    </span>
+                    {user.phone_number && (
+                      <>
+                        <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">•</span>
+                        <span className="text-gray-500 text-xs dark:text-gray-400 break-all">
+                          {user.phone_number}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Secondary Info - Compact with Fixed Label Width */}
+              <div className="space-y-1.5 mb-2 text-xs">
+                <div className="flex items-start gap-2">
+                  <span className="text-gray-500 dark:text-gray-400 min-w-[70px]">Username:</span>
+                  <span className="text-gray-800 dark:text-white font-medium flex-1 break-all">{user.username}</span>
+                </div>
+                {user.created_at && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-500 dark:text-gray-400 min-w-[70px]">Daftar:</span>
+                    <span className="text-gray-800 dark:text-white font-medium flex-1">{formatDate(user.created_at)}</span>
                   </div>
                 )}
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Tanggal Daftar</p>
-                  <p className="text-sm text-gray-800 dark:text-white">{formatDate(user.created_at)}</p>
-                </div>
               </div>
-              <div className="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+
+              {/* Actions - Compact */}
+              <div className="flex items-center gap-2 pt-2.5 border-t border-gray-100 dark:border-gray-700">
                 {!showDeleted && (
                   <>
                     {hasPermission(['view_user', 'view_any_user']) && (
@@ -372,7 +449,7 @@ export default function UsersList() {
                           e.stopPropagation();
                           navigate(`/users/${user.id}`);
                         }}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 touch-manipulation"
+                        className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 touch-manipulation"
                       >
                         <EyeIcon className="w-3.5 h-3.5" />
                         View
@@ -384,7 +461,7 @@ export default function UsersList() {
                           e.stopPropagation();
                           navigate(`/users/${user.id}/edit`);
                         }}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
+                        className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
                       >
                         <PencilIcon className="w-3.5 h-3.5" />
                         Edit
@@ -397,10 +474,11 @@ export default function UsersList() {
                           handleImpersonateClick(user.id, user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username);
                         }}
                         disabled={impersonatingUserId === user.id}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed dark:text-blue-400 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 touch-manipulation"
+                        className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed dark:text-blue-400 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 touch-manipulation"
                       >
                         <UserCircleIcon className="w-3.5 h-3.5" />
-                        Impersonate
+                        <span className="hidden xs:inline">Impersonate</span>
+                        <span className="xs:hidden">Login</span>
                       </button>
                     )}
                   </>
@@ -412,7 +490,7 @@ export default function UsersList() {
                       handleForceDeleteClick(user.id, user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username);
                     }}
                     disabled={deletingUserId === user.id}
-                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
                   >
                     <TrashBinIcon className="w-3.5 h-3.5" />
                     {deletingUserId === user.id ? "Deleting..." : "Force Delete"}
@@ -498,8 +576,25 @@ export default function UsersList() {
                         className="flex items-center gap-3 cursor-pointer"
                         onClick={() => navigate(`/users/${user.id}`)}
                       >
-                        <div className="h-10 w-10 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-sm">
-                          {getInitials(user)}
+                        <div className="h-10 w-10 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-sm relative">
+                          {userProfilePictures[user.id] ? (
+                            <img
+                              src={userProfilePictures[user.id]}
+                              alt={user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Fallback to initials if image fails to load
+                                const target = e.currentTarget;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.textContent = getInitials(user);
+                                }
+                              }}
+                            />
+                          ) : (
+                            getInitials(user)
+                          )}
                         </div>
                         <div>
                           <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">

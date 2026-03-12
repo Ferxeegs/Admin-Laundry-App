@@ -32,41 +32,74 @@ export default function UserSidebar({
   const [currentProfilePictureId, setCurrentProfilePictureId] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  // Helper function to normalize image URL (same as StudentSidebar)
+  const normalizeImageUrl = (url: string): string => {
+    if (url.startsWith('http') || url.startsWith('/') || url.startsWith('blob:')) {
+      return url;
+    }
+    return `${getBaseUrl()}${url.startsWith('/') ? url : `/${url}`}`;
+  };
+
+  // Helper function to extract media array from API response (same as StudentSidebar)
+  const extractMediaArray = (responseData: any): any[] | null => {
+    if (!responseData) return null;
+    
+    if (Array.isArray(responseData)) {
+      return responseData;
+    }
+    
+    if (responseData.media && Array.isArray(responseData.media)) {
+      return responseData.media;
+    }
+    
+    if (responseData.data && Array.isArray(responseData.data)) {
+      return responseData.data;
+    }
+    
+    return null;
+  };
+
   // Fetch existing profile picture on mount and when userId changes
-  useEffect(() => {
-    const fetchProfilePicture = async () => {
-      if (!userId) return;
+  const fetchProfilePicture = async () => {
+    if (!userId) {
+      setImagePreview(profileImage ? normalizeImageUrl(profileImage) : null);
+      setCurrentProfilePictureId(null);
+      return;
+    }
+    
+    try {
+      const response = await mediaAPI.getMediaByModel('User', userId, 'profile-pictures');
+      const mediaArray = extractMediaArray(response.data);
       
-      try {
-        const response = await mediaAPI.getMediaByModel('User', userId, 'profile-pictures');
-        if (response.success && response.data?.media && response.data.media.length > 0) {
-          const media = response.data.media[0];
-          // Get base URL without /api for static files
-          const serverUrl = `${getBaseUrl()}${media.url}`;
-          setImagePreview(serverUrl);
-          setCurrentProfilePictureId(media.id);
-        } else {
-          // No profile picture found, clear states
-          setImagePreview(null);
-          setCurrentProfilePictureId(null);
+      if (response.success && mediaArray && mediaArray.length > 0) {
+        const media = mediaArray[0];
+        let mediaUrl = media.url;
+        
+        // Remove /api/v1 or /api prefix if accidentally included
+        mediaUrl = mediaUrl.replace(/^\/api\/v1/, '').replace(/^\/api/, '');
+        
+        // Ensure it starts with /
+        if (!mediaUrl.startsWith('/')) {
+          mediaUrl = `/${mediaUrl}`;
         }
-      } catch (err) {
-        console.error('Error fetching profile picture:', err);
-        setImagePreview(null);
+        
+        setImagePreview(`${getBaseUrl()}${mediaUrl}`);
+        setCurrentProfilePictureId(media.id);
+      } else {
+        // No profile picture found, use prop if available
+        setImagePreview(profileImage ? normalizeImageUrl(profileImage) : null);
         setCurrentProfilePictureId(null);
       }
-    };
-
-    fetchProfilePicture();
-  }, [userId]);
-
-  // Update image preview when profileImage prop changes (from parent - for new uploads)
-  useEffect(() => {
-    if (profileImage && profileImage.startsWith('blob:')) {
-      // Only update if it's a blob URL (new file selected)
-      setImagePreview(profileImage);
+    } catch (err) {
+      // Fallback to prop if available
+      setImagePreview(profileImage ? normalizeImageUrl(profileImage) : null);
+      setCurrentProfilePictureId(null);
     }
-  }, [profileImage]);
+  };
+
+  useEffect(() => {
+    fetchProfilePicture();
+  }, [userId, profileImage]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -115,14 +148,48 @@ export default function UserSidebar({
 
       if (uploadResponse.success && uploadResponse.data) {
         setCurrentProfilePictureId(uploadResponse.data.id);
-        // Update preview with server URL (without /api for static files)
-        const serverUrl = `${getBaseUrl()}${uploadResponse.data.url}`;
-        setImagePreview(serverUrl);
+        // Build URL same way as StudentSidebar (using static file mount via nginx)
+        let mediaUrl = uploadResponse.data.url;
+        mediaUrl = mediaUrl.replace(/^\/api\/v1/, '').replace(/^\/api/, '');
+        if (!mediaUrl.startsWith('/')) {
+          mediaUrl = `/${mediaUrl}`;
+        }
+        setImagePreview(`${getBaseUrl()}${mediaUrl}`);
         onProfileImageChange?.(file);
+        
+        // Call callback to notify parent component first
         onProfilePictureUpdated?.();
+        
+        // Then refresh profile picture data to ensure consistency
+        // Use a small delay to ensure backend has processed the upload
+        setTimeout(() => {
+          fetchProfilePicture();
+        }, 300);
       } else {
         setUploadError(uploadResponse.message || 'Gagal mengupload foto profil');
-        setImagePreview(profileImage || null); // Revert to previous image
+        // Revert to previous image or clear if no previous
+        if (currentProfilePictureId) {
+          // Try to fetch previous image
+          try {
+            const prevResponse = await mediaAPI.getMediaByModel('User', userId, 'profile-pictures');
+            const mediaArray = extractMediaArray(prevResponse.data);
+            if (prevResponse.success && mediaArray && mediaArray.length > 0) {
+              const media = mediaArray[0];
+              let mediaUrl = media.url;
+              mediaUrl = mediaUrl.replace(/^\/api\/v1/, '').replace(/^\/api/, '');
+              if (!mediaUrl.startsWith('/')) {
+                mediaUrl = `/${mediaUrl}`;
+              }
+              setImagePreview(`${getBaseUrl()}${mediaUrl}`);
+            } else {
+              setImagePreview(null);
+            }
+          } catch (err) {
+            setImagePreview(null);
+          }
+        } else {
+          setImagePreview(null);
+        }
       }
     } catch (err: any) {
       setUploadError('Terjadi kesalahan saat mengupload foto profil');
@@ -230,6 +297,13 @@ export default function UserSidebar({
                   src={imagePreview}
                   alt="Profile preview"
                   className="w-32 h-32 rounded-full object-cover border-4 border-gray-200 dark:border-gray-700"
+                  onError={(e) => {
+                    // If image fails to load, clear preview
+                    console.error('Failed to load profile picture:', imagePreview);
+                    console.error('Image element:', e.currentTarget);
+                    setImagePreview(null);
+                    setCurrentProfilePictureId(null);
+                  }}
                 />
                 {isUploading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">

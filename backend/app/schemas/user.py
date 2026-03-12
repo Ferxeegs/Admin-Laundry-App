@@ -83,3 +83,23 @@ class UserPasswordReset(BaseModel):
         if 'password' in info.data and v != info.data['password']:
             raise ValueError('Passwords do not match')
         return v
+
+
+class UserPasswordChange(BaseModel):
+    current_password: str
+    password: str
+    confirm_password: str
+
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        return v
+
+    @field_validator('confirm_password')
+    @classmethod
+    def validate_confirm_password(cls, v: str, info) -> str:
+        if 'password' in info.data and v != info.data['password']:
+            raise ValueError('Passwords do not match')
+        return v

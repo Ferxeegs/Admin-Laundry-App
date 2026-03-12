@@ -35,8 +35,8 @@ export default function EditUser() {
   });
   const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
   const [countryCode, setCountryCode] = useState<string>("+62");
-  const [profileImage, setProfileImage] = useState<File | null>(null);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [profileImageBlobUrl, setProfileImageBlobUrl] = useState<string | null>(null);
   const { isOpen: isResetPasswordModalOpen, openModal: openResetPasswordModal, closeModal: closeResetPasswordModal } = useModal();
   const { isOpen: isImpersonateModalOpen, openModal: openImpersonateModal, closeModal: closeImpersonateModal } = useModal();
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
@@ -55,6 +55,15 @@ export default function EditUser() {
       fetchUserData();
     }
   }, [id]);
+
+  // Cleanup blob URL when component unmounts or profileImage changes
+  useEffect(() => {
+    return () => {
+      if (profileImageBlobUrl) {
+        URL.revokeObjectURL(profileImageBlobUrl);
+      }
+    };
+  }, [profileImageBlobUrl]);
 
   const fetchUserData = async () => {
     if (!id) return;
@@ -108,12 +117,20 @@ export default function EditUser() {
         const roleIds = user.roles?.map((r: any) => Number(r.id)) || [];
         setSelectedRoleIds(roleIds);
         
-        // Set profile picture URL if exists
+        // Set profile picture URL if exists (same approach as ViewStudent)
+        // Note: UserSidebar will fetch profile picture separately via mediaAPI
+        // So we don't need to set it here, but we can if it's in the response
         if ((user as any).profile_pictures && (user as any).profile_pictures.length > 0) {
           const profilePic = (user as any).profile_pictures[0];
-          // Get base URL without /api for static files
-          const serverUrl = `${getBaseUrl()}${profilePic.url}`;
-          setProfileImageUrl(serverUrl);
+          let profileUrl = profilePic.url;
+          // Remove /api/v1 or /api prefix if accidentally included
+          profileUrl = profileUrl.replace(/^\/api\/v1/, '').replace(/^\/api/, '');
+          // Ensure it starts with /
+          if (!profileUrl.startsWith('/')) {
+            profileUrl = `/${profileUrl}`;
+          }
+          // Use relative URL (same origin) for static files
+          setProfileImageUrl(`${getBaseUrl()}${profileUrl}`);
         } else {
           setProfileImageUrl(null);
         }
@@ -141,9 +158,42 @@ export default function EditUser() {
     fetchUserData();
   };
 
-  const handleProfilePictureUpdated = () => {
+  const handleProfilePictureUpdated = async () => {
     // Refresh user data to get updated profile picture from server
-    fetchUserData();
+    await fetchUserData();
+    
+    // Also refresh profile picture URL directly from media API (same approach as ViewStudent)
+    if (id) {
+      try {
+        const { mediaAPI } = await import('../../utils/api');
+        const response = await mediaAPI.getMediaByModel('User', id, 'profile-pictures');
+        
+        // Handle both array format and object with media property
+        let mediaArray: any[] = [];
+        
+        if (response.success && response.data) {
+          if (Array.isArray(response.data)) {
+            mediaArray = response.data;
+          } else if (response.data.media && Array.isArray(response.data.media)) {
+            mediaArray = response.data.media;
+          }
+        }
+        
+        if (mediaArray.length > 0) {
+          const media = mediaArray[0];
+          let mediaUrl = media.url;
+          mediaUrl = mediaUrl.replace(/^\/api\/v1/, '').replace(/^\/api/, '');
+          if (!mediaUrl.startsWith('/')) {
+            mediaUrl = `/${mediaUrl}`;
+          }
+          setProfileImageUrl(`${getBaseUrl()}${mediaUrl}`);
+        } else {
+          setProfileImageUrl(null);
+        }
+      } catch (err) {
+        console.error('Error refreshing profile picture URL:', err);
+      }
+    }
   };
 
   const handleImpersonateClick = () => {
@@ -428,8 +478,18 @@ export default function EditUser() {
               createdAt={userData.created_at}
               updatedAt={userData.updated_at}
               onEmailVerified={handleEmailVerified}
-              profileImage={profileImage ? URL.createObjectURL(profileImage) : profileImageUrl}
-              onProfileImageChange={setProfileImage}
+              profileImage={profileImageBlobUrl || profileImageUrl}
+              onProfileImageChange={(file) => {
+                // Cleanup previous blob URL to prevent memory leak
+                if (profileImageBlobUrl) {
+                  URL.revokeObjectURL(profileImageBlobUrl);
+                }
+                if (file) {
+                  setProfileImageBlobUrl(URL.createObjectURL(file));
+                } else {
+                  setProfileImageBlobUrl(null);
+                }
+              }}
               onProfilePictureUpdated={handleProfilePictureUpdated}
             />
           </div>

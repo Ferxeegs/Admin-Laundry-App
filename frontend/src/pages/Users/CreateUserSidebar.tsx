@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { EyeIcon, EyeCloseIcon } from "../../icons";
 
 interface CreateUserSidebarProps {
@@ -21,21 +21,45 @@ export default function CreateUserSidebar({
   const [imagePreview, setImagePreview] = useState<string | null>(profileImage || null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Update image preview when profileImage prop changes
+  useEffect(() => {
+    if (profileImage) {
+      setImagePreview(profileImage);
+    }
+  }, [profileImage]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      onProfileImageChange?.(file);
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Hanya file gambar yang diizinkan');
+      return;
     }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('Ukuran file maksimal 5MB');
+      return;
+    }
+
+    setUploadError(null);
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    onProfileImageChange?.(file);
   };
 
   const handleRemoveImage = () => {
     setImagePreview(null);
+    setUploadError(null);
     onProfileImageChange?.(null);
   };
 
@@ -47,6 +71,11 @@ export default function CreateUserSidebar({
           Profile Picture
         </h3>
         <div className="flex flex-col items-center justify-center">
+          {uploadError && (
+            <div className="mb-4 w-full p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+              {uploadError}
+            </div>
+          )}
           <div className="relative mb-4">
             {imagePreview ? (
               <div className="relative">
@@ -54,11 +83,18 @@ export default function CreateUserSidebar({
                   src={imagePreview}
                   alt="Profile preview"
                   className="w-32 h-32 rounded-full object-cover border-4 border-gray-200 dark:border-gray-700"
+                  onError={() => {
+                    // If image fails to load, clear preview
+                    console.error('Failed to load profile picture:', imagePreview);
+                    setImagePreview(null);
+                    onProfileImageChange?.(null);
+                  }}
                 />
                 <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="absolute -top-2 -right-2 p-1 text-white bg-red-500 rounded-full hover:bg-red-600"
+                  className="absolute -top-2 -right-2 p-1 text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                  title="Hapus foto"
                 >
                   <svg
                     className="w-4 h-4"
@@ -93,17 +129,32 @@ export default function CreateUserSidebar({
               </div>
             )}
           </div>
-          <label className="cursor-pointer">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="hidden"
-            />
-            <span className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">
-              {imagePreview ? "Change Photo" : "Upload Photo"}
-            </span>
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="cursor-pointer">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+              <span className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 transition-colors">
+                {imagePreview ? "Change Photo" : "Upload Photo"}
+              </span>
+            </label>
+            {imagePreview && (
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors"
+                title="Hapus foto"
+              >
+                Hapus
+              </button>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+            Format: JPG, PNG, GIF (Maks. 5MB)
+          </p>
         </div>
       </div>
 

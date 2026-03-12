@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
-import { userAPI, getBaseUrl } from "../../utils/api";
+import { userAPI, getBaseUrl, mediaAPI } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
 import { AngleLeftIcon, PencilIcon } from "../../icons";
 import Badge from "../../components/ui/badge/Badge";
@@ -38,6 +38,7 @@ export default function ViewUser() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -60,6 +61,43 @@ export default function ViewUser() {
           profile_picture: (response.data as any).profile_picture || null,
         };
         setUser(userData as User);
+        
+        // Fetch profile picture from media API (same approach as ViewStudent)
+        try {
+          const mediaResponse = await mediaAPI.getMediaByModel('User', id, 'profile-pictures');
+          
+          // Handle both array format and object with media property
+          let mediaArray: any[] = [];
+          
+          if (mediaResponse.success && mediaResponse.data) {
+            if (Array.isArray(mediaResponse.data)) {
+              mediaArray = mediaResponse.data;
+            } else if (mediaResponse.data.media && Array.isArray(mediaResponse.data.media)) {
+              mediaArray = mediaResponse.data.media;
+            }
+          }
+          
+          if (mediaArray && mediaArray.length > 0) {
+            const media = mediaArray[0];
+            let mediaUrl = media.url;
+            
+            // Remove /api/v1 or /api prefix if accidentally included
+            mediaUrl = mediaUrl.replace(/^\/api\/v1/, '').replace(/^\/api/, '');
+            
+            // Ensure it starts with /
+            if (!mediaUrl.startsWith('/')) {
+              mediaUrl = `/${mediaUrl}`;
+            }
+            
+            // Use relative URL (same origin) for static files via nginx
+            setProfilePictureUrl(`${getBaseUrl()}${mediaUrl}`);
+          } else {
+            setProfilePictureUrl(null);
+          }
+        } catch (mediaErr) {
+          console.error('Error fetching profile picture:', mediaErr);
+          setProfilePictureUrl(null);
+        }
       } else {
         setError(response.message || "Gagal mengambil data user");
       }
@@ -133,9 +171,7 @@ export default function ViewUser() {
     );
   }
 
-  const profilePictureUrl = user.profile_picture
-    ? `${getBaseUrl()}${user.profile_picture.url}`
-    : null;
+  // profilePictureUrl is now fetched separately from media API
 
   return (
     <div className="space-y-5">
@@ -183,6 +219,10 @@ export default function ViewUser() {
                     src={profilePictureUrl}
                     alt="Profile"
                     className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-gray-200 dark:border-gray-700"
+                    onError={(e) => {
+                      console.error('Failed to load profile picture in ViewUser:', profilePictureUrl);
+                      console.error('Image element:', e.currentTarget);
+                    }}
                   />
                 ) : (
                   <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-3xl sm:text-4xl border-4 border-gray-200 dark:border-gray-700">

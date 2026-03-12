@@ -22,6 +22,66 @@ export const getBaseUrl = (): string => {
   return result;
 };
 
+/**
+ * Build correct URL for media files
+ * Uses API endpoint: /api/v1/media/serve/{model_type}/{collection}/{filename}
+ * This is more reliable than static file mount
+ * @param mediaUrl - URL from media record (format: /uploads/{model_type}/{collection}/{filename})
+ * @returns Full URL for displaying the image
+ */
+export const getMediaUrl = (mediaUrl: string | null | undefined): string | null => {
+  if (!mediaUrl) return null;
+  
+  // Parse URL to extract model_type, collection, and filename
+  // Format: /uploads/{model_type}/{collection}/{filename}
+  const urlMatch = mediaUrl.match(/\/uploads\/([^\/]+)\/([^\/]+)\/(.+)$/);
+  
+  if (urlMatch) {
+    // Use API endpoint: /api/v1/media/serve/{model_type}/{collection}/{filename}
+    const [, modelType, collection, filename] = urlMatch;
+    // Don't double-encode filename - FastAPI :path parameter handles encoding
+    // Just use the filename as-is, but ensure it's properly formatted
+    const cleanFilename = filename;
+    
+    // Ensure API_BASE_URL ends with /api or /api/v1, then add /media/serve
+    let apiUrl: string;
+    if (API_BASE_URL.endsWith('/api/v1')) {
+      apiUrl = `${API_BASE_URL}/media/serve/${modelType}/${collection}/${cleanFilename}`;
+    } else if (API_BASE_URL.endsWith('/api')) {
+      apiUrl = `${API_BASE_URL}/v1/media/serve/${modelType}/${collection}/${cleanFilename}`;
+    } else {
+      // Fallback: assume /api/v1 structure
+      apiUrl = `${API_BASE_URL}/api/v1/media/serve/${modelType}/${collection}/${cleanFilename}`;
+    }
+    
+    // Debug logging (can be removed in production)
+    if (import.meta.env.DEV) {
+      console.log('Media URL:', { original: mediaUrl, final: apiUrl, apiBaseUrl: API_BASE_URL, filename: cleanFilename });
+    }
+    
+    return apiUrl;
+  }
+  
+  // Fallback: if URL doesn't match expected format, try to use static file mount
+  // Ensure URL starts with /
+  let imageUrl = mediaUrl.startsWith('/') ? mediaUrl : '/' + mediaUrl;
+  
+  // If API_BASE_URL is absolute (http://...), use it to build full URL
+  // Otherwise use relative URL (same origin)
+  if (API_BASE_URL.startsWith('http://') || API_BASE_URL.startsWith('https://')) {
+    // Extract base URL without /api
+    const baseUrl = API_BASE_URL.replace(/\/api\/v1\/?$/, '').replace(/\/api\/?$/, '');
+    imageUrl = `${baseUrl}${imageUrl}`;
+  }
+  
+  // Debug logging (can be removed in production)
+  if (import.meta.env.DEV) {
+    console.log('Media URL (fallback):', { original: mediaUrl, final: imageUrl, apiBaseUrl: API_BASE_URL });
+  }
+  
+  return imageUrl;
+};
+
 export interface ApiResponse<T = any> {
   success: boolean;
   message: string;
@@ -706,6 +766,59 @@ export const userAPI = {
     }>(`/users/${id}/reset-password`, {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Update current user profile
+   */
+  updateMyProfile: async (data: {
+    firstname?: string;
+    lastname?: string;
+    email?: string;
+    phone_number?: string | null;
+    username?: string;
+  }) => {
+    return apiRequest<{
+      id: string;
+      username: string;
+      email: string;
+      firstname: string;
+      lastname: string;
+      fullname: string | null;
+      phone_number: string | null;
+      created_at: string;
+      updated_at: string;
+      roles?: Array<{
+        id: number;
+        name: string;
+        guard_name: string;
+      }>;
+    }>('/users/me', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Change current user password
+   * Menggunakan endpoint /users/me/change-password dengan validasi password lama
+   * Endpoint ini perlu dibuat di backend untuk validasi password lama sebelum update
+   */
+  changePassword: async (data: {
+    current_password: string;
+    new_password: string;
+    confirm_password: string;
+  }) => {
+    return apiRequest<{
+      message: string;
+    }>('/users/me/change-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        current_password: data.current_password,
+        password: data.new_password,
+        confirm_password: data.confirm_password,
+      }),
     });
   },
 };

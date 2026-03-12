@@ -157,19 +157,19 @@ export default function StudentsList() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Search and Filters */}
-      <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Search and Filters - Compact for Mobile */}
+      <div className="flex flex-col gap-2 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
           <input
             type="text"
-            placeholder="Cari siswa (nama, NIK, kode unik)..."
+            placeholder="Cari siswa..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-11 sm:h-11 rounded-lg border border-gray-200 bg-transparent py-2.5 pl-11 sm:pl-12 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            className="w-full h-10 sm:h-11 rounded-lg border border-gray-200 bg-transparent py-2 pl-10 sm:pl-12 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
           />
           <svg
-            className="absolute -translate-y-1/2 left-3.5 sm:left-4 top-1/2 fill-gray-500 dark:fill-gray-400"
+            className="absolute -translate-y-1/2 left-3 sm:left-4 top-1/2 fill-gray-500 dark:fill-gray-400"
             width="18"
             height="18"
             viewBox="0 0 20 20"
@@ -190,7 +190,7 @@ export default function StudentsList() {
               setShowDeleted(!showDeleted);
               setPage(1);
             }}
-            className={`px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium rounded-lg transition-colors touch-manipulation ${
+            className={`px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors touch-manipulation ${
               showDeleted
                 ? "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white"
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
@@ -201,7 +201,7 @@ export default function StudentsList() {
           </button>
           <button
             onClick={() => navigate("/students/create")}
-            className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
+            className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
           >
             <svg
               className="w-3.5 h-3.5 sm:w-4 sm:h-4"
@@ -224,33 +224,29 @@ export default function StudentsList() {
 
       {/* Error Message */}
       {error && (
-        <div className="p-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+        <div className="p-3 sm:p-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
           {error}
         </div>
       )}
 
-      {/* Mobile Card View */}
-      <div className="block md:hidden space-y-3">
+      {/* Mobile Card View - Compact Design */}
+      <div className="block md:hidden space-y-2">
         {isLoading && students.length === 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="p-4 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 animate-pulse">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 bg-gray-200 rounded-full dark:bg-gray-700"></div>
+              <div key={i} className="p-3 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 animate-pulse">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full dark:bg-gray-700"></div>
                   <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2 dark:bg-gray-700"></div>
+                    <div className="h-3.5 bg-gray-200 rounded w-3/4 mb-1.5 dark:bg-gray-700"></div>
                     <div className="h-3 bg-gray-200 rounded w-1/2 dark:bg-gray-700"></div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="h-3 bg-gray-200 rounded w-full dark:bg-gray-700"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3 dark:bg-gray-700"></div>
                 </div>
               </div>
             ))}
           </div>
         ) : students.length === 0 ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-8">
             <div className="text-gray-500 dark:text-gray-400 text-sm text-center">
               {search 
                 ? `Tidak ada ${showDeleted ? "deleted " : ""}siswa yang ditemukan` 
@@ -261,69 +257,75 @@ export default function StudentsList() {
           students.map((student) => (
             <div
               key={student.id}
-              className="p-4 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+              className="p-3 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 active:bg-gray-50 dark:active:bg-gray-700/50 transition-colors"
+              onClick={() => navigate(`/students/${student.id}`)}
             >
-              <div className="flex items-start gap-3 mb-3">
+              {/* Main Info Row */}
+              <div className="flex items-start gap-2.5 mb-2.5">
                 {student.profile_picture ? (
                   <img
                     src={`${getBaseUrl()}${student.profile_picture.url}`}
                     alt={student.fullname}
-                    className="h-12 w-12 overflow-hidden rounded-full object-cover flex-shrink-0 cursor-pointer"
-                    onClick={() => navigate(`/students/${student.id}`)}
+                    className="h-10 w-10 rounded-full object-cover flex-shrink-0 mt-0.5"
                   />
                 ) : (
-                  <div 
-                    className="h-12 w-12 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 cursor-pointer"
-                    onClick={() => navigate(`/students/${student.id}`)}
-                  >
+                  <div className="h-10 w-10 rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 mt-0.5">
                     {getInitials(student)}
                   </div>
                 )}
-                <div className="flex-1 min-w-0" onClick={() => navigate(`/students/${student.id}`)}>
-                  <p className="font-medium text-gray-800 text-sm dark:text-white/90 truncate">
-                    {student.fullname}
-                  </p>
-                  <p className="text-gray-500 text-xs dark:text-gray-400 truncate mt-0.5">
-                    NIK: {student.national_id_number}
-                  </p>
-                  {student.unique_code && (
-                    <p className="text-gray-500 text-xs dark:text-gray-400 truncate">
-                      Kode: {student.unique_code}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="font-semibold text-gray-800 text-sm dark:text-white/90 truncate flex-1">
+                      {student.fullname}
                     </p>
+                    <div className="flex-shrink-0">
+                      <Badge size="sm" color={student.is_active ? "success" : "error"}>
+                        {student.is_active ? "Aktif" : "Tidak Aktif"}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-gray-500 text-xs dark:text-gray-400 break-all">
+                      {student.national_id_number}
+                    </span>
+                    {student.unique_code && (
+                      <>
+                        <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">•</span>
+                        <span className="text-gray-500 text-xs dark:text-gray-400 font-mono break-all">
+                          {student.unique_code}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Secondary Info - Compact Grid with Fixed Label Width */}
+              {(student.dormitory || student.grade_level || student.phone_number) && (
+                <div className="space-y-1.5 mb-2 text-xs">
+                  {student.dormitory && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-gray-500 dark:text-gray-400 min-w-[60px]">Asrama:</span>
+                      <span className="text-gray-800 dark:text-white font-medium flex-1">{student.dormitory}</span>
+                    </div>
+                  )}
+                  {student.grade_level && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-gray-500 dark:text-gray-400 min-w-[60px]">Kelas:</span>
+                      <span className="text-gray-800 dark:text-white font-medium flex-1">{student.grade_level}</span>
+                    </div>
+                  )}
+                  {student.phone_number && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-gray-500 dark:text-gray-400 min-w-[60px]">Telp:</span>
+                      <span className="text-gray-800 dark:text-white font-medium flex-1 break-all">{student.phone_number}</span>
+                    </div>
                   )}
                 </div>
-              </div>
-              <div className="space-y-2 mb-3">
-                {student.dormitory && (
-                  <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Asrama</p>
-                    <p className="text-sm text-gray-800 dark:text-white">{student.dormitory}</p>
-                  </div>
-                )}
-                {student.grade_level && (
-                  <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Kelas</p>
-                    <p className="text-sm text-gray-800 dark:text-white">{student.grade_level}</p>
-                  </div>
-                )}
-                {student.phone_number && (
-                  <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">No. Telepon</p>
-                    <p className="text-sm text-gray-800 dark:text-white">{student.phone_number}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</p>
-                  <Badge size="sm" color={student.is_active ? "success" : "error"}>
-                    {student.is_active ? "Aktif" : "Tidak Aktif"}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Tanggal Daftar</p>
-                  <p className="text-sm text-gray-800 dark:text-white">{formatDate(student.created_at)}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+              )}
+
+              {/* Actions - Compact */}
+              <div className="flex items-center gap-2 pt-2.5 border-t border-gray-100 dark:border-gray-700">
                 {!showDeleted && (
                   <>
                     <button
@@ -331,7 +333,7 @@ export default function StudentsList() {
                         e.stopPropagation();
                         navigate(`/students/${student.id}`);
                       }}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 touch-manipulation"
+                      className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 touch-manipulation"
                     >
                       <EyeIcon className="w-3.5 h-3.5" />
                       View
@@ -341,7 +343,7 @@ export default function StudentsList() {
                         e.stopPropagation();
                         navigate(`/students/${student.id}/edit`);
                       }}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
+                      className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
                     >
                       <PencilIcon className="w-3.5 h-3.5" />
                       Edit
@@ -355,7 +357,7 @@ export default function StudentsList() {
                       handleForceDeleteClick(student.id, student.fullname);
                     }}
                     disabled={deletingStudentId === student.id}
-                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
                   >
                     <TrashBinIcon className="w-3.5 h-3.5" />
                     {deletingStudentId === student.id ? "Deleting..." : "Force Delete"}

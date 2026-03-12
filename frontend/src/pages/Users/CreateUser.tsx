@@ -2,7 +2,7 @@ import { useState, FormEvent } from "react";
 import { useNavigate, Link } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
-import { userAPI } from "../../utils/api";
+import { userAPI, mediaAPI } from "../../utils/api";
 import { InfoIcon, LockIcon, AngleLeftIcon } from "../../icons";
 import CreateUserSidebar from "./CreateUserSidebar";
 import DetailsTab from "./DetailsTab";
@@ -122,13 +122,37 @@ export default function CreateUser() {
         return;
       }
 
-      // Success - redirect to edit user page
-      if (createResponse.data?.id) {
-        navigate(`/users/${createResponse.data.id}/edit`);
-      } else {
-        // Fallback: redirect to users list if no ID
-        navigate("/users");
+      const userId = createResponse.data?.id;
+      if (!userId) {
+        setError("User berhasil dibuat tapi ID tidak ditemukan");
+        setIsLoading(false);
+        return;
       }
+
+      // Upload profile picture if provided
+      if (profileImage) {
+        try {
+          const uploadResponse = await mediaAPI.uploadMedia(
+            profileImage,
+            'User',
+            userId,
+            'profile-pictures'
+          );
+
+          if (!uploadResponse.success) {
+            // User sudah dibuat, tapi upload foto gagal
+            // Tetap redirect ke edit page, user bisa upload foto lagi di sana
+            console.warn('User created but profile picture upload failed:', uploadResponse.message);
+          }
+        } catch (uploadErr: any) {
+          // User sudah dibuat, tapi upload foto gagal
+          // Tetap redirect ke edit page, user bisa upload foto lagi di sana
+          console.error('Error uploading profile picture:', uploadErr);
+        }
+      }
+
+      // Success - redirect to edit user page
+      navigate(`/users/${userId}/edit`);
     } catch (err: any) {
       setError("Terjadi kesalahan saat membuat user");
       console.error("Create user error:", err);

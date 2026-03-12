@@ -10,13 +10,13 @@ from datetime import datetime, timedelta
 from app.api.deps import get_db, get_current_active_user
 from app.models.auth import User, Role, user_roles
 from app.schemas.user import (
-    UserRead, UserCreate, UserUpdate, UserRoleUpdate, UserPasswordReset
+    UserRead, UserCreate, UserUpdate, UserRoleUpdate, UserPasswordReset, UserPasswordChange
 )
 from app.schemas.common import WebResponse
-from app.core.security import get_password_hash, create_access_token, decode_access_token
+from app.core.security import get_password_hash, create_access_token, decode_access_token, verify_password
 from app.core.config import settings
 from app.core.exceptions import (
-    NotFoundException, BadRequestException, ConflictException, ForbiddenException
+    NotFoundException, BadRequestException, ConflictException, ForbiddenException, UnauthorizedException
 )
 
 router = APIRouter()
@@ -221,6 +221,40 @@ def update_current_user(
         status="success",
         message="User updated successfully",
         data=UserRead.model_validate(current_user)
+    )
+
+
+@router.post("/me/change-password", response_model=WebResponse[dict])
+def change_current_user_password(
+    password_data: UserPasswordChange,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Change current user password with validation of current password.
+    PENTING: Route ini harus didefinisikan SEBELUM /{user_id} agar "me" tidak dianggap sebagai user_id.
+    """
+    # Verify current password
+    if not verify_password(password_data.current_password, current_user.password):
+        raise UnauthorizedException("Current password is incorrect")
+    
+    # Check if new password is same as current password
+    if verify_password(password_data.password, current_user.password):
+        raise BadRequestException("New password must be different from current password")
+    
+    # Hash new password
+    current_user.password = get_password_hash(password_data.password)
+    
+    # Set audit fields
+    from datetime import datetime, timezone
+    current_user.updated_by = current_user.id
+    current_user.updated_at = datetime.now(timezone.utc)
+    
+    db.commit()
+    
+    return WebResponse(
+        status="success",
+        message="Password changed successfully"
     )
 
 
