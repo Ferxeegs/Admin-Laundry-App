@@ -84,9 +84,18 @@ def init_permissions(db: Session):
         "restore_student",
         "force_delete_student",
     ]
-    
+
+    # Permissions untuk Order model
+    order_permissions = [
+        "view_order",
+        "create_order",
+        "update_order",
+        "delete_order",
+        "restore_order",
+        "force_delete_order",
+    ]
     # Combine all permissions
-    all_permissions = user_permissions + role_permissions + setting_permissions + student_permissions
+    all_permissions = user_permissions + role_permissions + setting_permissions + student_permissions + order_permissions
     
     for perm_name in all_permissions:
         existing_perm = db.query(Permission).filter(Permission.name == perm_name).first()

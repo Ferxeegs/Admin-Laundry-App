@@ -25,6 +25,10 @@ import Students from "./pages/Students/Students";
 import EditStudent from "./pages/Students/EditStudent";
 import CreateStudent from "./pages/Students/CreateStudent";
 import ViewStudent from "./pages/Students/ViewStudent";
+import Orders from "./pages/Orders/Orders";
+import CreateOrder from "./pages/Orders/CreateOrder";
+import EditOrder from "./pages/Orders/EditOrder";
+import ViewOrder from "./pages/Orders/ViewOrder";
 
 import Settings from "./pages/Settings/Settings";
 
@@ -132,6 +136,38 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <EditStudent />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orders"
+              element={
+                <ProtectedRoute>
+                  <Orders />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orders/create"
+              element={
+                <ProtectedRoute>
+                  <CreateOrder />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orders/:id"
+              element={
+                <ProtectedRoute>
+                  <ViewOrder />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orders/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <EditOrder />
                 </ProtectedRoute>
               }
             />

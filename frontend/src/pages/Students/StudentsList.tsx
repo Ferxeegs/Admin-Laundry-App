@@ -55,6 +55,7 @@ export default function StudentsList() {
   
   // Modal states
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
+  const { isOpen: isSoftDeleteModalOpen, openModal: openSoftDeleteModal, closeModal: closeSoftDeleteModal } = useModal();
   const [selectedStudentForDelete, setSelectedStudentForDelete] = useState<{ id: string; name: string } | null>(null);
 
   const fetchStudents = async (forceLoading = false) => {
@@ -107,6 +108,36 @@ export default function StudentsList() {
 
     return () => clearTimeout(timer);
   }, [search]);
+
+  const handleDeleteClick = (studentId: string, studentName: string) => {
+    setSelectedStudentForDelete({ id: studentId, name: studentName });
+    openSoftDeleteModal();
+  };
+
+  const handleDelete = async () => {
+    if (!selectedStudentForDelete) return;
+
+    const studentId = selectedStudentForDelete.id;
+    setDeletingStudentId(studentId);
+    setError(null);
+    closeSoftDeleteModal();
+
+    try {
+      const response = await studentAPI.deleteStudent(studentId);
+
+      if (response.success) {
+        fetchStudents();
+      } else {
+        setError(response.message || "Gagal menghapus siswa");
+      }
+    } catch (err: any) {
+      setError("Terjadi kesalahan saat menghapus siswa");
+      console.error("Delete student error:", err);
+    } finally {
+      setDeletingStudentId(null);
+      setSelectedStudentForDelete(null);
+    }
+  };
 
   const handleForceDeleteClick = (studentId: string, studentName: string) => {
     setSelectedStudentForDelete({ id: studentId, name: studentName });
@@ -348,6 +379,17 @@ export default function StudentsList() {
                       <PencilIcon className="w-3.5 h-3.5" />
                       Edit
                     </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(student.id, student.fullname);
+                      }}
+                      disabled={deletingStudentId === student.id}
+                      className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                    >
+                      <TrashBinIcon className="w-3.5 h-3.5" />
+                      Delete
+                    </button>
                   </>
                 )}
                 {showDeleted && (
@@ -532,6 +574,17 @@ export default function StudentsList() {
                             >
                               <PencilIcon className="w-4 h-4" />
                             </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(student.id, student.fullname);
+                              }}
+                              disabled={deletingStudentId === student.id}
+                              className="inline-flex items-center justify-center w-8 h-8 text-red-500 transition-colors rounded-lg hover:bg-red-100 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-800 dark:hover:text-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Delete Student"
+                            >
+                              <TrashBinIcon className="w-4 h-4" />
+                            </button>
                           </>
                         )}
                         {showDeleted && (
@@ -583,6 +636,26 @@ export default function StudentsList() {
           </div>
         </div>
       )}
+
+      {/* Soft Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isSoftDeleteModalOpen}
+        onClose={closeSoftDeleteModal}
+        onConfirm={handleDelete}
+        title="Hapus Siswa"
+        message={
+          <>
+            Apakah Anda yakin ingin menghapus siswa <strong className="text-gray-800 dark:text-white">{selectedStudentForDelete?.name}</strong>?
+          </>
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmButtonColor="danger"
+        icon={<TrashBinIcon className="w-6 h-6" />}
+        isLoading={deletingStudentId === selectedStudentForDelete?.id}
+        showWarning={true}
+        warningMessage="Siswa akan dihapus (soft delete) dan dapat dipulihkan kembali dari halaman deleted students."
+      />
 
       {/* Force Delete Confirmation Modal */}
       <ConfirmModal

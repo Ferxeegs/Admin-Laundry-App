@@ -7,6 +7,7 @@ import {
   ChevronDownIcon,
   GridIcon,
   HorizontaLDots,
+  ListIcon,
   LockIcon,
   SettingsIcon,
   UserIcon,
@@ -45,6 +46,12 @@ const navItems: NavItem[] = [
     name: "Students",
     path: "/students",
     requiredPermission: ["view_student"],
+  },
+  {
+    icon: <ListIcon />,
+    name: "Orders",
+    path: "/orders",
+    requiredPermission: ["view_order"],
   },
   {
     icon: <LockIcon />,

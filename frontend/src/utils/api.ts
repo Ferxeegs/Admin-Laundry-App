@@ -2028,3 +2028,283 @@ export const studentAPI = {
     });
   },
 };
+
+/**
+ * Order API functions
+ */
+export const orderAPI = {
+  /**
+   * Get all orders with pagination and search
+   */
+  getAllOrders: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    student_id?: string;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.search) queryParams.append("search", params.search);
+    if (params?.status) queryParams.append("status", params.status);
+    if (params?.student_id) queryParams.append("student_id", params.student_id);
+
+    const queryString = queryParams.toString();
+    const endpoint = `/orders${queryString ? `?${queryString}` : ""}`;
+
+    return apiRequest<{
+      orders: Array<{
+        id: string;
+        order_number: string;
+        student_id: string;
+        total_items: number;
+        free_items_used: number;
+        paid_items_count: number;
+        additional_fee: number;
+        current_status: string;
+        notes: string | null;
+        created_at: string | null;
+        updated_at: string | null;
+        created_by: string | null;
+        updated_by: string | null;
+        student?: {
+          id: string;
+          fullname: string;
+          unique_code: string | null;
+        };
+      }>;
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
+    }>(endpoint, {
+      method: "GET",
+    });
+  },
+
+  /**
+   * Get order by ID (with tracking history)
+   */
+  getOrderById: async (id: string) => {
+    return apiRequest<{
+      id: string;
+      order_number: string;
+      student_id: string;
+      total_items: number;
+      free_items_used: number;
+      paid_items_count: number;
+      additional_fee: number;
+      current_status: string;
+      notes: string | null;
+      created_at: string | null;
+      updated_at: string | null;
+      created_by: string | null;
+      updated_by: string | null;
+      trackings: Array<{
+        id: string;
+        order_id: string;
+        staff_id: string | null;
+        status_to: string;
+        notes: string | null;
+        created_at: string;
+      }>;
+    }>(`/orders/${id}`, {
+      method: "GET",
+    });
+  },
+
+  /**
+   * Create new order
+   * Staff only inputs total_items, system automatically calculates:
+   * - free_items_used (based on monthly quota: 4 free items per month)
+   * - paid_items_count (items exceeding quota)
+   * - additional_fee (paid_items_count * 4000)
+   */
+  createOrder: async (data: FormData | {
+    student_id: string;
+    total_items: number;
+    notes?: string | null;
+  }) => {
+    // Check if data is FormData (for file upload) or regular object
+    if (data instanceof FormData) {
+      // For FormData, we need to make a custom request without JSON headers
+      const url = `${API_BASE_URL}/orders`;
+      
+      // Get auth token from cookies or localStorage
+      const token = localStorage.getItem('token') || document.cookie
+        .split('; ')
+        .find(row => row.startsWith('token='))
+        ?.split('=')[1];
+      
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(url, {
+        method: "POST",
+        headers: headers,
+        body: data,
+        credentials: "include", // Include cookies for authentication
+        // Don't set Content-Type header, let browser set it with boundary for FormData
+      });
+
+      let result;
+      try {
+        result = await response.json();
+      } catch (e) {
+        return {
+          success: false,
+          message: "Gagal memproses response dari server",
+          error: "Invalid JSON response",
+        };
+      }
+      
+      if (!response.ok) {
+        // Handle validation errors from FastAPI
+        if (result.detail && Array.isArray(result.detail)) {
+          const errorMessages = result.detail.map((err: any) => {
+            if (typeof err === 'object' && err.msg) {
+              return `${err.loc?.join('.')}: ${err.msg}`;
+            }
+            return String(err);
+          }).join(', ');
+          return {
+            success: false,
+            message: errorMessages || result.message || "Gagal membuat order",
+            error: errorMessages || result.detail || result.message,
+          };
+        }
+        
+        return {
+          success: false,
+          message: result.message || result.detail || "Gagal membuat order",
+          error: result.error || result.detail || result.message,
+        };
+      }
+
+      return {
+        success: result.status === "success",
+        message: result.message || "Order berhasil dibuat",
+        data: result.data,
+      };
+    } else {
+      return apiRequest<{
+        id: string;
+        order_number: string;
+        student_id: string;
+        total_items: number;
+        free_items_used: number;
+        paid_items_count: number;
+        additional_fee: number;
+        current_status: string;
+        notes: string | null;
+        created_at: string;
+        updated_at: string;
+      }>("/orders", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    }
+  },
+
+  /**
+   * Update order (not status)
+   * Staff only inputs total_items, system automatically recalculates:
+   * - free_items_used (based on monthly quota: 4 free items per month)
+   * - paid_items_count (items exceeding quota)
+   * - additional_fee (paid_items_count * 4000)
+   */
+  updateOrder: async (
+    id: string,
+    data: {
+      total_items?: number;
+      notes?: string | null;
+    }
+  ) => {
+    return apiRequest<{
+      id: string;
+      order_number: string;
+      student_id: string;
+      total_items: number;
+      free_items_used: number;
+      paid_items_count: number;
+      additional_fee: number;
+      current_status: string;
+      notes: string | null;
+      created_at: string;
+      updated_at: string;
+    }>(`/orders/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Delete order by ID
+   */
+  deleteOrder: async (id: string) => {
+    return apiRequest<null>(`/orders/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * Get order trackings
+   */
+  getOrderTrackings: async (id: string) => {
+    return apiRequest<
+      Array<{
+        id: string;
+        order_id: string;
+        staff_id: string | null;
+        status_to: string;
+        notes: string | null;
+        created_at: string;
+      }>
+    >(`/orders/${id}/trackings`, {
+      method: "GET",
+    });
+  },
+
+  /**
+   * Create order tracking (update status)
+   */
+  createOrderTracking: async (
+    id: string,
+    data: {
+      status_to: string;
+      notes?: string | null;
+    }
+  ) => {
+    return apiRequest<{
+      id: string;
+      order_number: string;
+      student_id: string;
+      total_items: number;
+      free_items_used: number;
+      paid_items_count: number;
+      additional_fee: number;
+      current_status: string;
+      notes: string | null;
+      created_at: string | null;
+      updated_at: string | null;
+      created_by: string | null;
+      updated_by: string | null;
+      trackings: Array<{
+        id: string;
+        order_id: string;
+        staff_id: string | null;
+        status_to: string;
+        notes: string | null;
+        created_at: string;
+      }>;
+    }>(`/orders/${id}/trackings`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+};
