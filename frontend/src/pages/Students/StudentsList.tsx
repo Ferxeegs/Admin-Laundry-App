@@ -13,6 +13,7 @@ import { EyeIcon, PencilIcon, TrashBinIcon } from "../../icons";
 import TableSkeleton from "../../components/common/TableSkeleton";
 import { ConfirmModal } from "../../components/ui/modal";
 import { useModal } from "../../hooks/useModal";
+import { useToast } from "../../context/ToastContext";
 
 interface Student {
   id: string;
@@ -39,6 +40,7 @@ interface Student {
 
 export default function StudentsList() {
   const navigate = useNavigate();
+  const { success, error: showError } = useToast();
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -126,12 +128,17 @@ export default function StudentsList() {
       const response = await studentAPI.deleteStudent(studentId);
 
       if (response.success) {
+        success("Siswa berhasil dihapus!");
         fetchStudents();
       } else {
-        setError(response.message || "Gagal menghapus siswa");
+        const errorMessage = response.message || "Gagal menghapus siswa";
+        setError(errorMessage);
+        showError(errorMessage);
       }
     } catch (err: any) {
-      setError("Terjadi kesalahan saat menghapus siswa");
+      const errorMessage = "Terjadi kesalahan saat menghapus siswa";
+      setError(errorMessage);
+      showError(errorMessage);
       console.error("Delete student error:", err);
     } finally {
       setDeletingStudentId(null);
@@ -156,12 +163,17 @@ export default function StudentsList() {
       const response = await studentAPI.forceDeleteStudent(studentId);
 
       if (response.success) {
+        success("Siswa berhasil dihapus permanen!");
         fetchStudents();
       } else {
-        setError(response.message || "Gagal menghapus siswa permanen");
+        const errorMessage = response.message || "Gagal menghapus siswa permanen";
+        setError(errorMessage);
+        showError(errorMessage);
       }
     } catch (err: any) {
-      setError("Terjadi kesalahan saat menghapus siswa permanen");
+      const errorMessage = "Terjadi kesalahan saat menghapus siswa permanen";
+      setError(errorMessage);
+      showError(errorMessage);
       console.error("Force delete student error:", err);
     } finally {
       setDeletingStudentId(null);

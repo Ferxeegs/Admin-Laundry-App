@@ -4,6 +4,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import { orderAPI, studentAPI } from "../../utils/api";
 import { AngleLeftIcon } from "../../icons";
+import { useToast } from "../../context/ToastContext";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import TableSkeleton from "../../components/common/TableSkeleton";
@@ -22,6 +23,7 @@ export default function CreateOrder() {
   const [isFetchingStudents, setIsFetchingStudents] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
+  const { success, error: showError } = useToast();
   const [formData, setFormData] = useState<{
     student_id: string;
     total_items: number | "";
@@ -263,15 +265,23 @@ export default function CreateOrder() {
         }
         
         setError(errorMessage);
+        showError(errorMessage);
         setIsLoading(false);
         return;
       }
 
+      // Show success notification
+      success("Order berhasil dibuat!");
+      
       // Redirect to view order page
       if (createResponse.data?.id) {
-        navigate(`/orders/${createResponse.data.id}`);
+        setTimeout(() => {
+          navigate(`/orders/${createResponse.data.id}`);
+        }, 500);
       } else {
-        navigate("/orders");
+        setTimeout(() => {
+          navigate("/orders");
+        }, 500);
       }
     } catch (err: any) {
       console.error("Create order error:", err);
@@ -295,6 +305,7 @@ export default function CreateOrder() {
       }
       
       setError(errorMessage);
+      showError(errorMessage);
       setIsLoading(false);
     }
   };
@@ -330,10 +341,16 @@ export default function CreateOrder() {
         hideBreadcrumb={true}
       />
 
-      <div className="space-y-6">
-        {/* Header with Title */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+      <div className="space-y-4 sm:space-y-6">
+        {/* Header - Mobile Optimized */}
+        <div className="flex items-center gap-2 sm:gap-3 pb-2 sm:pb-0">
+          <Link
+            to="/orders"
+            className="inline-flex items-center justify-center w-10 h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
+          >
+            <AngleLeftIcon className="w-5 h-5" />
+          </Link>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white flex-1">
             Create New Order
           </h1>
         </div>

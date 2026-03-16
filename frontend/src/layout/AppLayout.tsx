@@ -5,9 +5,12 @@ import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
 import SessionTimeoutHandler from "../components/common/SessionTimeoutHandler";
 import FaviconUpdater from "../components/common/FaviconUpdater";
+import { useToast } from "../context/ToastContext";
+import ToastContainer from "../components/ui/toast/ToastContainer";
 
 const LayoutContent: React.FC = () => {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  const { toasts, removeToast } = useToast();
 
   return (
     <>
@@ -29,6 +32,7 @@ const LayoutContent: React.FC = () => {
           </div>
         </div>
       </div>
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </>
   );
 };

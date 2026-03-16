@@ -11,6 +11,7 @@ from app.api.deps import get_db, get_current_active_user
 from app.core.deps_permission import require_permission
 from app.models.auth import User
 from app.models.order import Order, OrderStatus, OrderTracking
+from app.models.common import Setting
 from app.schemas.common import WebResponse
 from app.schemas.order import (
     OrderRead,
@@ -38,6 +39,47 @@ def get_next_statuses(current_status: OrderStatus) -> List[OrderStatus]:
         OrderStatus.PICKED_UP: [],  # Final status, no next status
     }
     return status_flow.get(current_status, [])
+
+
+def get_order_settings(db: Session) -> tuple[int, float]:
+    """
+    Get monthly_quota and price_per_item from settings table.
+    Returns (monthly_quota: int, price_per_item: float).
+    Falls back to default values if settings not found.
+    """
+    # Default values
+    default_monthly_quota = 4
+    default_price_per_item = 4000.0
+    
+    # Get monthly_quota
+    monthly_quota_setting = db.query(Setting).filter(
+        Setting.group == "order",
+        Setting.name == "monthly_quota"
+    ).first()
+    
+    if monthly_quota_setting and monthly_quota_setting.payload is not None:
+        try:
+            monthly_quota = int(monthly_quota_setting.payload)
+        except (ValueError, TypeError):
+            monthly_quota = default_monthly_quota
+    else:
+        monthly_quota = default_monthly_quota
+    
+    # Get price_per_item
+    price_per_item_setting = db.query(Setting).filter(
+        Setting.group == "order",
+        Setting.name == "price_per_item"
+    ).first()
+    
+    if price_per_item_setting and price_per_item_setting.payload is not None:
+        try:
+            price_per_item = float(price_per_item_setting.payload)
+        except (ValueError, TypeError):
+            price_per_item = default_price_per_item
+    else:
+        price_per_item = default_price_per_item
+    
+    return monthly_quota, price_per_item
 
 
 @router.get("/", response_model=WebResponse[dict])
@@ -241,9 +283,8 @@ async def create_order(
         raise NotFoundException(f"Student with ID {student_id} not found")
 
     # Calculate monthly quota usage
-    # Each student has 4 free items per month
-    MONTHLY_QUOTA = 4
-    PRICE_PER_ITEM = 4000.0
+    # Get settings from database
+    MONTHLY_QUOTA, PRICE_PER_ITEM = get_order_settings(db)
 
     # Get current month and year
     current_month = now.month
@@ -511,8 +552,8 @@ def update_order(
 
     # If total_items is updated, recalculate free_items_used, paid_items_count, and additional_fee
     if "total_items" in update_data:
-        MONTHLY_QUOTA = 4
-        PRICE_PER_ITEM = 4000.0
+        # Get settings from database
+        MONTHLY_QUOTA, PRICE_PER_ITEM = get_order_settings(db)
 
         # Get the month when this order was created (use original created_at)
         order_month = order.created_at.month if order.created_at else datetime.now(timezone.utc).month

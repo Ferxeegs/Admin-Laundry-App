@@ -7,9 +7,11 @@ import { InfoIcon, LockIcon, AngleLeftIcon } from "../../icons";
 import CreateUserSidebar from "./CreateUserSidebar";
 import DetailsTab from "./DetailsTab";
 import RolesTab from "./RolesTab";
+import { useToast } from "../../context/ToastContext";
 
 export default function CreateUser() {
   const navigate = useNavigate();
+  const { success, error: showError } = useToast();
   const [activeTab, setActiveTab] = useState<"details" | "roles">("details");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,14 +119,18 @@ export default function CreateUser() {
       });
 
       if (!createResponse.success) {
-        setError(createResponse.message || "Gagal membuat user");
+        const errorMessage = createResponse.message || "Gagal membuat user";
+        setError(errorMessage);
+        showError(errorMessage);
         setIsLoading(false);
         return;
       }
 
       const userId = createResponse.data?.id;
       if (!userId) {
-        setError("User berhasil dibuat tapi ID tidak ditemukan");
+        const errorMessage = "User berhasil dibuat tapi ID tidak ditemukan";
+        setError(errorMessage);
+        showError(errorMessage);
         setIsLoading(false);
         return;
       }
@@ -152,9 +158,12 @@ export default function CreateUser() {
       }
 
       // Success - redirect to edit user page
+      success("User berhasil dibuat!");
       navigate(`/users/${userId}/edit`);
     } catch (err: any) {
-      setError("Terjadi kesalahan saat membuat user");
+      const errorMessage = "Terjadi kesalahan saat membuat user";
+      setError(errorMessage);
+      showError(errorMessage);
       console.error("Create user error:", err);
       setIsLoading(false);
     }
@@ -183,10 +192,16 @@ export default function CreateUser() {
         hideBreadcrumb={true}
       />
 
-      <div className="space-y-6">
-        {/* Header with Title and Action Buttons */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+      <div className="space-y-4 sm:space-y-6">
+        {/* Header - Mobile Optimized */}
+        <div className="flex items-center gap-2 sm:gap-3 pb-2 sm:pb-0">
+          <Link
+            to="/users"
+            className="inline-flex items-center justify-center w-10 h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
+          >
+            <AngleLeftIcon className="w-5 h-5" />
+          </Link>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white flex-1">
             Create New User
           </h1>
         </div>

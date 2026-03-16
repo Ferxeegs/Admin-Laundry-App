@@ -169,30 +169,27 @@ export default function ViewStudent() {
       <PageMeta title="View Student" description="View student details" />
 
       {/* Header - Mobile Optimized */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            to="/students"
-            className="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
-          >
-            <AngleLeftIcon className="w-5 h-5" />
-          </Link>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-800 dark:text-white truncate">
-              {student.fullname}
-            </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
-              Detail informasi siswa
-            </p>
-          </div>
+      <div className="flex items-center gap-2 sm:gap-3 pb-2 sm:pb-0">
+        <Link
+          to="/students"
+          className="inline-flex items-center justify-center w-10 h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
+        >
+          <AngleLeftIcon className="w-5 h-5" />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white truncate">
+            {student.fullname}
+          </h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+            Detail informasi siswa
+          </p>
         </div>
         <Link
           to={`/students/${student.id}/edit`}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation w-full sm:w-auto"
+          className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation flex-shrink-0 sm:px-4 sm:py-2.5"
         >
           <PencilIcon className="w-4 h-4" />
-          <span className="sm:hidden">Edit</span>
-          <span className="hidden sm:inline">Edit Student</span>
+          <span className="hidden sm:inline">Edit</span>
         </Link>
       </div>
 

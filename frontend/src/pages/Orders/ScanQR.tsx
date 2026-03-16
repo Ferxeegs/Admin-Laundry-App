@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router";
+import { useNavigate } from "react-router";
 import { Html5Qrcode } from "html5-qrcode";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import { studentAPI, mediaAPI, orderAPI, getBaseUrl } from "../../utils/api";
 import { Modal } from "../../components/ui/modal";
+import { useToast } from "../../context/ToastContext";
 import Label from "../../components/form/Label";
-import { AngleLeftIcon } from "../../icons";
+// import { AngleLeftIcon } from "../../icons";
 import Badge from "../../components/ui/badge/Badge";
 import TableSkeleton from "../../components/common/TableSkeleton";
 
@@ -50,6 +51,7 @@ export default function ScanQR() {
   const [statusImage, setStatusImage] = useState<File | null>(null);
   const [statusImagePreview, setStatusImagePreview] = useState<string | null>(null);
   const scannerElementId = "qr-reader";
+  const { success, error: showError } = useToast();
 
   useEffect(() => {
     // Cleanup on unmount
@@ -451,6 +453,7 @@ export default function ScanQR() {
         }
 
         handleCloseStatusModal();
+        success("Status order berhasil diupdate!");
         // Reset semua state dan kembali ke mode scan
         setScannedStudent(null);
         setProfileImage(null);
@@ -462,10 +465,14 @@ export default function ScanQR() {
         setStatusImage(null);
         setStatusImagePreview(null);
       } else {
-        setError(response.message || "Gagal mengupdate status order");
+        const errorMessage = response.message || "Gagal mengupdate status order";
+        setError(errorMessage);
+        showError(errorMessage);
       }
     } catch (err: any) {
-      setError("Terjadi kesalahan saat mengupdate status. Silakan coba lagi.");
+      const errorMessage = "Terjadi kesalahan saat mengupdate status. Silakan coba lagi.";
+      setError(errorMessage);
+      showError(errorMessage);
       console.error("Update status error:", err);
     } finally {
       setIsUpdatingStatus(false);
@@ -485,25 +492,23 @@ export default function ScanQR() {
       <PageBreadcrumb pageTitle="Scan QR Code" />
       <PageMeta title="Scan QR Code" description="Scan QR code untuk verifikasi siswa" />
 
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            to="/orders"
-            className="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
-          >
-            <AngleLeftIcon className="w-5 h-5" />
-          </Link>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-800 dark:text-white truncate">
-              Scan QR Code
-            </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
-              Scan QR code siswa untuk verifikasi dan membuat order
-            </p>
-          </div>
+      {/* Header - Mobile Optimized */}
+      {/* <div className="flex items-center gap-2 sm:gap-3 pb-2 sm:pb-0">
+        <Link
+          to="/orders"
+          className="inline-flex items-center justify-center w-10 h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
+        >
+          <AngleLeftIcon className="w-5 h-5" />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl sm:text-xl lg:text-2xl font-semibold text-gray-800 dark:text-white truncate">
+            Scan QR Code
+          </h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+            Scan QR code siswa untuk verifikasi dan membuat order
+          </p>
         </div>
-      </div>
+      </div> */}
 
       {/* Main Content */}
       <div className="space-y-4 sm:space-y-5">

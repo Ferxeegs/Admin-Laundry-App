@@ -14,11 +14,13 @@ import { InfoIcon, LockIcon, CheckLineIcon, AngleLeftIcon, TrashBinIcon, UserCir
 import UserSidebar from "./UserSidebar";
 import DetailsTab from "./DetailsTab";
 import RolesTab from "./RolesTab";
+import { useToast } from "../../context/ToastContext";
 
 export default function EditUser() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { impersonate, hasSuperAdminRole, hasPermission } = useAuth();
+  const { success, error: showError } = useToast();
   const [activeTab, setActiveTab] = useState<"details" | "roles">("details");
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
@@ -354,7 +356,9 @@ export default function EditUser() {
       });
 
       if (!updateResponse.success) {
-        setError(updateResponse.message || "Gagal mengupdate user");
+        const errorMessage = updateResponse.message || "Gagal mengupdate user";
+        setError(errorMessage);
+        showError(errorMessage);
         setIsLoading(false);
         return;
       }
@@ -363,15 +367,20 @@ export default function EditUser() {
       const rolesResponse = await userAPI.updateUserRoles(id, selectedRoleIds.map(String));
 
       if (!rolesResponse.success) {
-        setError(rolesResponse.message || "Gagal mengupdate roles");
+        const errorMessage = rolesResponse.message || "Gagal mengupdate roles";
+        setError(errorMessage);
+        showError(errorMessage);
         setIsLoading(false);
         return;
       }
 
       // Success - redirect back to users list
+      success("User berhasil diupdate!");
       navigate("/users");
     } catch (err: any) {
-      setError("Terjadi kesalahan. Silakan coba lagi.");
+      const errorMessage = "Terjadi kesalahan. Silakan coba lagi.";
+      setError(errorMessage);
+      showError(errorMessage);
       console.error("Update user error:", err);
     } finally {
       setIsLoading(false);
@@ -440,30 +449,37 @@ export default function EditUser() {
         hideBreadcrumb={true}
       />
 
-      <div className="space-y-6">
-        {/* Header with Title and Action Buttons */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+      <div className="space-y-4 sm:space-y-6">
+        {/* Header - Mobile Optimized */}
+        <div className="flex items-center gap-2 sm:gap-3 pb-2 sm:pb-0">
+          <Link
+            to="/users"
+            className="inline-flex items-center justify-center w-10 h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
+          >
+            <AngleLeftIcon className="w-5 h-5" />
+          </Link>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white flex-1 truncate">
             Edit {userFullName}
           </h1>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {hasSuperAdminRole && (
               <button
                 type="button"
                 onClick={handleImpersonateClick}
                 disabled={isImpersonating}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <UserCircleIcon className="w-4 h-4" />
-                {isImpersonating ? "Impersonating..." : "Impersonate"}
+                <span className="hidden md:inline">{isImpersonating ? "Impersonating..." : "Impersonate"}</span>
               </button>
             )}
             <button
               type="button"
               onClick={openResetPasswordModal}
-              className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600"
+              className="px-3 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 sm:px-4"
             >
-              Reset Password
+              <span className="hidden sm:inline">Reset Password</span>
+              <span className="sm:hidden">Reset</span>
             </button>
           </div>
         </div>

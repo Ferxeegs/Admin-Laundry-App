@@ -7,9 +7,11 @@ import { AngleLeftIcon } from "../../icons";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import CreateStudentSidebar from "./CreateStudentSidebar";
+import { useToast } from "../../context/ToastContext";
 
 export default function CreateStudent() {
   const navigate = useNavigate();
+  const { success, error: showError } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -87,7 +89,9 @@ export default function CreateStudent() {
       });
 
       if (!createResponse.success) {
-        setError(createResponse.message || "Gagal membuat siswa");
+        const errorMessage = createResponse.message || "Gagal membuat siswa";
+        setError(errorMessage);
+        showError(errorMessage);
         setIsLoading(false);
         return;
       }
@@ -108,13 +112,16 @@ export default function CreateStudent() {
       }
 
       // Redirect to view student page
+      success("Siswa berhasil dibuat!");
       if (createResponse.data?.id) {
         navigate(`/students/${createResponse.data.id}`);
       } else {
         navigate("/students");
       }
     } catch (err: any) {
-      setError("Terjadi kesalahan saat membuat siswa");
+      const errorMessage = "Terjadi kesalahan saat membuat siswa";
+      setError(errorMessage);
+      showError(errorMessage);
       console.error("Create student error:", err);
       setIsLoading(false);
     }
@@ -142,10 +149,16 @@ export default function CreateStudent() {
         hideBreadcrumb={true}
       />
 
-      <div className="space-y-6">
-        {/* Header with Title */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+      <div className="space-y-4 sm:space-y-6">
+        {/* Header - Mobile Optimized */}
+        <div className="flex items-center gap-2 sm:gap-3 pb-2 sm:pb-0">
+          <Link
+            to="/students"
+            className="inline-flex items-center justify-center w-10 h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
+          >
+            <AngleLeftIcon className="w-5 h-5" />
+          </Link>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white flex-1">
             Create New Student
           </h1>
         </div>

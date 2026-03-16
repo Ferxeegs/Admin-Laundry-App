@@ -8,8 +8,9 @@ import Badge from "../../components/ui/badge/Badge";
 import Label from "../../components/form/Label";
 import { Modal } from "../../components/ui/modal";
 import StatusLogModal from "../../components/Orders/StatusLogModal";
-import { orderAPI, studentAPI, userAPI, mediaAPI, getBaseUrl } from "../../utils/api";
+import { orderAPI, studentAPI, userAPI, mediaAPI, settingAPI, getBaseUrl } from "../../utils/api";
 import { AngleLeftIcon, PencilIcon } from "../../icons";
+import { useToast } from "../../context/ToastContext";
 
 interface OrderTracking {
   id: string;
@@ -75,11 +76,14 @@ export default function ViewOrder() {
   const [images, setImages] = useState<Media[]>([]);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
+  const [pricePerItem, setPricePerItem] = useState<number>(4000); // Default value
+  const { success, error: showError } = useToast();
 
   useEffect(() => {
     if (id) {
       fetchOrderData();
     }
+    fetchOrderSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -98,6 +102,26 @@ export default function ViewOrder() {
       }
     } catch (err) {
       console.error("Fetch order images error:", err);
+    }
+  };
+
+  const fetchOrderSettings = async () => {
+    try {
+      const response = await settingAPI.getByGroup("order");
+      if (response.success && response.data) {
+        const pricePerItemValue = response.data.price_per_item;
+        if (pricePerItemValue !== null && pricePerItemValue !== undefined) {
+          const price = typeof pricePerItemValue === 'string' 
+            ? parseFloat(pricePerItemValue) 
+            : Number(pricePerItemValue);
+          if (!isNaN(price)) {
+            setPricePerItem(price);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Fetch order settings error:", err);
+      // Keep default value if fetch fails
     }
   };
 
@@ -393,11 +417,16 @@ export default function ViewOrder() {
         // Refresh order data
         await fetchOrderData();
         handleCloseStatusModal();
+        success("Status order berhasil diupdate!");
       } else {
-        setError(response.message || "Gagal mengupdate status order");
+        const errorMessage = response.message || "Gagal mengupdate status order";
+        setError(errorMessage);
+        showError(errorMessage);
       }
     } catch (err: any) {
-      setError("Terjadi kesalahan saat mengupdate status. Silakan coba lagi.");
+      const errorMessage = "Terjadi kesalahan saat mengupdate status. Silakan coba lagi.";
+      setError(errorMessage);
+      showError(errorMessage);
       console.error("Update status error:", err);
     } finally {
       setIsUpdatingStatus(false);
@@ -443,36 +472,33 @@ export default function ViewOrder() {
       <PageBreadcrumb pageTitle="View Order" />
       <PageMeta title="View Order" description="View order details" />
 
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            to="/orders"
-            className="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
-          >
-            <AngleLeftIcon className="w-5 h-5" />
-          </Link>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-800 dark:text-white truncate">
-              {order.order_number}
-            </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
-              Detail informasi order laundry
-            </p>
-          </div>
+      {/* Header - Mobile Optimized */}
+      <div className="flex items-center gap-2 sm:gap-3 pb-2 sm:pb-0">
+        <Link
+          to="/orders"
+          className="inline-flex items-center justify-center w-10 h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
+        >
+          <AngleLeftIcon className="w-5 h-5" />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl sm:text-xl lg:text-2xl font-semibold text-gray-800 dark:text-white truncate">
+            {order.order_number}
+          </h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+            Detail informasi order laundry
+          </p>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Badge size="md" color={getStatusColor(order.current_status)}>
             {formatStatus(order.current_status)}
           </Badge>
           {canEditOrder(order.current_status) && (
             <Link
               to={`/orders/${order.id}/edit`}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation w-full sm:w-auto"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation sm:px-4 sm:py-2.5"
             >
               <PencilIcon className="w-4 h-4" />
-              <span className="sm:hidden">Edit</span>
-              <span className="hidden sm:inline">Edit Order</span>
+              <span className="hidden sm:inline">Edit</span>
             </Link>
           )}
         </div>
@@ -713,7 +739,7 @@ export default function ViewOrder() {
                   Rp {order.additional_fee.toLocaleString("id-ID")}
                   {order.paid_items_count > 0 && (
                     <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
-                      ({order.paid_items_count} × Rp 4.000)
+                      ({order.paid_items_count} × Rp {pricePerItem.toLocaleString("id-ID")})
                     </span>
                   )}
                 </p>

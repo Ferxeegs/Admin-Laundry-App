@@ -23,6 +23,10 @@ interface SettingsData {
     brand_logo_square?: string;
     site_favicon?: string;
   };
+  order: {
+    monthly_quota?: string;
+    price_per_item?: string;
+  };
 }
 
 export default function SettingsForm() {
@@ -35,6 +39,7 @@ export default function SettingsForm() {
   const [settings, setSettings] = useState<SettingsData>({
     general: {},
     appearance: {},
+    order: {},
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -58,6 +63,7 @@ export default function SettingsForm() {
       // Fetch general settings
       const generalResponse = await settingAPI.getByGroup("general");
       const appearanceResponse = await settingAPI.getByGroup("appearance");
+      const orderResponse = await settingAPI.getByGroup("order");
 
       if (generalResponse.success && generalResponse.data) {
         // Convert payload values to strings if needed
@@ -102,6 +108,18 @@ export default function SettingsForm() {
           setFaviconPreview(faviconUrl.startsWith('http') ? faviconUrl : `${getBaseUrl()}${faviconUrl}`);
         }
       }
+
+      if (orderResponse.success && orderResponse.data) {
+        // Convert payload values to strings if needed
+        const orderData: Record<string, string> = {};
+        Object.entries(orderResponse.data || {}).forEach(([key, value]) => {
+          orderData[key] = value !== null && value !== undefined ? String(value) : "";
+        });
+        setSettings((prev) => ({
+          ...prev,
+          order: orderData,
+        }));
+      }
     } catch (err: any) {
       setError("Gagal mengambil settings. Silakan coba lagi.");
       console.error("Fetch settings error:", err);
@@ -111,7 +129,7 @@ export default function SettingsForm() {
   };
 
   const handleInputChange = (
-    group: "general" | "appearance",
+    group: "general" | "appearance" | "order",
     name: string,
     value: string
   ) => {
@@ -423,6 +441,18 @@ export default function SettingsForm() {
         }
       });
 
+      // Update order settings
+      const orderFields = ['monthly_quota', 'price_per_item'];
+      orderFields.forEach((name) => {
+        const value = settings.order[name as keyof typeof settings.order];
+        // Update dengan value yang ada, atau empty string jika tidak ada
+        settingsToUpdate.push({
+          group: "order",
+          name,
+          payload: value !== undefined && value !== null ? value : "",
+        });
+      });
+
       // Update all settings
       const response = await settingAPI.updateMultiple(settingsToUpdate);
 
@@ -720,6 +750,34 @@ export default function SettingsForm() {
                   Format: ICO, PNG. Maksimal 2MB. Ukuran disarankan 32x32 atau 16x16
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+      </ComponentCard>
+
+      {/* Order Settings */}
+      <ComponentCard title="Order Settings" className="mb-6">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2">
+            <div>
+              <Label>Monthly Quota</Label>
+              <Input
+                type="number"
+                value={settings.order.monthly_quota || ""}
+                onChange={(e) => handleInputChange("order", "monthly_quota", e.target.value)}
+                placeholder="Monthly Quota"
+                disabled={!canUpdateSettings}
+              />
+            </div>
+            <div>
+              <Label>Price Per Item</Label>
+              <Input
+                type="number"
+                value={settings.order.price_per_item || ""}
+                onChange={(e) => handleInputChange("order", "price_per_item", e.target.value)}
+                placeholder="Price Per Item"
+                disabled={!canUpdateSettings}
+              />
             </div>
           </div>
         </div>

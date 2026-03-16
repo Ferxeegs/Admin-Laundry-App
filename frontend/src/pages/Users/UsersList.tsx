@@ -14,6 +14,7 @@ import { useAuth } from "../../context/AuthContext";
 import TableSkeleton from "../../components/common/TableSkeleton";
 import { ConfirmModal } from "../../components/ui/modal";
 import { useModal } from "../../hooks/useModal";
+import { useToast } from "../../context/ToastContext";
 
 interface User {
   id: string;
@@ -47,6 +48,7 @@ interface User {
 export default function UsersList() {
   const navigate = useNavigate();
   const { impersonate, hasSuperAdminRole, hasPermission } = useAuth();
+  const { success, error: showError } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -226,12 +228,17 @@ export default function UsersList() {
 
       if (response.success) {
         // Refresh list
+        success("User berhasil dihapus permanen!");
         fetchUsers();
       } else {
-        setError(response.message || "Gagal menghapus user permanen");
+        const errorMessage = response.message || "Gagal menghapus user permanen";
+        setError(errorMessage);
+        showError(errorMessage);
       }
     } catch (err: any) {
-      setError("Terjadi kesalahan saat menghapus user permanen");
+      const errorMessage = "Terjadi kesalahan saat menghapus user permanen";
+      setError(errorMessage);
+      showError(errorMessage);
       console.error("Force delete user error:", err);
     } finally {
       setDeletingUserId(null);

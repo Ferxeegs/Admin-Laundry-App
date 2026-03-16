@@ -8,10 +8,12 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import TableSkeleton from "../../components/common/TableSkeleton";
 import EditStudentSidebar from "./EditStudentSidebar";
+import { useToast } from "../../context/ToastContext";
 
 export default function EditStudent() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { success, error: showError } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -170,7 +172,9 @@ export default function EditStudent() {
       });
 
       if (!updateResponse.success) {
-        setError(updateResponse.message || "Gagal mengupdate siswa");
+        const errorMessage = updateResponse.message || "Gagal mengupdate siswa";
+        setError(errorMessage);
+        showError(errorMessage);
         setIsLoading(false);
         return;
       }
@@ -211,9 +215,12 @@ export default function EditStudent() {
       }
 
       // Redirect to view student page
+      success("Siswa berhasil diupdate!");
       navigate(`/students/${id}`);
     } catch (err: any) {
-      setError("Terjadi kesalahan saat mengupdate siswa");
+      const errorMessage = "Terjadi kesalahan saat mengupdate siswa";
+      setError(errorMessage);
+      showError(errorMessage);
       console.error("Update student error:", err);
       setIsLoading(false);
     }

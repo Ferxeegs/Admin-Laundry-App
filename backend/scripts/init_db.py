@@ -330,6 +330,20 @@ def init_settings(db: Session):
             "payload": "",
             "locked": 0,
         },
+        #Order Settings
+        {
+            "group": "order",
+            "name": "monthly_quota",
+            "payload": 4,
+            "locked": 0,
+        },
+        {
+            "group": "order",
+            "name": "price_per_item",
+            "payload": 4000,
+            "locked": 0,
+        },
+
     ]
     
     for setting_data in default_settings:

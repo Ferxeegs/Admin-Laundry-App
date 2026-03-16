@@ -8,15 +8,18 @@ import { AppWrapper } from "./components/common/PageMeta.tsx";
 import { ThemeProvider } from "./context/ThemeContext.tsx";
 import { AuthProvider } from "./context/AuthContext.tsx";
 import { SettingsProvider } from "./context/SettingsContext.tsx";
+import { ToastProvider } from "./context/ToastContext.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
       <AuthProvider>
         <SettingsProvider>
-          <AppWrapper>
-            <App />
-          </AppWrapper>
+          <ToastProvider>
+            <AppWrapper>
+              <App />
+            </AppWrapper>
+          </ToastProvider>
         </SettingsProvider>
       </AuthProvider>
     </ThemeProvider>

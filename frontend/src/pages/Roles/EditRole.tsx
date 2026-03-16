@@ -1,12 +1,12 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useParams, useNavigate, Link } from "react-router";
-import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import { roleAPI } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
 import { LockIcon, CheckLineIcon, AngleLeftIcon, ChevronUpIcon, ChevronDownIcon } from "../../icons";
+import { useToast } from "../../context/ToastContext";
 
 interface Permission {
   id: number;
@@ -35,6 +35,7 @@ export default function EditRole() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { hasPermission } = useAuth();
+  const { success, error: showError } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -174,15 +175,20 @@ export default function EditRole() {
       );
 
       if (!updatePermissionsResponse.success) {
-        setError(updatePermissionsResponse.message || "Gagal mengupdate permissions");
+        const errorMessage = updatePermissionsResponse.message || "Gagal mengupdate permissions";
+        setError(errorMessage);
+        showError(errorMessage);
         setIsLoading(false);
         return;
       }
 
       // Success - redirect back to roles list
+      success("Role permissions berhasil diupdate!");
       navigate("/roles");
     } catch (err: any) {
-      setError("Terjadi kesalahan. Silakan coba lagi.");
+      const errorMessage = "Terjadi kesalahan. Silakan coba lagi.";
+      setError(errorMessage);
+      showError(errorMessage);
       console.error("Update role error:", err);
     } finally {
       setIsLoading(false);
@@ -370,21 +376,19 @@ export default function EditRole() {
     return (
       <>
         <PageMeta title="Edit Role" description="Edit role information" />
-        <PageBreadcrumb
-          pageTitle={
-            <div className="flex items-center gap-2 font-normal text-base">
-              <Link
-                to="/roles"
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                Roles
-              </Link>
-              <span className="text-gray-600">&gt;</span>
-              <span>Edit Role</span>
-            </div>
-          }
-          hideBreadcrumb={true}
-        />
+        <div className="flex items-center gap-2 sm:gap-3 pb-2 sm:pb-0">
+          <Link
+            to="/roles"
+            className="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
+          >
+            <AngleLeftIcon className="w-5 h-5" />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-800 dark:text-white truncate">
+              Edit Role
+            </h2>
+          </div>
+        </div>
         <div className="flex items-center justify-center py-12">
           <div className="text-gray-500 dark:text-gray-400">Memuat data role...</div>
         </div>
@@ -396,7 +400,19 @@ export default function EditRole() {
     return (
       <>
         <PageMeta title="Edit Role" description="Edit role information" />
-        <PageBreadcrumb pageTitle="Edit Role" />
+        <div className="flex items-center gap-2 sm:gap-3 pb-2 sm:pb-0">
+          <Link
+            to="/roles"
+            className="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
+          >
+            <AngleLeftIcon className="w-5 h-5" />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-800 dark:text-white truncate">
+              Edit Role
+            </h2>
+          </div>
+        </div>
         <div className="flex items-center justify-center py-12">
           <div className="text-gray-500 dark:text-gray-400">Role tidak ditemukan</div>
         </div>
@@ -409,35 +425,31 @@ export default function EditRole() {
   return (
     <>
       <PageMeta title={`Edit ${roleName} | TailAdmin`} description="Edit role information" />
-      <PageBreadcrumb
-        pageTitle={
-          <div className="flex items-center gap-2 font-normal text-base">
+
+      <div className="space-y-4 sm:space-y-6">
+        {/* Header - Mobile Optimized */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               to="/roles"
-              className="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              className="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
             >
-              Roles
+              <AngleLeftIcon className="w-5 h-5" />
             </Link>
-            <span className="text-gray-600">&gt;</span>
-            <span>{roleName}</span>
-            <span className="text-gray-600">&gt;</span>
-            <span>Edit</span>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-800 dark:text-white truncate">
+                Edit {roleName}
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+                Edit role permissions and settings
+              </p>
+            </div>
           </div>
-        }
-        hideBreadcrumb={true}
-      />
-
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-            Edit {roleName}
-          </h1>
         </div>
 
         {/* Role Details Section */}
-        <div className="p-6 bg-gray-50 rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="p-4 sm:p-6 bg-gray-50 rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+          <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2">
             <div>
               <Label>
                 Name <span className="text-red-500">*</span>
@@ -467,21 +479,21 @@ export default function EditRole() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-3 mt-6">
-            <label className="relative inline-flex items-center cursor-pointer">
+          <div className="flex items-center gap-2 sm:gap-3 mt-4 sm:mt-6">
+            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
               <input
                 type="checkbox"
                 checked={selectAll}
                 onChange={handleSelectAll}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+              <div className="w-10 h-5 sm:w-11 sm:h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
             </label>
-            <div>
+            <div className="min-w-0 flex-1">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Select All
               </span>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
                 Enable all Permissions currently Enabled for this role
               </p>
             </div>
@@ -489,64 +501,70 @@ export default function EditRole() {
         </div>
 
         {/* Tabs */}
-        <div className="p-6 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-          <div className="flex items-center gap-1 mb-6 border-b border-gray-200 dark:border-gray-700">
-            <button
-              type="button"
-              onClick={() => setActiveTab("all")}
-              className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 transition-colors ${
-                activeTab === "all"
-                  ? "border-brand-500 text-brand-500"
-                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              }`}
-            >
-              <LockIcon className="w-4 h-4" />
-              All Permissions ({allPermissions.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("resources")}
-              className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 transition-colors ${
-                activeTab === "resources"
-                  ? "border-brand-500 text-brand-500"
-                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              }`}
-            >
-              Resources ({groupedPermissions.resources.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("pages")}
-              className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 transition-colors ${
-                activeTab === "pages"
-                  ? "border-brand-500 text-brand-500"
-                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              }`}
-            >
-              Pages ({groupedPermissions.pages.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("widgets")}
-              className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 transition-colors ${
-                activeTab === "widgets"
-                  ? "border-brand-500 text-brand-500"
-                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              }`}
-            >
-              Widgets ({groupedPermissions.widgets.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("other")}
-              className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 transition-colors ${
-                activeTab === "other"
-                  ? "border-brand-500 text-brand-500"
-                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              }`}
-            >
-              Other Permissions ({groupedPermissions.other.length})
-            </button>
+        <div className="p-4 sm:p-6 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+          <div className="overflow-x-auto -mx-4 sm:mx-0 mb-4 sm:mb-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-1 px-4 sm:px-0 min-w-max">
+              <button
+                type="button"
+                onClick={() => setActiveTab("all")}
+                className={`flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-4 sm:py-3 font-medium text-xs sm:text-sm border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === "all"
+                    ? "border-brand-500 text-brand-500"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                <LockIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">All Permissions</span>
+                <span className="xs:hidden">All</span>
+                <span className="ml-1">({allPermissions.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("resources")}
+                className={`flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-4 sm:py-3 font-medium text-xs sm:text-sm border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === "resources"
+                    ? "border-brand-500 text-brand-500"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                Resources ({groupedPermissions.resources.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("pages")}
+                className={`flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-4 sm:py-3 font-medium text-xs sm:text-sm border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === "pages"
+                    ? "border-brand-500 text-brand-500"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                Pages ({groupedPermissions.pages.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("widgets")}
+                className={`flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-4 sm:py-3 font-medium text-xs sm:text-sm border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === "widgets"
+                    ? "border-brand-500 text-brand-500"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                Widgets ({groupedPermissions.widgets.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("other")}
+                className={`flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-4 sm:py-3 font-medium text-xs sm:text-sm border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === "other"
+                    ? "border-brand-500 text-brand-500"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                <span className="hidden xs:inline">Other Permissions</span>
+                <span className="xs:hidden">Other</span>
+                <span className="ml-1">({groupedPermissions.other.length})</span>
+              </button>
+            </div>
           </div>
 
           {/* Permissions Content */}
@@ -568,19 +586,19 @@ export default function EditRole() {
                     className="bg-gray-50 rounded-lg border border-gray-200 dark:bg-gray-900 dark:border-gray-700"
                   >
                     {/* Header */}
-                    <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                      <div className="flex-1">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-0.5">
+                    <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-0.5 truncate">
                           {modelName}
                         </h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                           {getModelPath(modelName)}
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => toggleCollapse(modelName)}
-                        className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                        className="p-1.5 sm:p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 touch-manipulation flex-shrink-0"
                       >
                         {isCollapsed ? (
                           <ChevronDownIcon className="w-4 h-4" />
@@ -592,32 +610,32 @@ export default function EditRole() {
 
                     {/* Permissions Content */}
                     {!isCollapsed && (
-                      <div className="p-4">
+                      <div className="p-3 sm:p-4">
                         <div className="mb-3">
                           <button
                             type="button"
                             onClick={() => handleSelectAllInGroup(modelPermissions)}
-                            className="text-xs font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300"
+                            className="text-xs font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300 touch-manipulation"
                           >
                             Select all
                           </button>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                           {modelPermissions.map((permission) => {
                             const displayName = getActionDisplayName(permission.name);
 
                             return (
                               <label
                                 key={permission.id}
-                                className="flex items-center gap-2 cursor-pointer"
+                                className="flex items-center gap-2 cursor-pointer p-1.5 sm:p-0 rounded hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors touch-manipulation"
                               >
                                 <input
                                   type="checkbox"
                                   checked={selectedPermissionIds.includes(Number(permission.id))}
                                   onChange={() => handlePermissionToggle(Number(permission.id))}
-                                  className="w-4 h-4 text-brand-500 bg-gray-100 border-gray-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                  className="w-4 h-4 text-brand-500 bg-gray-100 border-gray-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 flex-shrink-0"
                                 />
-                                <span className="text-xs text-gray-700 dark:text-gray-300">
+                                <span className="text-xs text-gray-700 dark:text-gray-300 truncate">
                                   {displayName}
                                 </span>
                               </label>
@@ -638,12 +656,12 @@ export default function EditRole() {
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-gray-200 dark:border-gray-700">
               <button
                 type="button"
                 onClick={() => navigate("/roles")}
                 disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 touch-manipulation"
               >
                 <AngleLeftIcon className="w-4 h-4" />
                 Back
@@ -652,10 +670,10 @@ export default function EditRole() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
                 >
                   <CheckLineIcon className="w-4 h-4" />
-                  {isLoading ? "Saving..." : "Save Changes"}
+                  <span>{isLoading ? "Saving..." : "Save Changes"}</span>
                 </button>
               )}
             </div>
