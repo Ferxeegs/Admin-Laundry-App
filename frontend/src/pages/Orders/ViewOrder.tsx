@@ -308,6 +308,7 @@ export default function ViewOrder() {
       status: string;
       staffId: string | null;
       notes: string | null;
+      trackingId: string | null;
     }> = [];
 
     // Add RECEIVED status from order
@@ -318,6 +319,7 @@ export default function ViewOrder() {
         status: "RECEIVED",
         staffId: order.created_by,
         notes: null,
+        trackingId: null, // RECEIVED doesn't have tracking
       });
     }
 
@@ -330,6 +332,7 @@ export default function ViewOrder() {
           status: tracking.status_to,
           staffId: tracking.staff_id,
           notes: tracking.notes,
+          trackingId: tracking.id,
         });
       }
     });
@@ -792,6 +795,32 @@ export default function ViewOrder() {
         formatLogDateTime={formatLogDateTime}
         formatStatus={formatStatus}
         getStatusColor={getStatusColor}
+        getTrackingImageUrl={async (trackingId: string | null) => {
+          if (!trackingId) return null;
+          
+          try {
+            const response = await mediaAPI.getMediaByModel('OrderTracking', trackingId, 'status_update');
+            if (response.success && response.data) {
+              let mediaArray: Media[] = [];
+              if (response.data.media && Array.isArray(response.data.media)) {
+                mediaArray = response.data.media;
+              } else if (Array.isArray(response.data)) {
+                mediaArray = response.data;
+              }
+              
+              if (mediaArray.length > 0) {
+                const imageUrl = mediaArray[0].url.startsWith('http')
+                  ? mediaArray[0].url
+                  : `${getBaseUrl()}${mediaArray[0].url.startsWith('/') ? mediaArray[0].url : `/${mediaArray[0].url}`}`;
+                return imageUrl;
+              }
+            }
+          } catch (err) {
+            console.error("Error fetching tracking image:", err);
+          }
+          return null;
+        }}
+        getBaseUrl={getBaseUrl}
       />
 
       {/* Status Update Modal */}

@@ -11,6 +11,7 @@ import {
   LockIcon,
   SettingsIcon,
   UserIcon,
+  QrCodeIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
@@ -51,6 +52,12 @@ const navItems: NavItem[] = [
     icon: <ListIcon />,
     name: "Orders",
     path: "/orders",
+    requiredPermission: ["view_order"],
+  },
+  {
+    icon: <QrCodeIcon />,
+    name: "Scan QR",
+    path: "/orders/scan",
     requiredPermission: ["view_order"],
   },
   {

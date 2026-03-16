@@ -51,7 +51,8 @@ def get_all_students(
             Student.phone_number.ilike(f"%{search}%"),
             Student.dormitory.ilike(f"%{search}%"),
             Student.grade_level.ilike(f"%{search}%"),
-            Student.guardian_name.ilike(f"%{search}%")
+            Student.guardian_name.ilike(f"%{search}%"),
+            Student.qr_code.ilike(f"%{search}%")
         )
         query = query.filter(search_filter)
     

@@ -48,6 +48,9 @@ export default function OrdersList() {
     totalPages: 0,
   });
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   
   // Modal states
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
@@ -164,6 +167,7 @@ export default function OrdersList() {
 
       if (response.success) {
         fetchOrders();
+        setSelectedOrders(new Set());
       } else {
         setError(response.message || "Gagal menghapus order");
       }
@@ -176,8 +180,90 @@ export default function OrdersList() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedOrders.size === 0) return;
+
+    setIsBulkDeleting(true);
+    setError(null);
+
+    try {
+      const deletePromises = Array.from(selectedOrders).map((orderId) =>
+        orderAPI.deleteOrder(orderId)
+      );
+
+      const results = await Promise.all(deletePromises);
+      const failed = results.filter((r) => !r.success);
+
+      if (failed.length > 0) {
+        setError(`Gagal menghapus ${failed.length} dari ${selectedOrders.size} order`);
+      } else {
+        setSelectedOrders(new Set());
+        fetchOrders();
+      }
+    } catch (err: any) {
+      setError("Terjadi kesalahan saat menghapus order");
+      console.error("Bulk delete error:", err);
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const handleToggleSelect = (orderId: string) => {
+    setSelectedOrders((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedOrders.size === orders.length) {
+      setSelectedOrders(new Set());
+    } else {
+      setSelectedOrders(new Set(orders.map((order) => order.id)));
+    }
+  };
+
+  const handleToggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    if (isSelectionMode) {
+      // Clear selection when exiting selection mode
+      setSelectedOrders(new Set());
+    }
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Bulk Actions Bar */}
+      {isSelectionMode && selectedOrders.size > 0 && (
+        <div className="flex items-center justify-between gap-3 p-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-brand-700 dark:text-brand-300">
+              {selectedOrders.size} order dipilih
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedOrders(new Set())}
+              className="px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              disabled={isBulkDeleting}
+              className="px-3 py-1.5 text-xs sm:text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isBulkDeleting ? "Menghapus..." : `Hapus ${selectedOrders.size}`}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Search & Filter */}
       <div className="flex flex-col gap-2 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
@@ -220,6 +306,39 @@ export default function OrdersList() {
             <option value="COMPLETED">Selesai</option>
             <option value="PICKED_UP">Diambil</option>
           </select>
+          {/* Toggle Selection Mode Button - Mobile Only */}
+          <button
+            onClick={handleToggleSelectionMode}
+            className={`md:hidden inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg touch-manipulation transition-colors ${
+              isSelectionMode
+                ? "text-white bg-brand-500 hover:bg-brand-600"
+                : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
+            }`}
+          >
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              {isSelectionMode ? (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              ) : (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              )}
+            </svg>
+            {isSelectionMode ? "Batal" : "Pilih"}
+          </button>
           <button
             onClick={() => navigate("/orders/create")}
             className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
@@ -279,31 +398,87 @@ export default function OrdersList() {
           orders.map((order) => (
             <div
               key={order.id}
-              className="p-3 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 active:bg-gray-50 dark:active:bg-gray-700/50 transition-colors"
-              onClick={() => navigate(`/orders/${order.id}`)}
+              className={`p-3 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 transition-colors ${
+                !isSelectionMode ? "active:bg-gray-50 dark:active:bg-gray-700/50 cursor-pointer" : ""
+              }`}
+              onClick={!isSelectionMode ? () => navigate(`/orders/${order.id}`) : undefined}
             >
-              <div className="flex items-start justify-between gap-2 mb-2.5">
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-gray-800 text-sm dark:text-white/90 truncate">
-                    {order.order_number}
-                  </p>
-                  {order.student && (
-                    <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5 font-medium">
-                      {order.student.fullname}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {formatDate(order.created_at)}
-                  </p>
+              <div className="flex items-start gap-2 mb-2.5">
+                {/* Checkbox - Only show in selection mode */}
+                {isSelectionMode && (
+                  <input
+                    type="checkbox"
+                    checked={selectedOrders.has(order.id)}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      handleToggleSelect(order.id);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-1 w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-500 focus:ring-2 cursor-pointer"
+                  />
+                )}
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-2.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-gray-800 text-sm dark:text-white/90 truncate">
+                        {order.order_number}
+                      </p>
+                      {order.student && (
+                        <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5 font-medium">
+                          {order.student.fullname}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {formatDate(order.created_at)}
+                      </p>
+                    </div>
+                    <Badge size="sm" color={getStatusColor(order.current_status)}>
+                      {formatStatus(order.current_status)}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <span>Total Item: {order.total_items}</span>
+                    <span>Berbayar: {order.paid_items_count}</span>
+                  </div>
                 </div>
-                <Badge size="sm" color={getStatusColor(order.current_status)}>
-                  {formatStatus(order.current_status)}
-                </Badge>
               </div>
-              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                <span>Total Item: {order.total_items}</span>
-                <span>Berbayar: {order.paid_items_count}</span>
-              </div>
+              {/* Action Buttons - Only show in selection mode */}
+              {isSelectionMode && (
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/orders/${order.id}`);
+                    }}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
+                  >
+                    <EyeIcon className="w-3.5 h-3.5" />
+                    Lihat
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/orders/${order.id}/edit`);
+                    }}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
+                  >
+                    <PencilIcon className="w-3.5 h-3.5" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick(order.id, order.order_number);
+                    }}
+                    disabled={deletingOrderId === order.id}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <TrashBinIcon className="w-3.5 h-3.5" />
+                    Hapus
+                  </button>
+                </div>
+              )}
             </div>
           ))
         )}
@@ -325,6 +500,17 @@ export default function OrdersList() {
               <Table>
                 <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
                   <TableRow>
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-12"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedOrders.size === orders.length && orders.length > 0}
+                        onChange={handleSelectAll}
+                        className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-500 focus:ring-2 cursor-pointer"
+                      />
+                    </TableCell>
                     <TableCell
                       isHeader
                       className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
@@ -376,6 +562,14 @@ export default function OrdersList() {
                       key={order.id}
                       className="hover:bg-gray-50 dark:hover:bg-white/[0.02]"
                     >
+                      <TableCell className="px-5 py-4 w-12">
+                        <input
+                          type="checkbox"
+                          checked={selectedOrders.has(order.id)}
+                          onChange={() => handleToggleSelect(order.id)}
+                          className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-500 focus:ring-2 cursor-pointer"
+                        />
+                      </TableCell>
                       <TableCell className="px-5 py-4">
                         <div
                           className="cursor-pointer font-medium text-gray-800 text-theme-sm dark:text-white/90"
