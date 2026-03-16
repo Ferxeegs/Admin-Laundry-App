@@ -663,7 +663,7 @@ def create_order_tracking(
     order_id: str,
     tracking_data: OrderTrackingCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("update_order_status")),
+    current_user: User = Depends(require_permission(["create_order", "update_order"])),
 ):
     """
     Add new tracking entry & update order status.

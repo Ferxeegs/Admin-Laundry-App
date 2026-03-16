@@ -159,7 +159,7 @@ export default function App() {
             <Route
               path="/orders/scan"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission={["create_order", "update_order"]}>
                   <ScanQR />
                 </ProtectedRoute>
               }

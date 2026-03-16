@@ -541,33 +541,31 @@ export default function ScanQR() {
 
               {/* Fullscreen Scanner */}
               {isScanning && (
-                <div className="relative">
-                  <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-4">
-                    {/* Scanner Container */}
-                    <div className="w-full max-w-md relative flex flex-col items-center">
-                      <div id={scannerElementId} className="w-full rounded-lg overflow-hidden" />
-                      
-                      {/* Instructions */}
-                      <div className="mt-4 text-center px-4">
-                        <p className="text-white text-sm sm:text-base mb-2 font-medium">
-                          Arahkan kamera ke QR code siswa
-                        </p>
-                        <p className="text-white/70 text-xs sm:text-sm">
-                          Scanner akan otomatis mendeteksi QR code
-                        </p>
-                      </div>
-
-                      {/* Stop Button */}
-                      <button
-                        onClick={stopScanning}
-                        className="mt-6 w-full max-w-xs inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 active:bg-red-700 transition-colors touch-manipulation"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        Hentikan Scan
-                      </button>
+                <div className="fixed inset-0 z-[999999] bg-black flex flex-col items-center justify-center p-4" style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
+                  {/* Scanner Container */}
+                  <div className="w-full max-w-md relative flex flex-col items-center">
+                    <div id={scannerElementId} className="w-full rounded-lg overflow-hidden" />
+                    
+                    {/* Instructions */}
+                    <div className="mt-4 text-center px-4">
+                      <p className="text-white text-sm sm:text-base mb-2 font-medium">
+                        Arahkan kamera ke QR code siswa
+                      </p>
+                      <p className="text-white/70 text-xs sm:text-sm">
+                        Scanner akan otomatis mendeteksi QR code
+                      </p>
                     </div>
+
+                    {/* Stop Button */}
+                    <button
+                      onClick={stopScanning}
+                      className="mt-6 w-full max-w-xs inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 active:bg-red-700 transition-colors touch-manipulation"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Hentikan Scan
+                    </button>
                   </div>
                 </div>
               )}

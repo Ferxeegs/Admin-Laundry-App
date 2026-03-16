@@ -8,7 +8,7 @@ import Badge from "../../components/ui/badge/Badge";
 import Label from "../../components/form/Label";
 import { Modal } from "../../components/ui/modal";
 import StatusLogModal from "../../components/Orders/StatusLogModal";
-import { orderAPI, studentAPI, userAPI, mediaAPI, settingAPI, getBaseUrl } from "../../utils/api";
+import { orderAPI, studentAPI, userAPI, mediaAPI, getBaseUrl } from "../../utils/api";
 import { AngleLeftIcon, PencilIcon } from "../../icons";
 import { useToast } from "../../context/ToastContext";
 
@@ -76,14 +76,14 @@ export default function ViewOrder() {
   const [images, setImages] = useState<Media[]>([]);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
-  const [pricePerItem, setPricePerItem] = useState<number>(4000); // Default value
+  // const [ , setPricePerItem] = useState<number>(4000); // Default value
   const { success, error: showError } = useToast();
 
   useEffect(() => {
     if (id) {
       fetchOrderData();
     }
-    fetchOrderSettings();
+    // fetchOrderSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -105,25 +105,25 @@ export default function ViewOrder() {
     }
   };
 
-  const fetchOrderSettings = async () => {
-    try {
-      const response = await settingAPI.getByGroup("order");
-      if (response.success && response.data) {
-        const pricePerItemValue = response.data.price_per_item;
-        if (pricePerItemValue !== null && pricePerItemValue !== undefined) {
-          const price = typeof pricePerItemValue === 'string' 
-            ? parseFloat(pricePerItemValue) 
-            : Number(pricePerItemValue);
-          if (!isNaN(price)) {
-            setPricePerItem(price);
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Fetch order settings error:", err);
-      // Keep default value if fetch fails
-    }
-  };
+  // const fetchOrderSettings = async () => {
+  //   try {
+  //     const response = await settingAPI.getByGroup("order");
+  //     if (response.success && response.data) {
+  //       const pricePerItemValue = response.data.price_per_item;
+  //       if (pricePerItemValue !== null && pricePerItemValue !== undefined) {
+  //         const price = typeof pricePerItemValue === 'string' 
+  //           ? parseFloat(pricePerItemValue) 
+  //           : Number(pricePerItemValue);
+  //         if (!isNaN(price)) {
+  //           setPricePerItem(price);
+  //         }
+  //       }
+  //     }
+  //   } catch (err) {
+  //     console.error("Fetch order settings error:", err);
+  //     // Keep default value if fetch fails
+  //   }
+  // };
 
   const fetchOrderData = async () => {
     if (!id) return;
@@ -737,11 +737,11 @@ export default function ViewOrder() {
                 </p>
                 <p className="text-sm font-semibold text-gray-800 dark:text-white">
                   Rp {order.additional_fee.toLocaleString("id-ID")}
-                  {order.paid_items_count > 0 && (
+                  {/* {order.paid_items_count > 0 && (
                     <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
                       ({order.paid_items_count} × Rp {pricePerItem.toLocaleString("id-ID")})
                     </span>
-                  )}
+                  )} */}
                 </p>
               </div>
               {order.notes && (
@@ -759,7 +759,7 @@ export default function ViewOrder() {
 
           {/* Order Images */}
           {images.length > 0 && (
-            <ComponentCard title="Gambar Order">
+            <ComponentCard title="Foto Pakaian">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {images.map((image, index) => {
                   const imageUrl = image.url.startsWith('http') 
