@@ -9,7 +9,6 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 # Import middleware untuk menangani Proxy (Fix Mixed Content)
-from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.core.config import settings
 from app.core.logging_config import root_logger
