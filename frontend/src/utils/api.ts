@@ -180,7 +180,7 @@ export const authAPI = {
       lastname: string;
       fullname: string;
       created_at: string;
-    }>('/auth/register', {
+    }>('/auth/register/', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -201,7 +201,7 @@ export const authAPI = {
       };
       token: string;
       refreshToken: string;
-    }>('/auth/login', {
+    }>('/auth/login/', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -236,7 +236,7 @@ export const authAPI = {
         username: string;
         email: string;
       } | null;
-    }>('/users/me', {
+    }>('/users/me/', {
       method: 'GET',
     });
   },
@@ -322,7 +322,7 @@ export const mediaAPI = {
     queryParams.append('model_id', model_id);
     if (collection) queryParams.append('collection', collection);
 
-    const endpoint = `/media${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const endpoint = `/media/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return apiRequest<{
       media: Array<{
         id: number;
@@ -344,7 +344,7 @@ export const mediaAPI = {
    * Delete media by ID
    */
   deleteMedia: async (id: number) => {
-    return apiRequest<{ message: string }>(`/media/${id}`, {
+    return apiRequest<{ message: string }>(`/media/${id}/`, {
       method: 'DELETE',
       credentials: 'include', // Kirim cookies
     });
@@ -354,7 +354,7 @@ export const mediaAPI = {
    * Delete file by URL (for settings)
    */
   deleteFileByUrl: async (url: string) => {
-    return apiRequest<{ deleted: boolean }>('/media/delete-by-url', {
+    return apiRequest<{ deleted: boolean }>('/media/delete-by-url/', {
       method: 'POST',
       body: JSON.stringify({ url }),
       credentials: 'include',
@@ -368,7 +368,7 @@ export const mediaAPI = {
  */
 export const removeAuthToken = async () => {
   try {
-    await fetch(`${API_BASE_URL}/auth/logout`, {
+    await fetch(`${API_BASE_URL}/auth/logout/`, {
       method: 'POST',
       credentials: 'include',
     });
@@ -464,7 +464,7 @@ export const userAPI = {
     if (params?.search) queryParams.append('search', params.search);
 
     const queryString = queryParams.toString();
-    const endpoint = `/users${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/users/${queryString ? `?${queryString}` : ''}`;
 
     return apiRequest<{
       users: Array<{
@@ -514,7 +514,7 @@ export const userAPI = {
         name: string;
         guard_name: string;
       }>;
-    }>(`/users/${id}`, {
+    }>(`/users/${id}/`, {
       method: 'GET',
     });
   },
@@ -622,7 +622,7 @@ export const userAPI = {
         name: string;
         guard_name: string;
       }>;
-    }>(`/users/${id}/roles`, {
+    }>(`/users/${id}/roles/`, {
       method: 'PUT',
       body: JSON.stringify({ role_ids: roleIds }),
     });
@@ -675,7 +675,7 @@ export const userAPI = {
         }>;
       };
       redirect_url: string;
-    }>('/users/stop-impersonate', {
+    }>('/users/stop-impersonate/', {
       method: 'POST',
     });
   },
@@ -689,7 +689,7 @@ export const userAPI = {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.search) queryParams.append('search', params.search);
     
-    const endpoint = `/users/deleted${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const endpoint = `/users/deleted/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return apiRequest<{
       users: Array<{
         id: string;
@@ -725,7 +725,7 @@ export const userAPI = {
    * Delete user by ID (soft delete)
    */
   deleteUser: async (id: string) => {
-    return apiRequest<null>(`/users/${id}`, {
+    return apiRequest<null>(`/users/${id}/`, {
       method: 'DELETE',
     });
   },
@@ -734,7 +734,7 @@ export const userAPI = {
    * Force delete user by ID (hard delete)
    */
   forceDeleteUser: async (id: string) => {
-    return apiRequest<null>(`/users/${id}/force`, {
+    return apiRequest<null>(`/users/${id}/force/`, {
       method: 'DELETE',
     });
   },
@@ -745,7 +745,7 @@ export const userAPI = {
   verifyUserEmail: async (id: string) => {
     return apiRequest<{
       email_verified_at: string;
-    }>(`/users/${id}/verify-email`, {
+    }>(`/users/${id}/verify-email/`, {
       method: 'POST',
     });
   },
@@ -756,7 +756,7 @@ export const userAPI = {
   sendVerificationEmail: async (id: string) => {
     return apiRequest<{
       message: string;
-    }>(`/users/${id}/send-verification-email`, {
+    }>(`/users/${id}/send-verification-email/`, {
       method: 'POST',
     });
   },
@@ -767,7 +767,7 @@ export const userAPI = {
   resetPassword: async (id: string, data: { password: string; confirm_password: string }) => {
     return apiRequest<{
       message: string;
-    }>(`/users/${id}/reset-password`, {
+    }>(`/users/${id}/reset-password/`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -1036,7 +1036,7 @@ export const complaintAPI = {
         lastname: string;
         fullname: string | null;
       } | null;
-    }>(`/complaints/${id}`, {
+    }>(`/complaints/${id}/`, {
       method: 'GET',
     });
   },
@@ -1146,7 +1146,7 @@ export const complaintAPI = {
           fullname: string | null;
         } | null;
       }>;
-    }>(`/complaints/${id}/status`, {
+    }>(`/complaints/${id}/status/`, {
       method: 'PUT',
       body: JSON.stringify({ status, notes }),
     });
@@ -1156,7 +1156,7 @@ export const complaintAPI = {
    * Delete complaint by ID
    */
   deleteComplaint: async (id: string) => {
-    return apiRequest<null>(`/complaints/${id}`, {
+    return apiRequest<null>(`/complaints/${id}/`, {
       method: 'DELETE',
     });
   },
@@ -1177,7 +1177,7 @@ export const complaintAPI = {
     if (params?.priority) queryParams.append('priority', params.priority);
 
     const queryString = queryParams.toString();
-    const endpoint = `/complaints/user/${userId}${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/complaints/user/${userId}/${queryString ? `?${queryString}` : ''}`;
 
     return apiRequest<{
       complaints: Array<{
@@ -1285,7 +1285,7 @@ export const settingAPI = {
       payload: any;
       created_at: string;
       updated_at: string;
-    }>(`/settings/${groupName}/${settingName}`, {
+    }>(`/settings/${groupName}/${settingName}/`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -1318,7 +1318,7 @@ export const settingAPI = {
    * Delete setting
    */
   delete: async (groupName: string, settingName: string) => {
-    return apiRequest(`/settings/${groupName}/${settingName}`, {
+    return apiRequest(`/settings/${groupName}/${settingName}/`, {
       method: 'DELETE',
     });
   },
@@ -1343,7 +1343,7 @@ export const curfewPermissionAPI = {
     if (params?.user_id) queryParams.append('user_id', params.user_id);
 
     const queryString = queryParams.toString();
-    const endpoint = `/curfew-permissions${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/curfew-permissions/${queryString ? `?${queryString}` : ''}`;
 
     return apiRequest<{
       permissions: Array<{
@@ -1439,7 +1439,7 @@ export const curfewPermissionAPI = {
         created_at: string;
         updated_at: string;
       } | null;
-    }>(`/curfew-permissions/${id}`, {
+    }>(`/curfew-permissions/${id}/`, {
       method: 'GET',
     });
   },
@@ -1535,7 +1535,7 @@ export const curfewPermissionAPI = {
         created_at: string;
         updated_at: string;
       } | null;
-    }>(`/curfew-permissions/${id}`, {
+    }>(`/curfew-permissions/${id}/`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -1586,7 +1586,7 @@ export const curfewPermissionAPI = {
         created_at: string;
         updated_at: string;
       } | null;
-    }>(`/curfew-permissions/${id}/status`, {
+    }>(`/curfew-permissions/${id}/status/`, {
       method: 'PUT',
       body: JSON.stringify({ status }),
     });
@@ -1634,7 +1634,7 @@ export const curfewPermissionAPI = {
         updated_at: string;
         updated_by: string | null;
       } | null;
-    } | null>(`/curfew-permissions/${id}/violation`, {
+    } | null>(`/curfew-permissions/${id}/violation/`, {
       method: 'GET',
     });
   },
@@ -1653,7 +1653,7 @@ export const curfewPermissionAPI = {
       late_duration: number;
       note: string | null;
       created_at: string;
-    }>(`/curfew-permissions/${id}/violation`, {
+    }>(`/curfew-permissions/${id}/violation/`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -1717,7 +1717,7 @@ export const curfewPermissionAPI = {
    * Delete curfew permission by ID
    */
   deleteCurfewPermission: async (id: string) => {
-    return apiRequest<null>(`/curfew-permissions/${id}`, {
+    return apiRequest<null>(`/curfew-permissions/${id}/`, {
       method: 'DELETE',
     });
   },
@@ -1740,7 +1740,7 @@ export const curfewPermissionAPI = {
     if (params?.curfew_id) queryParams.append('curfew_id', params.curfew_id);
 
     const queryString = queryParams.toString();
-    const endpoint = `/curfew-permissions/violations${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/curfew-permissions/violations/${queryString ? `?${queryString}` : ''}`;
 
     return apiRequest<{
       violations: Array<{
@@ -1805,7 +1805,7 @@ export const curfewPermissionAPI = {
     if (params?.status) queryParams.append('status', params.status);
 
     const queryString = queryParams.toString();
-    const endpoint = `/curfew-permissions/user/${userId}${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/curfew-permissions/user/${userId}/${queryString ? `?${queryString}` : ''}`;
 
     return apiRequest<{
       permissions: Array<{
@@ -1852,7 +1852,7 @@ export const studentAPI = {
     if (params?.is_active !== undefined) queryParams.append('is_active', params.is_active.toString());
 
     const queryString = queryParams.toString();
-    const endpoint = `/students${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/students/${queryString ? `?${queryString}` : ''}`;
 
     return apiRequest<{
       students: Array<{
@@ -1903,7 +1903,7 @@ export const studentAPI = {
       deleted_at: string | null;
       created_by: string | null;
       deleted_by: string | null;
-    }>(`/students/${id}`, {
+    }>(`/students/${id}/`, {
       method: 'GET',
     });
   },
@@ -1935,7 +1935,7 @@ export const studentAPI = {
       is_active: boolean;
       created_at: string;
       updated_at: string;
-    }>('/students', {
+    }>('/students/', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -1968,7 +1968,7 @@ export const studentAPI = {
       is_active: boolean;
       created_at: string;
       updated_at: string;
-    }>(`/students/${id}`, {
+    }>(`/students/${id}/`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -2055,7 +2055,7 @@ export const orderAPI = {
     if (params?.student_id) queryParams.append("student_id", params.student_id);
 
     const queryString = queryParams.toString();
-    const endpoint = `/orders${queryString ? `?${queryString}` : ""}`;
+    const endpoint = `/orders/${queryString ? `?${queryString}` : ""}`;
 
     return apiRequest<{
       orders: Array<{
@@ -2115,7 +2115,7 @@ export const orderAPI = {
         notes: string | null;
         created_at: string;
       }>;
-    }>(`/orders/${id}`, {
+    }>(`/orders/${id}/`, {
       method: "GET",
     });
   },
@@ -2135,7 +2135,7 @@ export const orderAPI = {
     // Check if data is FormData (for file upload) or regular object
     if (data instanceof FormData) {
       // For FormData, we need to make a custom request without JSON headers
-      const url = `${API_BASE_URL}/orders`;
+      const url = `${API_BASE_URL}/orders/`;
       
       // Get auth token from cookies or localStorage
       const token = localStorage.getItem('token') || document.cookie
@@ -2208,7 +2208,7 @@ export const orderAPI = {
         notes: string | null;
         created_at: string;
         updated_at: string;
-      }>("/orders", {
+      }>("/orders/", {
         method: "POST",
         body: JSON.stringify(data),
       });
@@ -2241,7 +2241,7 @@ export const orderAPI = {
       notes: string | null;
       created_at: string;
       updated_at: string;
-    }>(`/orders/${id}`, {
+    }>(`/orders/${id}/`, {
       method: "PUT",
       body: JSON.stringify(data),
     });
@@ -2251,7 +2251,7 @@ export const orderAPI = {
    * Delete order by ID
    */
   deleteOrder: async (id: string) => {
-    return apiRequest<null>(`/orders/${id}`, {
+    return apiRequest<null>(`/orders/${id}/`, {
       method: "DELETE",
     });
   },
@@ -2269,7 +2269,7 @@ export const orderAPI = {
         notes: string | null;
         created_at: string;
       }>
-    >(`/orders/${id}/trackings`, {
+    >(`/orders/${id}/trackings/`, {
       method: "GET",
     });
   },
@@ -2306,7 +2306,7 @@ export const orderAPI = {
         notes: string | null;
         created_at: string;
       }>;
-    }>(`/orders/${id}/trackings`, {
+    }>(`/orders/${id}/trackings/`, {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -2331,7 +2331,7 @@ export const reportsAPI = {
     if (params?.end_date) queryParams.append("end_date", params.end_date);
 
     const queryString = queryParams.toString();
-    const endpoint = `/reports/operational${queryString ? `?${queryString}` : ""}`;
+    const endpoint = `/reports/operational/${queryString ? `?${queryString}` : ""}`;
 
     return apiRequest<{
       period: string;
@@ -2361,7 +2361,7 @@ export const reportsAPI = {
   getOrdersByStatus: async () => {
     return apiRequest<{
       by_status: Array<{ status: string; count: number }>;
-    }>("/reports/orders-by-status", {
+    }>("/reports/orders-by-status/", {
       method: "GET",
     });
   },

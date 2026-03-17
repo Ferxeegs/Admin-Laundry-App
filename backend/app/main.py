@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from pathlib import Path
+from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.core.config import settings
 from app.core.logging_config import root_logger
@@ -40,6 +41,9 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json" if settings.DEBUG else None,
     lifespan=lifespan
 )
+
+# Setup ProxyHeadersMiddleware to respect proxy headers (e.g. X-Forwarded-Proto from Nginx)
+app.add_middleware(ProxyHeadersMiddleware, trusted_proxies="*")
 
 # Setup CORS
 app.add_middleware(
