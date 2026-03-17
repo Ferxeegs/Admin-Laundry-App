@@ -28,16 +28,31 @@ export default function AuthLayout({
                   width={231}
                   height={48}
                   src={getLogoUrl(false)}
-                  alt="Logo"
+                  alt={settings?.general?.site_name || "Laundry Pondok"}
+                  className="block dark:hidden"
                   onError={(e) => {
                     const img = e.target as HTMLImageElement;
-                    // Prevent infinite loop: only fallback once
                     if (!img.dataset.fallbackUsed) {
-                      img.dataset.fallbackUsed = 'true';
-                      img.src = '/images/logo/auth-logo.svg';
+                      img.dataset.fallbackUsed = "true";
+                      img.src = "/images/logo/auth-logo.svg";
                     } else {
-                      // If fallback also fails, hide the image
-                      img.style.display = 'none';
+                      img.style.display = "none";
+                    }
+                  }}
+                />
+                <img
+                  width={231}
+                  height={48}
+                  src={getLogoUrl(true)}
+                  alt={settings?.general?.site_name || "Laundry Pondok"}
+                  className="hidden dark:block"
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    if (!img.dataset.fallbackUsed) {
+                      img.dataset.fallbackUsed = "true";
+                      img.src = "/images/logo/logo-dark.svg";
+                    } else {
+                      img.style.display = "none";
                     }
                   }}
                 />

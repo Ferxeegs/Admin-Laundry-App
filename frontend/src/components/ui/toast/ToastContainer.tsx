@@ -1,4 +1,4 @@
-import { Toast, ToastType } from "./Toast";
+import { Toast } from "./Toast";
 import ToastComponent from "./Toast";
 
 interface ToastContainerProps {

@@ -846,7 +846,6 @@ export default function ViewOrder() {
           }
           return null;
         }}
-        getBaseUrl={getBaseUrl}
       />
 
       {/* Status Update Modal */}

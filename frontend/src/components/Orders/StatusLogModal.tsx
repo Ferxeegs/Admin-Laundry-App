@@ -20,7 +20,6 @@ interface StatusLogModalProps {
   formatStatus: (status: string) => string;
   getStatusColor: (status: string) => "primary" | "success" | "warning" | "info";
   getTrackingImageUrl?: (trackingId: string | null) => Promise<string | null>;
-  getBaseUrl?: () => string;
 }
 
 export default function StatusLogModal({
@@ -32,7 +31,6 @@ export default function StatusLogModal({
   formatStatus,
   getStatusColor,
   getTrackingImageUrl,
-  getBaseUrl,
 }: StatusLogModalProps) {
   const [trackingImages, setTrackingImages] = useState<Record<string, string>>({});
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
