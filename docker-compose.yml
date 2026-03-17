@@ -15,14 +15,14 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - laundry_network
+      - app-bridge
 
   redis:
     image: redis:alpine
     container_name: laundry_redis
     restart: always
     networks:
-      - laundry_network
+      - app-bridge
 
   adminer:
     image: adminer
@@ -32,7 +32,7 @@ services:
     depends_on:
       - db
     networks:
-      - laundry_network
+      - app-bridge
 
   # --- BACKEND SERVICES ---
   backend-dev:
@@ -51,7 +51,7 @@ services:
       db:
         condition: service_healthy
     networks:
-      - laundry_network
+      - app-bridge
 
   backend-prod:
     profiles: ["prod"]
@@ -68,7 +68,7 @@ services:
       db:
         condition: service_healthy
     networks:
-      - laundry_network
+      - app-bridge
 
   # --- FRONTEND SERVICES ---
   frontend-dev:
@@ -100,7 +100,7 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - laundry_network
+      - app-bridge
     # Restart policy untuk development
     restart: unless-stopped
 
@@ -113,7 +113,7 @@ services:
     restart: always
     env_file: .env
     networks:
-      - laundry_network
+      - app-bridge
 
   # --- NGINX GATEWAY ---
   nginx-dev:
@@ -130,26 +130,26 @@ services:
       backend-dev:
         condition: service_started
     networks:
-      - laundry_network
+      - app-bridge
 
-  nginx-prod:
-    profiles: ["prod"]
-    build:
-      context: ./nginx
-      dockerfile: ./builder/prod/Dockerfile
-    container_name: laundry_gateway_prod
-    ports:
-      - "80:80"
-      - "443:443"
-    restart: always
-    depends_on:
-      - frontend-prod
-      - backend-prod
-    networks:
-      - laundry_network
+  # nginx-prod:
+  #   profiles: ["prod"]
+  #   build:
+  #     context: ./nginx
+  #     dockerfile: ./builder/prod/Dockerfile
+  #   container_name: laundry_gateway_prod
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   restart: always
+  #   depends_on:
+  #     - frontend-prod
+  #     - backend-prod
+  #   networks:
+  #     - app-bridge
 
 networks:
-  laundry_network:
+  app-bridge:
     driver: bridge
 
 volumes:
