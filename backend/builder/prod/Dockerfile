@@ -36,6 +36,7 @@
     COPY ./builder/prod/entrypoint.sh /entrypoint.sh
     # Note: chown dilakukan di atas, chmod manual jika perlu lewat root sebelum USER
     # Namun biasanya chown cukup jika file disalin saat masih root
+    RUN chmod +x /entrypoint.sh
     
     ENTRYPOINT ["/entrypoint.sh"]
     
