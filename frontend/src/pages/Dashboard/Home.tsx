@@ -10,7 +10,7 @@ export default function Home() {
   return (
     <>
       <PageMeta
-        title="Dashboard | Laundry Pondok"
+        title="Dashboard"
         description="Ringkasan operasional laundry pondok: siswa, order, pendapatan, dan statistik per asrama."
       />
       <div className="space-y-6 sm:space-y-8">

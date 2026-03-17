@@ -9,7 +9,7 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { getLogoUrl } = useSettings();
+  const { getLogoUrl, settings } = useSettings();
 
   return (
     <div className="relative p-6 bg-white z-1 dark:bg-gray-900 sm:p-0">
@@ -40,7 +40,9 @@ export default function AuthLayout({
                 />
               </Link>
               <p className="text-center text-gray-400 dark:text-white/60">
-                Free and Open-Source Tailwind CSS Admin Dashboard Template
+                {settings?.general?.site_tagline ||
+                  settings?.general?.site_description ||
+                  "Sistem Manajemen Laundry Pondok"}
               </p>
             </div>
           </div>

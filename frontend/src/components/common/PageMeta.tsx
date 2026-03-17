@@ -12,16 +12,16 @@ const PageMeta = ({
 }) => {
   const { settings } = useSettings();
   const location = useLocation();
-  const siteTagline = settings?.general?.site_tagline || "TailAdmin";
-  const fullTitle = `${title} | ${siteTagline}`;
+  const siteName = settings?.general?.site_name || "Laundry Pondok App";
+  const fullTitle = `${title} | ${siteName}`;
 
   // Ensure title updates when route or settings change
   useEffect(() => {
     document.title = fullTitle;
-  }, [fullTitle, title, siteTagline, location.pathname]);
+  }, [fullTitle, title, siteName, location.pathname]);
 
   return (
-    <Helmet key={`${title}-${siteTagline}-${location.pathname}`}>
+    <Helmet key={`${title}-${siteName}-${location.pathname}`}>
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
     </Helmet>

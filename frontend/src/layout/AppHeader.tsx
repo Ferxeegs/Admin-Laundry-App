@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-
-import { Link } from "react-router";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useNavigate, useLocation, Link } from "react-router";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
@@ -8,15 +7,93 @@ import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 // import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
 
+interface SearchCommand {
+  name: string;
+  path: string;
+  keywords: string[];
+  category: string;
+}
+
+const searchCommands: SearchCommand[] = [
+  {
+    name: "Dashboard",
+    path: "/",
+    keywords: ["dashboard", "home", "beranda"],
+    category: "Navigasi",
+  },
+  {
+    name: "Orders",
+    path: "/orders",
+    keywords: ["order", "orders", "laundry", "transaksi"],
+    category: "Laundry",
+  },
+  {
+    name: "Scan QR Order",
+    path: "/orders/scan",
+    keywords: ["scan", "qr", "scan qr", "scanner"],
+    category: "Laundry",
+  },
+  {
+    name: "Students",
+    path: "/students",
+    keywords: ["siswa", "santri", "student"],
+    category: "Data",
+  },
+  {
+    name: "Users",
+    path: "/users",
+    keywords: ["users", "user", "pengguna", "akun"],
+    category: "Akses",
+  },
+  {
+    name: "Roles",
+    path: "/roles",
+    keywords: ["roles", "role", "peran", "hak akses"],
+    category: "Akses",
+  },
+  {
+    name: "Reports",
+    path: "/reports",
+    keywords: ["reports", "report", "laporan", "statistik"],
+    category: "Analitik",
+  },
+  {
+    name: "Calendar",
+    path: "/calendar",
+    keywords: ["calendar", "kalender", "jadwal"],
+    category: "Navigasi",
+  },
+  {
+    name: "Settings",
+    path: "/settings",
+    keywords: ["settings", "setting", "pengaturan", "konfigurasi"],
+    category: "Sistem",
+  },
+  {
+    name: "Profile",
+    path: "/profile",
+    keywords: ["profile", "profil", "account", "akun"],
+    category: "Navigasi",
+  },
+];
+
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
-  const { isImpersonating, impersonatedBy, user } = useAuth();
-  const { getLogoUrl } = useSettings();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
+  const { isImpersonating, impersonatedBy, user, hasPermission } = useAuth();
+  const { getLogoUrl } = useSettings();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
+  const inputRef = useRef<HTMLInputElement>(null);
+  const searchResultsRef = useRef<HTMLDivElement>(null);
+
   const handleToggle = () => {
-    if (window.innerWidth >= 1024) {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
       toggleSidebar();
     } else {
       toggleMobileSidebar();
@@ -24,32 +101,140 @@ const AppHeader: React.FC = () => {
   };
 
   const toggleApplicationMenu = () => {
-    setApplicationMenuOpen(!isApplicationMenuOpen);
+    setApplicationMenuOpen((prev) => !prev);
   };
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  // Map path → permission untuk command yang butuh izin khusus
+  const availableCommands = useMemo(() => {
+    const permissionMap: Record<string, string | string[]> = {
+      "/users": ["view_user", "view_any_user"],
+      "/roles": ["view_role", "view_any_role"],
+      "/orders/scan": ["create_order", "update_order"],
+      // lainnya mengikuti ProtectedRoute (tidak di-restrict di sini)
+    };
 
+    return searchCommands.filter((cmd) => {
+      const required = permissionMap[cmd.path];
+      if (required) {
+        return hasPermission(required);
+      }
+      return true;
+    });
+  }, [hasPermission]);
+
+  // Filter command berdasarkan query
+  const filteredCommands = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase().trim();
+
+    return availableCommands.filter((cmd) => {
+      const nameMatch = cmd.name.toLowerCase().includes(q);
+      const keywordMatch = cmd.keywords.some((k) =>
+        k.toLowerCase().includes(q),
+      );
+      return nameMatch || keywordMatch;
+    });
+  }, [searchQuery, availableCommands]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setIsSearchOpen(value.trim().length > 0);
+    setSelectedIndex(0);
+  };
+
+  const handleSelectCommand = (command: SearchCommand) => {
+    navigate(command.path);
+    setSearchQuery("");
+    setIsSearchOpen(false);
+    inputRef.current?.blur();
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isSearchOpen || filteredCommands.length === 0) return;
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setSelectedIndex((prev) =>
+          prev < filteredCommands.length - 1 ? prev + 1 : prev,
+        );
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (filteredCommands[selectedIndex]) {
+          handleSelectCommand(filteredCommands[selectedIndex]);
+        }
+        break;
+      case "Escape":
+        e.preventDefault();
+        setSearchQuery("");
+        setIsSearchOpen(false);
+        inputRef.current?.blur();
+        break;
+    }
+  };
+
+  // Tutup dropdown jika klik di luar
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key === "k") {
-        event.preventDefault();
-        inputRef.current?.focus();
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchResultsRef.current &&
+        !searchResultsRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setIsSearchOpen(false);
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
+    if (isSearchOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isSearchOpen]);
 
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
+  // Shortcut global Cmd/Ctrl+K
+  useEffect(() => {
+    const handleGlobalKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") {
+          if (target !== inputRef.current) return;
+        }
+      }
+
+      if ((event.metaKey || event.ctrlKey) && event.key === "k") {
+        event.preventDefault();
+        inputRef.current?.focus();
+        if (searchQuery.trim().length > 0) {
+          setIsSearchOpen(true);
+        }
+      }
     };
-  }, []);
+
+    document.addEventListener("keydown", handleGlobalKeyDown);
+    return () => document.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [searchQuery]);
+
+  // Close search ketika route berubah
+  useEffect(() => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+  }, [location.pathname]);
 
   return (
     <header className="sticky top-0 flex w-full bg-white border-gray-200 z-99999 dark:border-gray-800 dark:bg-gray-900 lg:border-b">
       <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
-        <div className="flex items-center justify-between w-full gap-2 px-3 py-2.5 border-b border-gray-200 dark:border-gray-800 sm:gap-3 sm:py-3 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
+        <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
+          {/* Sidebar toggle */}
           <button
-            className="flex items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-99999 dark:border-gray-800 dark:text-gray-400 lg:h-11 lg:w-11 lg:border touch-manipulation"
+            className="items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-99999 dark:border-gray-800 lg:flex dark:text-gray-400 lg:h-11 lg:w-11 lg:border touch-manipulation"
             onClick={handleToggle}
             aria-label="Toggle Sidebar"
           >
@@ -84,40 +269,41 @@ const AppHeader: React.FC = () => {
                 />
               </svg>
             )}
-            {/* Cross Icon */}
           </button>
 
-          <Link to="/" className="lg:hidden max-w-[120px] sm:max-w-[150px]">
+          {/* Logo mobile */}
+          <Link to="/" className="lg:hidden">
             <img
-              className="dark:hidden w-full h-auto"
+              className="dark:hidden max-h-8 max-w-[120px] object-contain"
               src={getLogoUrl(false)}
               alt="Logo"
               onError={(e) => {
                 const img = e.target as HTMLImageElement;
                 if (!img.dataset.fallbackUsed) {
-                  img.dataset.fallbackUsed = 'true';
-                  img.src = '/images/logo/logo.svg';
+                  img.dataset.fallbackUsed = "true";
+                  img.src = "/images/logo/logo.svg";
                 } else {
-                  img.style.display = 'none';
+                  img.style.display = "none";
                 }
               }}
             />
             <img
-              className="hidden dark:block w-full h-auto"
+              className="hidden dark:block max-h-8 max-w-[120px] object-contain"
               src={getLogoUrl(true)}
               alt="Logo"
               onError={(e) => {
                 const img = e.target as HTMLImageElement;
                 if (!img.dataset.fallbackUsed) {
-                  img.dataset.fallbackUsed = 'true';
-                  img.src = '/images/logo/logo-dark.svg';
+                  img.dataset.fallbackUsed = "true";
+                  img.src = "/images/logo/logo-dark.svg";
                 } else {
-                  img.style.display = 'none';
+                  img.style.display = "none";
                 }
               }}
             />
           </Link>
 
+          {/* App menu (mobile) */}
           <button
             onClick={toggleApplicationMenu}
             className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg z-99999 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden touch-manipulation"
@@ -138,52 +324,129 @@ const AppHeader: React.FC = () => {
             </svg>
           </button>
 
+          {/* Search (desktop) */}
           <div className="hidden lg:block">
-            <form>
-              <div className="relative">
-                <span className="absolute -translate-y-1/2 pointer-events-none left-4 top-1/2">
-                  <svg
-                    className="fill-gray-500 dark:fill-gray-400"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M3.04175 9.37363C3.04175 5.87693 5.87711 3.04199 9.37508 3.04199C12.8731 3.04199 15.7084 5.87693 15.7084 9.37363C15.7084 12.8703 12.8731 15.7053 9.37508 15.7053C5.87711 15.7053 3.04175 12.8703 3.04175 9.37363ZM9.37508 1.54199C5.04902 1.54199 1.54175 5.04817 1.54175 9.37363C1.54175 13.6991 5.04902 17.2053 9.37508 17.2053C11.2674 17.2053 13.003 16.5344 14.357 15.4176L17.177 18.238C17.4699 18.5309 17.9448 18.5309 18.2377 18.238C18.5306 17.9451 18.5306 17.4703 18.2377 17.1774L15.418 14.3573C16.5365 13.0033 17.2084 11.2669 17.2084 9.37363C17.2084 5.04817 13.7011 1.54199 9.37508 1.54199Z"
-                      fill=""
-                    />
-                  </svg>
-                </span>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder="Search or type command..."
-                  className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-200 bg-transparent py-2.5 pl-12 pr-14 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 xl:w-[430px]"
-                />
+            <div className="relative">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (filteredCommands[selectedIndex]) {
+                    handleSelectCommand(filteredCommands[selectedIndex]);
+                  }
+                }}
+              >
+                <div className="relative">
+                  <span className="absolute -translate-y-1/2 pointer-events-none left-4 top-1/2">
+                    <svg
+                      className="fill-gray-500 dark:fill-gray-400"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        clipRule="evenodd"
+                        d="M3.04175 9.37363C3.04175 5.87693 5.87711 3.04199 9.37508 3.04199C12.8731 3.04199 15.7084 5.87693 15.7084 9.37363C15.7084 12.8703 12.8731 15.7053 9.37508 15.7053C5.87711 15.7053 3.04175 12.8703 3.04175 9.37363ZM9.37508 1.54199C5.04902 1.54199 1.54175 5.04817 1.54175 9.37363C1.54175 13.6991 5.04902 17.2053 9.37508 17.2053C11.2674 17.2053 13.003 16.5344 14.357 15.4176L17.177 18.238C17.4699 18.5309 17.9448 18.5309 18.2377 18.238C18.5306 17.9451 18.5306 17.4703 18.2377 17.1774L15.418 14.3573C16.5365 13.0033 17.2084 11.2669 17.2084 9.37363C17.2084 5.04817 13.7011 1.54199 9.37508 1.54199Z"
+                        fill=""
+                      />
+                    </svg>
+                  </span>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    placeholder="Search or type command..."
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onKeyDown={handleInputKeyDown}
+                    onFocus={() => {
+                      if (searchQuery.trim().length > 0) {
+                        setIsSearchOpen(true);
+                      }
+                    }}
+                    className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-200 bg-transparent py-2.5 pl-12 pr-14 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 xl:w-[430px]"
+                  />
 
-                <button className="absolute right-2.5 top-1/2 inline-flex -translate-y-1/2 items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 px-[7px] py-[4.5px] text-xs -tracking-[0.2px] text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400">
-                  <span> ⌘ </span>
-                  <span> K </span>
-                </button>
-              </div>
-            </form>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      inputRef.current?.focus();
+                      if (searchQuery.trim().length > 0) {
+                        setIsSearchOpen(true);
+                      }
+                    }}
+                    className="absolute right-2.5 top-1/2 inline-flex -translate-y-1/2 items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 px-[7px] py-[4.5px] text-xs -tracking-[0.2px] text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400"
+                  >
+                    <span> ⌘ </span>
+                    <span> K </span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Search results */}
+              {isSearchOpen && filteredCommands.length > 0 && (
+                <div
+                  ref={searchResultsRef}
+                  className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto"
+                >
+                  <div className="p-2">
+                    {filteredCommands.map((command, index) => (
+                      <button
+                        key={`${command.path}-${index}`}
+                        type="button"
+                        onClick={() => handleSelectCommand(command)}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                          index === selectedIndex
+                            ? "bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium">{command.name}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                              {command.category}
+                            </div>
+                          </div>
+                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded">
+                            Enter
+                          </kbd>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* No results */}
+              {isSearchOpen &&
+                searchQuery.trim().length > 0 &&
+                filteredCommands.length === 0 && (
+                  <div
+                    ref={searchResultsRef}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg z-50 p-4"
+                  >
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                      Tidak ada hasil untuk &quot;{searchQuery}&quot;
+                    </p>
+                  </div>
+                )}
+            </div>
           </div>
         </div>
+
+        {/* Right: impersonate, role badge, theme toggle, user menu */}
         <div
           className={`${
             isApplicationMenuOpen ? "flex" : "hidden"
-          } items-center justify-between w-full gap-2 sm:gap-3 px-3 py-3 sm:px-4 sm:py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
+          } items-center justify-between w-full gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
         >
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-            {/* <!-- Impersonate Indicator --> */}
+          <div className="flex items-center gap-2 2xsm:gap-3">
             {isImpersonating && impersonatedBy && (
-              <div className="flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 bg-yellow-100 border border-yellow-300 rounded-lg dark:bg-yellow-900/30 dark:border-yellow-800">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-100 border border-yellow-300 rounded-lg dark:bg-yellow-900/30 dark:border-yellow-800">
                 <svg
-                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                  className="w-4 h-4 text-yellow-600 dark:text-yellow-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -195,16 +458,16 @@ const AppHeader: React.FC = () => {
                     d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                   />
                 </svg>
-                <span className="text-[10px] sm:text-xs font-medium text-yellow-800 dark:text-yellow-300 whitespace-nowrap">
+                <span className="text-xs font-medium text-yellow-800 dark:text-yellow-300">
                   Impersonating
                 </span>
               </div>
             )}
-            {/* <!-- Role Badge --> */}
+
             {user?.roles && user.roles.length > 0 && (
-              <div className="flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 bg-brand-100 border border-brand-300 rounded-lg dark:bg-brand-900/30 dark:border-brand-800 max-w-[140px] sm:max-w-none">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-100 border border-brand-300 rounded-lg dark:bg-brand-900/30 dark:border-brand-800 max-w-[180px] sm:max-w-none">
                 <svg
-                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-600 dark:text-brand-400 flex-shrink-0"
+                  className="w-4 h-4 text-brand-600 dark:text-brand-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -216,18 +479,15 @@ const AppHeader: React.FC = () => {
                     d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                   />
                 </svg>
-                <span className="text-[10px] sm:text-xs font-medium text-brand-800 dark:text-brand-300 truncate">
-                  {user.roles.map(role => role.name).join(', ')}
+                <span className="text-xs font-medium text-brand-800 dark:text-brand-300 truncate">
+                  {user.roles.map((role) => role.name).join(", ")}
                 </span>
               </div>
             )}
-            {/* <!-- Dark Mode Toggler --> */}
+
             <ThemeToggleButton />
-            {/* <!-- Dark Mode Toggler --> */}
             {/* <NotificationDropdown /> */}
-            {/* <!-- Notification Menu Area --> */}
           </div>
-          {/* <!-- User Area --> */}
           <UserDropdown />
         </div>
       </div>

@@ -2,10 +2,11 @@
 Authentication endpoints.
 """
 from datetime import timedelta
+from secrets import token_urlsafe
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import get_db, get_current_active_user
 from app.core.config import settings
 from app.core.security import verify_password, create_access_token, get_password_hash
 from app.core.exceptions import UnauthorizedException, BadRequestException
@@ -40,13 +41,9 @@ def login(
     if user.deleted_at is not None:
         raise UnauthorizedException("User account is inactive")
     
-    # Calculate token expiration based on remember_me
-    if login_data.remember_me:
-        access_token_expires = timedelta(days=30)  # 30 days for remember me
-        max_age = 30 * 24 * 60 * 60  # 30 days in seconds
-    else:
-        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60  # Convert to seconds
+    # Access token selalu short-lived; remember_me dikendalikan via remember_token cookie
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60  # Convert to seconds for access_token cookie
     
     access_token = create_access_token(
         data={"sub": user.username, "user_id": user.id},
@@ -61,8 +58,32 @@ def login(
         httponly=True,
         samesite="lax",
         secure=False,  # Set to True in production with HTTPS
-        path="/"
+        path="/",
     )
+
+    # Handle remember_me using opaque remember_token stored in DB and cookie
+    if login_data.remember_me:
+        remember_token = token_urlsafe(64)
+        user.remember_token = remember_token
+        db.add(user)
+        db.commit()
+
+        response.set_cookie(
+            key="remember_token",
+            value=remember_token,
+            max_age=30 * 24 * 60 * 60,  # 30 days
+            httponly=True,
+            samesite="lax",
+            secure=False,  # Set True on HTTPS
+            path="/",
+        )
+    else:
+        # Clear previous remember token if any
+        if user.remember_token:
+            user.remember_token = None
+            db.add(user)
+            db.commit()
+        response.delete_cookie("remember_token", path="/")
     
     return WebResponse(
         status="success",
@@ -108,4 +129,24 @@ def register(
         message="User registered successfully",
         data=UserRead.model_validate(db_user)
     )
+
+
+@router.post("/logout", response_model=WebResponse[None])
+def logout(
+    response: Response,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Logout endpoint.
+    Clears access_token and remember_token cookies and resets remember_token in DB.
+    """
+    current_user.remember_token = None
+    db.add(current_user)
+    db.commit()
+
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("remember_token", path="/")
+
+    return WebResponse(status="success", message="Logged out successfully")
 

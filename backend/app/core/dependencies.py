@@ -48,30 +48,38 @@ def get_db() -> Generator:
 def get_current_user(
     request: Request,
     db: Session = Depends(get_db),
-    token: Optional[str] = Depends(get_token_from_cookie_or_header)
+    token: Optional[str] = Depends(get_token_from_cookie_or_header),
 ) -> User:
     """
-    Get current authenticated user from JWT token.
-    Reads token from cookie (preferred) or Authorization header (fallback).
+    Get current authenticated user.
+
+    Preferred order:
+    1. Validate JWT access token from cookie / Authorization header.
+    2. If token missing/invalid, fall back to remember_token cookie (if present).
     """
     credentials_exception = UnauthorizedException("Could not validate credentials")
-    
-    if not token:
-        raise credentials_exception
-    
-    payload = decode_access_token(token)
-    if payload is None:
-        raise credentials_exception
-    
-    username: str = payload.get("sub")
-    if username is None:
-        raise credentials_exception
-    
-    user = db.query(User).filter(User.username == username).first()
-    if user is None:
-        raise credentials_exception
-    
-    return user
+
+    # 1. Try JWT access token first
+    if token:
+        payload = decode_access_token(token)
+        if payload is not None:
+            username: str = payload.get("sub")
+            if username is None:
+                raise credentials_exception
+
+            user = db.query(User).filter(User.username == username).first()
+            if user is None:
+                raise credentials_exception
+            return user
+
+    # 2. Fallback: remember_token cookie (for long-lived sessions)
+    remember_token = request.cookies.get("remember_token")
+    if remember_token:
+        user = db.query(User).filter(User.remember_token == remember_token).first()
+        if user is not None:
+            return user
+
+    raise credentials_exception
 
 
 def get_current_active_user(

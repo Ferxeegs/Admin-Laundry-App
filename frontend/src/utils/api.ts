@@ -364,15 +364,19 @@ export const mediaAPI = {
 
 /**
  * Helper untuk menghapus token (logout)
- * Token sekarang di HttpOnly cookie, tidak bisa dihapus dari JavaScript
- * Cookie akan otomatis expire atau bisa dihapus oleh backend jika ada endpoint logout
- * Untuk sekarang, cukup clear state di frontend
+ * Token sekarang di HttpOnly cookie, jadi perlu request ke backend (/auth/logout)
  */
 export const removeAuthToken = async () => {
-  // Token disimpan di HttpOnly cookie, tidak bisa diakses/dihapus dari JavaScript
-  // Cookie akan otomatis expire atau bisa dihapus oleh backend jika ada endpoint logout
-  // Jika backend menambahkan endpoint logout, bisa dipanggil di sini
-  console.log('Auth token will be cleared when cookie expires or user logs out');
+  try {
+    await fetch(`${API_BASE_URL}/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch (err) {
+    // Jangan blokir logout frontend jika request gagal,
+    // cookie akan expire sendiri sesuai masa berlaku.
+    console.warn('Failed to call /auth/logout, session will expire by itself.', err);
+  }
 };
 
 /**

@@ -453,7 +453,7 @@ export default function Reports() {
   return (
     <>
       <PageMeta
-        title="Laporan Operasional | Laundry Pondok"
+        title="Laporan Operasional"
         description="Laporan operasional sistem laundry pondok"
       />
       <PageBreadcrumb pageTitle="Laporan Operasional" />

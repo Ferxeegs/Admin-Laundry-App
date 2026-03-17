@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import { settingAPI, mediaAPI, getBaseUrl } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import ComponentCard from "../../components/common/ComponentCard";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
@@ -32,10 +33,10 @@ interface SettingsData {
 export default function SettingsForm() {
   const { hasPermission } = useAuth();
   const canUpdateSettings = hasPermission("update_setting");
+  const { success: showSuccessToast, error: showErrorToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<SettingsData>({
     general: {},
     appearance: {},
@@ -121,8 +122,10 @@ export default function SettingsForm() {
         }));
       }
     } catch (err: any) {
-      setError("Gagal mengambil settings. Silakan coba lagi.");
+      const message = "Gagal mengambil settings. Silakan coba lagi.";
+      setError(message);
       console.error("Fetch settings error:", err);
+      showErrorToast(message);
     } finally {
       setIsLoading(false);
     }
@@ -187,10 +190,12 @@ export default function SettingsForm() {
         },
       }));
       
-      setSuccessMessage("Site logo berhasil dihapus!");
+      showSuccessToast("Site logo berhasil dihapus!");
     } catch (err: any) {
-      setError("Gagal menghapus logo. Silakan coba lagi.");
+      const message = "Gagal menghapus logo. Silakan coba lagi.";
+      setError(message);
       console.error("Delete logo error:", err);
+      showErrorToast(message);
     }
   };
 
@@ -215,10 +220,12 @@ export default function SettingsForm() {
         },
       }));
       
-      setSuccessMessage("Site logo dark berhasil dihapus!");
+      showSuccessToast("Site logo dark berhasil dihapus!");
     } catch (err: any) {
-      setError("Gagal menghapus logo dark. Silakan coba lagi.");
+      const message = "Gagal menghapus logo dark. Silakan coba lagi.";
+      setError(message);
       console.error("Delete logo dark error:", err);
+      showErrorToast(message);
     }
   };
 
@@ -261,10 +268,12 @@ export default function SettingsForm() {
           brand_logo_square: "",
         },
       }));
-      setSuccessMessage("Brand logo square berhasil dihapus!");
+      showSuccessToast("Brand logo square berhasil dihapus!");
     } catch (err: any) {
-      setError("Gagal menghapus brand logo square. Silakan coba lagi.");
+      const message = "Gagal menghapus brand logo square. Silakan coba lagi.";
+      setError(message);
       console.error("Delete brand logo square error:", err);
+      showErrorToast(message);
     }
   };
 
@@ -283,10 +292,12 @@ export default function SettingsForm() {
           site_favicon: "",
         },
       }));
-      setSuccessMessage("Site favicon berhasil dihapus!");
+      showSuccessToast("Site favicon berhasil dihapus!");
     } catch (err: any) {
-      setError("Gagal menghapus favicon. Silakan coba lagi.");
+      const message = "Gagal menghapus favicon. Silakan coba lagi.";
+      setError(message);
       console.error("Delete favicon error:", err);
+      showErrorToast(message);
     }
   };
 
@@ -294,7 +305,6 @@ export default function SettingsForm() {
     e.preventDefault();
     setIsSaving(true);
     setError(null);
-    setSuccessMessage(null);
 
     try {
       const settingsToUpdate: Array<{
@@ -457,7 +467,7 @@ export default function SettingsForm() {
       const response = await settingAPI.updateMultiple(settingsToUpdate);
 
       if (response.success) {
-        setSuccessMessage("Settings berhasil disimpan!");
+        showSuccessToast("Settings berhasil disimpan!");
         // Clear file inputs
         setLogoFile(null);
         setLogoDarkFile(null);
@@ -466,11 +476,15 @@ export default function SettingsForm() {
         // Refresh settings
         await fetchSettings();
       } else {
-        setError(response.message || "Gagal menyimpan settings");
+        const message = response.message || "Gagal menyimpan settings";
+        setError(message);
+        showErrorToast(message);
       }
     } catch (err: any) {
-      setError("Terjadi kesalahan. Silakan coba lagi.");
+      const message = "Terjadi kesalahan. Silakan coba lagi.";
+      setError(message);
       console.error("Save settings error:", err);
+      showErrorToast(message);
     } finally {
       setIsSaving(false);
     }
@@ -491,17 +505,6 @@ export default function SettingsForm() {
       {/* General Settings */}
       <ComponentCard title="General Settings" className="mb-6">
         <div className="space-y-6">
-          {error && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
-              {error}
-            </div>
-          )}
-          {successMessage && (
-            <div className="p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
-              {successMessage}
-            </div>
-          )}
-
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
               <Label>
