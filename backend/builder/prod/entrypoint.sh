@@ -1,16 +1,24 @@
 #!/bin/bash
 set -e
 
-# Menunggu database (Sangat penting di lingkungan cloud/VPS)
+# 1. Tunggu database siap
+echo "Menunggu database..."
 until nc -z db 5432; do
-  echo "Menunggu Database Produksi..."
-  sleep 2
+  sleep 1
 done
 
-echo "Database Produksi Terkoneksi!"
+# 2. Jalankan Migrasi (Membuat tabel)
+echo "Menjalankan migrasi database..."
+# Jika pakai Alembic:
+alembic upgrade head
+# Jika tanpa Alembic (hanya untuk awal):
+# python -c "from app.db.base import Base; from app.db.session import engine; Base.metadata.create_all(bind=engine)"
 
-# Di Prod, sangat disarankan menjalankan migrasi otomatis
-# python -m alembic upgrade head
+# 3. Jalankan Seeder
+echo "Menjalankan seeder..."
+export PYTHONPATH=$PYTHONPATH:/app
+python scripts/init_db.py
 
-# Menjalankan aplikasi
+# 4. Jalankan aplikasi utama
+echo "Memulai FastAPI..."
 exec "$@"
