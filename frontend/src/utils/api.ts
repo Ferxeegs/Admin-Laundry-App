@@ -2349,4 +2349,16 @@ export const reportsAPI = {
       method: "GET",
     });
   },
+
+  /**
+   * Get order counts by status for all orders.
+   * Exclude PICKED_UP on frontend to show "order dalam proses".
+   */
+  getOrdersByStatus: async () => {
+    return apiRequest<{
+      by_status: Array<{ status: string; count: number }>;
+    }>("/reports/orders-by-status", {
+      method: "GET",
+    });
+  },
 };

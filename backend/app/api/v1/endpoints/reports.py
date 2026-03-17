@@ -258,3 +258,33 @@ def get_operational_report(
             status_code=500,
             detail=f"Error generating report: {str(e)}"
         )
+
+
+@router.get("/orders-by-status", response_model=WebResponse[dict])
+def get_orders_by_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Get order counts grouped by current_status for all orders.
+    Returns e.g. { "by_status": [{ "status": "RECEIVED", "count": 2 }, ...] }.
+    Frontend typically excludes PICKED_UP to show "order dalam proses".
+    """
+    try:
+        rows = (
+            db.query(Order.current_status, func.count(Order.id).label("count"))
+            .group_by(Order.current_status)
+            .all()
+        )
+
+        by_status = [{"status": str(row.current_status.value), "count": row.count} for row in rows]
+
+        return WebResponse(
+            status="success",
+            data={"by_status": by_status},
+        )
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error generating orders-by-status report: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
