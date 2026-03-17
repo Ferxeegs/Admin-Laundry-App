@@ -11,7 +11,7 @@ import { useSettings } from "../../context/SettingsContext";
 export default function SignInForm() {
   const location = useLocation();
   const { fetchUser } = useAuth();
-  const { settings, getBrandLogoSquareUrl } = useSettings();
+  const { settings, getLogoUrl } = useSettings();
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -120,9 +120,14 @@ export default function SignInForm() {
       <div className="flex flex-col items-center w-full pt-3 pb-1 text-center sm:hidden">
         <Link to="/" className="inline-flex flex-col items-center gap-1.5">
           <img
-            src={getBrandLogoSquareUrl()}
-            alt="Laundry Pondok"
-            className="h-9 w-9 rounded-xl bg-white shadow-theme-xs object-contain dark:bg-gray-900"
+            src={getLogoUrl(false)}
+            alt={settings?.general?.site_name || "Laundry Pondok"}
+            className="h-11 w-auto max-w-[180px] object-contain dark:hidden"
+          />
+          <img
+            src={getLogoUrl(true)}
+            alt={settings?.general?.site_name || "Laundry Pondok"}
+            className="hidden h-11 w-auto max-w-[180px] object-contain dark:block"
           />
           <span className="mt-1 text-sm font-semibold text-gray-800 dark:text-white/90">
             {settings?.general?.site_name || "Laundry Pondok App"}

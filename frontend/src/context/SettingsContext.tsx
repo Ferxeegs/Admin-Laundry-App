@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { settingAPI, getBaseUrl } from '../utils/api';
-import { useAuth } from './AuthContext';
 
 interface SettingsData {
   general: {
@@ -47,7 +46,6 @@ interface SettingsProviderProps {
 export const SettingsProvider = ({ children }: SettingsProviderProps) => {
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const fetchSettings = async () => {
     try {
@@ -82,15 +80,9 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
   };
 
   useEffect(() => {
-    // Hanya fetch settings setelah user terautentikasi.
-    // Ini mencegah error 401 berulang di halaman signin.
-    if (!authLoading && isAuthenticated) {
-      fetchSettings();
-    } else if (!authLoading && !isAuthenticated) {
-      // Jika belum login, jangan loading-block UI
-      setIsLoading(false);
-    }
-  }, [authLoading, isAuthenticated]);
+    // Fetch settings sekali di awal, tidak tergantung auth
+    fetchSettings();
+  }, []);
 
   const getLogoUrl = (dark = false): string => {
     if (!settings) {

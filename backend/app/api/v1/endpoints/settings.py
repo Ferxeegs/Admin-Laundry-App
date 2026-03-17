@@ -21,7 +21,6 @@ router = APIRouter()
 @router.get("/", response_model=WebResponse[list[SettingRead]])
 def get_all_settings(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
 ):
     """
     Get all settings.
@@ -38,7 +37,6 @@ def get_all_settings(
 def get_settings_by_group(
     group_name: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
 ):
     """
     Get all settings in a group as a dictionary.
@@ -61,7 +59,6 @@ def get_setting(
     group_name: str,
     setting_name: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
 ):
     """
     Get a single setting by group and name.
