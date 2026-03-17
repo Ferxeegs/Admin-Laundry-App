@@ -1852,7 +1852,8 @@ export const studentAPI = {
     if (params?.is_active !== undefined) queryParams.append('is_active', params.is_active.toString());
 
     const queryString = queryParams.toString();
-    const endpoint = `/students${queryString ? `?${queryString}` : ''}`;
+    // Backend route didefinisikan di path "/" dengan prefix "/students" -> butuh trailing slash
+    const endpoint = `/students/${queryString ? `?${queryString}` : ''}`;
 
     return apiRequest<{
       students: Array<{
@@ -2055,7 +2056,8 @@ export const orderAPI = {
     if (params?.student_id) queryParams.append("student_id", params.student_id);
 
     const queryString = queryParams.toString();
-    const endpoint = `/orders${queryString ? `?${queryString}` : ""}`;
+    // Backend route didefinisikan di path "/" dengan prefix "/orders" -> butuh trailing slash
+    const endpoint = `/orders/${queryString ? `?${queryString}` : ""}`;
 
     return apiRequest<{
       orders: Array<{
