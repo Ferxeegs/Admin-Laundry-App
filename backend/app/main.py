@@ -44,7 +44,7 @@ app = FastAPI(
 # --- FIX MIXED CONTENT ---
 # Middleware ini wajib ada jika menggunakan Nginx Global Proxy agar 
 # FastAPI mengenali header X-Forwarded-Proto (HTTPS)
-app.add_middleware(ProxyHeadersMiddleware, trusted_proxies="*")
+# app.add_middleware(ProxyHeadersMiddleware, trusted_proxies="*")
 
 # Setup CORS
 app.add_middleware(
