@@ -464,7 +464,8 @@ export const userAPI = {
     if (params?.search) queryParams.append('search', params.search);
 
     const queryString = queryParams.toString();
-    const endpoint = `/users${queryString ? `?${queryString}` : ''}`;
+    // Backend route didefinisikan di "/" dengan prefix "/users" -> butuh trailing slash
+    const endpoint = `/users/${queryString ? `?${queryString}` : ''}`;
 
     return apiRequest<{
       users: Array<{
@@ -845,7 +846,8 @@ export const roleAPI = {
     if (params?.search) queryParams.append('search', params.search);
 
     const queryString = queryParams.toString();
-    const endpoint = `/roles${queryString ? `?${queryString}` : ''}`;
+    // Backend route didefinisikan di "/" dengan prefix "/roles" -> butuh trailing slash
+    const endpoint = `/roles/${queryString ? `?${queryString}` : ''}`;
 
     return apiRequest<{
       roles: Array<{
