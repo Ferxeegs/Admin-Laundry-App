@@ -12,6 +12,7 @@ import {
   SettingsIcon,
   UserIcon,
   QrCodeIcon,
+  PieChartIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
@@ -59,6 +60,11 @@ const navItems: NavItem[] = [
     name: "Scan QR",
     path: "/orders/scan",
     requiredPermission: ["view_order"],
+  },
+  {
+    icon: <PieChartIcon />,
+    name: "Laporan",
+    path: "/reports",
   },
   {
     icon: <LockIcon />,

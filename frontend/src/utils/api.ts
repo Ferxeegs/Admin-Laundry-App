@@ -2308,3 +2308,45 @@ export const orderAPI = {
     });
   },
 };
+
+/**
+ * Reports API functions
+ */
+export const reportsAPI = {
+  /**
+   * Get operational report with transaction counts and revenue summary
+   */
+  getOperationalReport: async (params?: {
+    period?: "daily" | "weekly" | "monthly";
+    start_date?: string;
+    end_date?: string;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.period) queryParams.append("period", params.period);
+    if (params?.start_date) queryParams.append("start_date", params.start_date);
+    if (params?.end_date) queryParams.append("end_date", params.end_date);
+
+    const queryString = queryParams.toString();
+    const endpoint = `/reports/operational${queryString ? `?${queryString}` : ""}`;
+
+    return apiRequest<{
+      period: string;
+      start_date: string;
+      end_date: string;
+      summary: {
+        total_transactions: number;
+        free_transactions: number;
+        paid_transactions: number;
+        total_revenue: number;
+      };
+      breakdown: Array<{
+        period: string;
+        label: string;
+        count: number;
+        revenue: number;
+      }>;
+    }>(endpoint, {
+      method: "GET",
+    });
+  },
+};

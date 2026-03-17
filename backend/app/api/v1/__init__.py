@@ -10,6 +10,7 @@ from app.api.v1.endpoints import (
     students,
     media,
     orders,
+    reports,
 )
 
 api_router = APIRouter()
@@ -22,3 +23,4 @@ api_router.include_router(settings.router, prefix="/settings", tags=["Settings"]
 api_router.include_router(students.router, prefix="/students", tags=["Students"])
 api_router.include_router(media.router, prefix="/media", tags=["Media"])
 api_router.include_router(orders.router, prefix="/orders", tags=["Orders"])
+api_router.include_router(reports.router, prefix="/reports", tags=["Reports"])

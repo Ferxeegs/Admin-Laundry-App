@@ -30,6 +30,7 @@ import CreateOrder from "./pages/Orders/CreateOrder";
 import EditOrder from "./pages/Orders/EditOrder";
 import ViewOrder from "./pages/Orders/ViewOrder";
 import ScanQR from "./pages/Orders/ScanQR";
+import Reports from "./pages/Reports/Reports";
 
 import Settings from "./pages/Settings/Settings";
 
@@ -177,6 +178,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <EditOrder />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute>
+                  <Reports />
                 </ProtectedRoute>
               }
             />
