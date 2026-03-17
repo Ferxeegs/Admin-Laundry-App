@@ -7,8 +7,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from pathlib import Path
-
-# Import middleware untuk menangani Proxy (Fix Mixed Content)
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware # Import ini
 
 from app.core.config import settings
 from app.core.logging_config import root_logger
@@ -31,6 +30,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"Shutting down {settings.PROJECT_NAME}")
 
 # Inisialisasi FastAPI
+# Tip: redirect_slashes=False mencegah redirect otomatis yang sering bikin error 307 di prod
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
@@ -38,13 +38,25 @@ app = FastAPI(
     docs_url=f"{settings.API_V1_STR}/docs" if settings.DEBUG else None,
     redoc_url=f"{settings.API_V1_STR}/redoc" if settings.DEBUG else None,
     openapi_url=f"{settings.API_V1_STR}/openapi.json" if settings.DEBUG else None,
-    lifespan=lifespan
+    lifespan=lifespan,
+    redirect_slashes=False 
 )
 
-# --- FIX MIXED CONTENT ---
-# Middleware ini wajib ada jika menggunakan Nginx Global Proxy agar 
-# FastAPI mengenali header X-Forwarded-Proto (HTTPS)
-# app.add_middleware(ProxyHeadersMiddleware, trusted_proxies="*")
+# --- FIX MIXED CONTENT & REDIRECTS ---
+
+# 1. Middleware untuk membaca header X-Forwarded-For & X-Forwarded-Proto
+app.add_middleware(ProxyHeadersMiddleware, trusted_proxies="*")
+
+# 2. Custom Middleware untuk memaksa skema HTTPS (Solusi ampuh untuk Cloudflare)
+@app.middleware("http")
+async def force_https_middleware(request: Request, call_next):
+    # Jika request datang lewat HTTPS (dideteksi dari header proxy), 
+    # paksa FastAPI menganggap dirinya HTTPS
+    if request.headers.get("x-forwarded-proto") == "https":
+        request.scope["scheme"] = "https"
+    
+    response = await call_next(request)
+    return response
 
 # Setup CORS
 app.add_middleware(
