@@ -492,30 +492,39 @@ export default function ScanQR() {
       <PageBreadcrumb pageTitle="Scan QR Code" />
       <PageMeta title="Scan QR Code" description="Scan QR code untuk verifikasi siswa" />
 
-      {/* Header - Mobile Optimized */}
-      {/* <div className="flex items-center gap-2 sm:gap-3 pb-2 sm:pb-0">
-        <Link
-          to="/orders"
-          className="inline-flex items-center justify-center w-10 h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
-        >
-          <AngleLeftIcon className="w-5 h-5" />
-        </Link>
-        <div className="min-w-0 flex-1">
-          <h2 className="text-xl sm:text-xl lg:text-2xl font-semibold text-gray-800 dark:text-white truncate">
-            Scan QR Code
-          </h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
-            Scan QR code siswa untuk verifikasi dan membuat order
-          </p>
-        </div>
-      </div> */}
+      {/* Keterangan halaman */}
+      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/40 sm:p-5">
+        <h2 className="text-sm font-semibold text-gray-800 dark:text-white/90 sm:text-base">
+          Tentang Scan QR Code
+        </h2>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+          Halaman ini digunakan untuk memindai QR code siswa saat penyerahan atau pengambilan laundry.
+          Setelah QR code terdeteksi, sistem akan menampilkan data siswa, sisa kuota gratis bulanan,
+          dan order aktif (jika ada). Anda dapat membuat order baru atau mengubah status order
+          (Diterima → Cuci & Kering → Setrika → Selesai → Diambil).
+        </p>
+        <ul className="mt-3 space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
+          <li className="flex items-start gap-2">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />
+            <span>Pastikan izin kamera sudah diberikan agar scanner dapat digunakan.</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />
+            <span>Arahkan kamera ke QR code siswa dengan jarak dan pencahayaan yang cukup.</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />
+            <span>Gunakan tombol &quot;Scan Lagi&quot; untuk memindai siswa lain setelah selesai.</span>
+          </li>
+        </ul>
+      </div>
 
       {/* Main Content */}
       <div className="space-y-4 sm:space-y-5">
         {/* Scanner Section */}
         {!scannedStudent && (
           <ComponentCard title="Scanner QR Code">
-            <div className="space-y-4">
+            <div className="space-y-5">
               {error && (
                 <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
                   {error}
@@ -523,20 +532,26 @@ export default function ScanQR() {
               )}
 
               {!isScanning && !error && (
-                <div className="text-center py-8">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Klik tombol di bawah untuk memulai scanner
-                  </p>
-                  <button
-                    onClick={startScanning}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 transition-colors touch-manipulation"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2.01M19 8h2.01M12 12h.01M12 8h.01M12 16h.01" />
-                    </svg>
-                    Mulai Scan
-                  </button>
-                </div>
+                <>
+                  <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800/50">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      Klik tombol <strong>Mulai Scan</strong> di bawah untuk mengaktifkan kamera.
+                      Setelah scanner terbuka, arahkan kamera ke QR code yang terdapat pada kartu atau
+                      dokumen siswa. Pemindaian akan berhenti otomatis ketika QR code berhasil terbaca.
+                    </p>
+                  </div>
+                  <div className="text-center py-4">
+                    <button
+                      onClick={startScanning}
+                      className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 transition-colors touch-manipulation"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2.01M19 8h2.01M12 12h.01M12 8h.01M12 16h.01" />
+                      </svg>
+                      Mulai Scan
+                    </button>
+                  </div>
+                </>
               )}
 
               {/* Fullscreen Scanner */}
