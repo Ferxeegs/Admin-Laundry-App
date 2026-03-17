@@ -1,5 +1,5 @@
 """
-Main FastAPI application.
+Main FastAPI application for Laundry Pondok.
 """
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +8,9 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+# Import middleware untuk menangani Proxy (Fix Mixed Content)
+from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
+
 from app.core.config import settings
 from app.core.logging_config import root_logger
 from app.core.exceptions import AppException
@@ -15,7 +18,6 @@ from app.api.v1 import api_router
 from app.middleware.logging_middleware import LoggingMiddleware
 
 logger = root_logger
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -29,8 +31,7 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info(f"Shutting down {settings.PROJECT_NAME}")
 
-
-# Create FastAPI app
+# Inisialisasi FastAPI
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
@@ -40,6 +41,11 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json" if settings.DEBUG else None,
     lifespan=lifespan
 )
+
+# --- FIX MIXED CONTENT ---
+# Middleware ini wajib ada jika menggunakan Nginx Global Proxy agar 
+# FastAPI mengenali header X-Forwarded-Proto (HTTPS)
+app.add_middleware(ProxyHeadersMiddleware, trusted_proxies="*")
 
 # Setup CORS
 app.add_middleware(
@@ -53,7 +59,7 @@ app.add_middleware(
 # Add logging middleware
 app.add_middleware(LoggingMiddleware)
 
-# Global exception handler
+# Global exception handler untuk AppException
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException):
     """Handle custom application exceptions."""
@@ -63,11 +69,11 @@ async def app_exception_handler(request: Request, exc: AppException):
         content={
             "status": "error",
             "message": exc.detail,
-            "error": exc.detail  # Also include error field for frontend compatibility
+            "error": exc.detail
         }
     )
 
-
+# Global exception handler untuk Error umum
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
     """Handle general exceptions."""
@@ -80,22 +86,18 @@ async def general_exception_handler(request: Request, exc: Exception):
         }
     )
 
-
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-# Mount static files for uploads
+# Mount static files untuk uploads
 upload_dir = Path(settings.UPLOAD_DIR)
-# Convert to absolute path if relative
 if not upload_dir.is_absolute():
-    # From: backend/app/main.py
-    # To: backend/
     backend_dir = Path(__file__).parent.parent
     upload_dir = backend_dir / upload_dir
+
 upload_dir.mkdir(parents=True, exist_ok=True)
 logger.info(f"Static files directory: {upload_dir} (absolute: {upload_dir.resolve()})")
 app.mount("/uploads", StaticFiles(directory=str(upload_dir)), name="uploads")
-
 
 @app.get("/", tags=["Health"])
 def health_check():
@@ -105,7 +107,6 @@ def health_check():
         "project": settings.PROJECT_NAME,
         "version": settings.PROJECT_VERSION
     }
-
 
 @app.get("/health", tags=["Health"])
 def health():
