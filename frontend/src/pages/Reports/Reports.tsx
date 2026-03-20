@@ -2,8 +2,6 @@ import { useEffect, useState, useRef } from "react";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
-import Chart from "react-apexcharts";
-import { ApexOptions } from "apexcharts";
 import { reportsAPI } from "../../utils/api";
 import { useToast } from "../../context/ToastContext";
 import { BoxIconLine, DollarLineIcon, PieChartIcon, CalenderIcon } from "../../icons";
@@ -11,7 +9,9 @@ import Button from "../../components/ui/button/Button";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.css";
 
-type PeriodType = "daily" | "weekly" | "monthly";
+import OperationalBreakdownChart, {
+  PeriodType,
+} from "../../components/charts/OperationalBreakdownChart";
 
 interface ReportData {
   period: string;
@@ -44,21 +44,34 @@ export default function Reports() {
   // Get default dates based on period
   const getDefaultDates = () => {
     const today = new Date();
-    let defaultStart: Date;
-    
+
     if (period === "daily") {
-      defaultStart = new Date(today);
+      // Last 7 days (including today)
+      const defaultStart = new Date(today);
+      defaultStart.setDate(today.getDate() - 6);
       defaultStart.setHours(0, 0, 0, 0);
-    } else if (period === "weekly") {
-      const daysSinceMonday = today.getDay() === 0 ? 6 : today.getDay() - 1;
-      defaultStart = new Date(today);
-      defaultStart.setDate(today.getDate() - daysSinceMonday);
-      defaultStart.setHours(0, 0, 0, 0);
-    } else {
-      defaultStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      return { defaultStart, defaultEnd: today };
     }
-    
-    return { defaultStart, today };
+
+    if (period === "weekly") {
+      // Last 8 weeks (aligned to Monday)
+      const weeksBack = 8;
+      const currentMonday = new Date(today);
+      const day = currentMonday.getDay(); // 0 = Sunday
+      const diffToMonday = day === 0 ? -6 : 1 - day;
+      currentMonday.setDate(currentMonday.getDate() + diffToMonday);
+      currentMonday.setHours(0, 0, 0, 0);
+
+      const defaultStart = new Date(currentMonday);
+      defaultStart.setDate(currentMonday.getDate() - (weeksBack - 1) * 7);
+      return { defaultStart, defaultEnd: today };
+    }
+
+    // Monthly: Last 6 months (from first day of month)
+    const monthsBack = 6;
+    const defaultStart = new Date(today.getFullYear(), today.getMonth() - (monthsBack - 1), 1);
+    defaultStart.setHours(0, 0, 0, 0);
+    return { defaultStart, defaultEnd: today };
   };
 
   // Reset date range when period changes
@@ -99,9 +112,9 @@ export default function Reports() {
       existingInstance.destroy();
     }
 
-    const { defaultStart, today } = getDefaultDates();
+    const { defaultStart, defaultEnd } = getDefaultDates();
     // Use custom dates if available, otherwise use defaults
-    const defaultDates = startDate && endDate ? [startDate, endDate] : [defaultStart, today];
+    const defaultDates = startDate && endDate ? [startDate, endDate] : [defaultStart, defaultEnd];
 
     const fp = flatpickr(datePickerRef.current, {
       mode: "range",
@@ -202,10 +215,12 @@ export default function Reports() {
         period,
       };
 
-      if (startDate && endDate) {
-        params.start_date = startDate;
-        params.end_date = endDate;
-      }
+      const { defaultStart, defaultEnd } = getDefaultDates();
+      const toYMD = (d: string | Date) => (typeof d === "string" ? d : d.toISOString().split("T")[0]);
+
+      // Always send a date range so breakdown contains multiple points.
+      params.start_date = toYMD(startDate ?? defaultStart);
+      params.end_date = toYMD(endDate ?? defaultEnd);
 
       const response = await reportsAPI.getOperationalReport(params);
 
@@ -231,8 +246,8 @@ export default function Reports() {
     if (datePickerRef.current) {
       const existingInstance = (datePickerRef.current as any)._flatpickr;
       if (existingInstance) {
-        const { defaultStart, today } = getDefaultDates();
-        existingInstance.setDate([defaultStart, today], false);
+        const { defaultStart, defaultEnd } = getDefaultDates();
+        existingInstance.setDate([defaultStart, defaultEnd], false);
       }
     }
   };
@@ -270,185 +285,7 @@ export default function Reports() {
     }
   };
 
-  // Chart options for transaction count
-  const transactionChartOptions: ApexOptions = {
-    colors: ["#465fff"],
-    chart: {
-      fontFamily: "Outfit, sans-serif",
-      type: "bar",
-      height: 300,
-      toolbar: {
-        show: false,
-      },
-    },
-    plotOptions: {
-      bar: {
-        horizontal: false,
-        columnWidth: period === "daily" ? "50%" : "60%",
-        borderRadius: 5,
-        borderRadiusApplication: "end",
-      },
-    },
-    dataLabels: {
-      enabled: true,
-      formatter: (val: number) => val.toString(),
-      style: {
-        fontSize: "12px",
-        fontWeight: 600,
-      },
-    },
-    stroke: {
-      show: true,
-      width: 2,
-      colors: ["transparent"],
-    },
-    xaxis: {
-      categories: reportData?.breakdown.map((item) => item.label) || [],
-      axisBorder: {
-        show: false,
-      },
-      axisTicks: {
-        show: false,
-      },
-      labels: {
-        style: {
-          fontSize: "12px",
-        },
-        rotate: period === "daily" ? -45 : 0,
-        rotateAlways: period === "daily",
-      },
-    },
-    yaxis: {
-      title: {
-        text: "Jumlah Transaksi",
-        style: {
-          fontSize: "12px",
-          fontWeight: 600,
-        },
-      },
-      labels: {
-        formatter: (val: number) => val.toString(),
-      },
-    },
-    grid: {
-      yaxis: {
-        lines: {
-          show: true,
-        },
-      },
-      xaxis: {
-        lines: {
-          show: false,
-        },
-      },
-    },
-    fill: {
-      opacity: 1,
-    },
-    tooltip: {
-      y: {
-        formatter: (val: number) => `${val} transaksi`,
-      },
-    },
-  };
-
-  // Chart options for revenue
-  const revenueChartOptions: ApexOptions = {
-    colors: ["#10b981"],
-    chart: {
-      fontFamily: "Outfit, sans-serif",
-      type: "line",
-      height: 300,
-      toolbar: {
-        show: false,
-      },
-    },
-    stroke: {
-      curve: "smooth",
-      width: 3,
-    },
-    fill: {
-      type: "gradient",
-      gradient: {
-        opacityFrom: 0.6,
-        opacityTo: 0.1,
-      },
-    },
-    markers: {
-      size: 5,
-      strokeColors: "#10b981",
-      strokeWidth: 2,
-      hover: {
-        size: 7,
-      },
-    },
-    xaxis: {
-      categories: reportData?.breakdown.map((item) => item.label) || [],
-      axisBorder: {
-        show: false,
-      },
-      axisTicks: {
-        show: false,
-      },
-      labels: {
-        style: {
-          fontSize: "12px",
-        },
-        rotate: period === "daily" ? -45 : 0,
-        rotateAlways: period === "daily",
-      },
-    },
-    yaxis: {
-      title: {
-        text: "Pendapatan (Rp)",
-        style: {
-          fontSize: "12px",
-          fontWeight: 600,
-        },
-      },
-      labels: {
-        formatter: (val: number) => {
-          if (val >= 1000000) {
-            return `Rp ${(val / 1000000).toFixed(1)}J`;
-          } else if (val >= 1000) {
-            return `Rp ${(val / 1000).toFixed(0)}K`;
-          }
-          return `Rp ${val.toFixed(0)}`;
-        },
-      },
-    },
-    grid: {
-      yaxis: {
-        lines: {
-          show: true,
-        },
-      },
-      xaxis: {
-        lines: {
-          show: false,
-        },
-      },
-    },
-    tooltip: {
-      y: {
-        formatter: (val: number) => formatCurrency(val),
-      },
-    },
-  };
-
-  const transactionSeries = [
-    {
-      name: "Jumlah Transaksi",
-      data: reportData?.breakdown.map((item) => item.count) || [],
-    },
-  ];
-
-  const revenueSeries = [
-    {
-      name: "Pendapatan",
-      data: reportData?.breakdown.map((item) => item.revenue) || [],
-    },
-  ];
+  // Chart config sudah dipindahkan ke komponen reusable `OperationalBreakdownChart`
 
   return (
     <>
@@ -678,10 +515,10 @@ export default function Reports() {
               >
                 <div className="max-w-full overflow-x-auto custom-scrollbar">
                   <div className="min-w-[400px]">
-                    <Chart
-                      options={transactionChartOptions}
-                      series={transactionSeries}
-                      type="bar"
+                    <OperationalBreakdownChart
+                      period={period}
+                      breakdown={reportData.breakdown}
+                      variant="transactions"
                       height={300}
                     />
                   </div>
@@ -695,10 +532,10 @@ export default function Reports() {
               >
                 <div className="max-w-full overflow-x-auto custom-scrollbar">
                   <div className="min-w-[400px]">
-                    <Chart
-                      options={revenueChartOptions}
-                      series={revenueSeries}
-                      type="line"
+                    <OperationalBreakdownChart
+                      period={period}
+                      breakdown={reportData.breakdown}
+                      variant="revenue"
                       height={300}
                     />
                   </div>
