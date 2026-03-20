@@ -86,11 +86,25 @@ export default function ScanQR() {
       scannerRef.current = html5QrCode;
 
       // Get available cameras
-      const devices = await Html5Qrcode.getCameras();
-      
+      const devices = (await Html5Qrcode.getCameras()) as Array<{ id: string; label?: string }>;
+
       if (devices && devices.length > 0) {
-        // Use the first available camera (usually the back camera on mobile)
-        const cameraId = devices[0].id;
+        // Prefer back/rear camera (on many devices, devices[0] is the front camera)
+        const backCamera =
+          devices.find((d) => {
+            const label = (d.label || "").toLowerCase();
+            return (
+              label.includes("back") ||
+              label.includes("rear") ||
+              label.includes("environment") ||
+              label.includes("utama") ||
+              label.includes("belakang")
+            );
+          }) ||
+          // If labels are empty (some browsers hide labels until permission), fallback to 2nd camera.
+          (devices.length > 1 ? devices[1] : devices[0]);
+
+        const cameraId = backCamera.id;
 
         // Calculate QR box size based on screen width (responsive)
         const qrboxSize = Math.min(250, window.innerWidth * 0.7);
@@ -492,32 +506,34 @@ export default function ScanQR() {
       <PageBreadcrumb pageTitle="Scan QR Code" />
       <PageMeta title="Scan QR Code" description="Scan QR code untuk verifikasi siswa" />
 
-      {/* Keterangan halaman */}
-      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/40 sm:p-5">
-        <h2 className="text-sm font-semibold text-gray-800 dark:text-white/90 sm:text-base">
-          Tentang Scan QR Code
-        </h2>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-          Halaman ini digunakan untuk memindai QR code siswa saat penyerahan atau pengambilan laundry.
-          Setelah QR code terdeteksi, sistem akan menampilkan data siswa, sisa kuota gratis bulanan,
-          dan order aktif (jika ada). Anda dapat membuat order baru atau mengubah status order
-          (Diterima → Cuci & Kering → Setrika → Selesai → Diambil).
-        </p>
-        <ul className="mt-3 space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
-          <li className="flex items-start gap-2">
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />
-            <span>Pastikan izin kamera sudah diberikan agar scanner dapat digunakan.</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />
-            <span>Arahkan kamera ke QR code siswa dengan jarak dan pencahayaan yang cukup.</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />
-            <span>Gunakan tombol &quot;Scan Lagi&quot; untuk memindai siswa lain setelah selesai.</span>
-          </li>
-        </ul>
-      </div>
+      {/* Keterangan halaman (hanya tampil saat belum scan) */}
+      {!scannedStudent && (
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/40 sm:p-5">
+          <h2 className="text-sm font-semibold text-gray-800 dark:text-white/90 sm:text-base">
+            Tentang Scan QR Code
+          </h2>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+            Halaman ini digunakan untuk memindai QR code siswa saat penyerahan atau pengambilan laundry.
+            Setelah QR code terdeteksi, sistem akan menampilkan data siswa, sisa kuota gratis bulanan,
+            dan order aktif (jika ada). Anda dapat membuat order baru atau mengubah status order
+            (Diterima → Cuci & Kering → Setrika → Selesai → Diambil).
+          </p>
+          <ul className="mt-3 space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
+            <li className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />
+              <span>Pastikan izin kamera sudah diberikan agar scanner dapat digunakan.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />
+              <span>Arahkan kamera ke QR code siswa dengan jarak dan pencahayaan yang cukup.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />
+              <span>Gunakan tombol &quot;Scan Lagi&quot; untuk memindai siswa lain setelah selesai.</span>
+            </li>
+          </ul>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="space-y-4 sm:space-y-5">
