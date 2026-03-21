@@ -9,6 +9,14 @@ interface StatusLogEntry {
   staffId: string | null;
   notes: string | null;
   trackingId?: string | null;
+  /** Untuk baris RECEIVED: id order agar gambar diambil dari media model Order */
+  orderId?: string;
+}
+
+function getLogImageCacheKey(log: StatusLogEntry): string | null {
+  if (log.trackingId) return log.trackingId;
+  if (log.status === "RECEIVED" && log.orderId) return `received:${log.orderId}`;
+  return null;
 }
 
 interface StatusLogModalProps {
@@ -19,7 +27,8 @@ interface StatusLogModalProps {
   formatLogDateTime: (dateTime: string) => string;
   formatStatus: (status: string) => string;
   getStatusColor: (status: string) => "primary" | "success" | "warning" | "info";
-  getTrackingImageUrl?: (trackingId: string | null) => Promise<string | null>;
+  /** Resolve URL gambar satu baris (RECEIVED = Order/images, lainnya = OrderTracking/status_update) */
+  getRowImageUrl?: (log: StatusLogEntry) => Promise<string | null>;
 }
 
 export default function StatusLogModal({
@@ -30,54 +39,60 @@ export default function StatusLogModal({
   formatLogDateTime,
   formatStatus,
   getStatusColor,
-  getTrackingImageUrl,
+  getRowImageUrl,
 }: StatusLogModalProps) {
-  const [trackingImages, setTrackingImages] = useState<Record<string, string>>({});
+  const [rowImageUrls, setRowImageUrls] = useState<Record<string, string>>({});
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (isOpen && getTrackingImageUrl) {
-      // Load images for all trackings
-      const loadImages = async () => {
-        const imageMap: Record<string, string> = {};
-        const loadingSet = new Set<string>();
+    if (!isOpen || !getRowImageUrl) return;
 
-        for (const log of logs) {
-          if (log.trackingId && !trackingImages[log.trackingId]) {
-            loadingSet.add(log.trackingId);
-            setLoadingImages(prev => new Set(prev).add(log.trackingId!));
-            try {
-              const imageUrl = await getTrackingImageUrl(log.trackingId);
-              if (imageUrl) {
-                imageMap[log.trackingId] = imageUrl;
-              }
-            } catch (err) {
-              console.error(`Error loading image for tracking ${log.trackingId}:`, err);
-            } finally {
-              setLoadingImages(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(log.trackingId!);
-                return newSet;
-              });
-            }
+    let cancelled = false;
+
+    (async () => {
+      const imageMap: Record<string, string> = {};
+      for (const log of logs) {
+        const cacheKey = getLogImageCacheKey(log);
+        if (!cacheKey) continue;
+
+        setLoadingImages((prev) => new Set(prev).add(cacheKey));
+        try {
+          const imageUrl = await getRowImageUrl(log);
+          if (imageUrl && !cancelled) {
+            imageMap[cacheKey] = imageUrl;
           }
+        } catch (err) {
+          console.error(`Error loading image for log row ${cacheKey}:`, err);
+        } finally {
+          setLoadingImages((prev) => {
+            const next = new Set(prev);
+            next.delete(cacheKey);
+            return next;
+          });
         }
+      }
+      if (!cancelled && Object.keys(imageMap).length > 0) {
+        setRowImageUrls((prev) => ({ ...prev, ...imageMap }));
+      }
+    })();
 
-        if (Object.keys(imageMap).length > 0) {
-          setTrackingImages(prev => ({ ...prev, ...imageMap }));
-        }
-      };
-
-      loadImages();
-    }
+    return () => {
+      cancelled = true;
+    };
+    // getRowImageUrl harus stabil (useCallback di induk)
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, logs]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setRowImageUrls({});
+      setLoadingImages(new Set());
+    }
   }, [isOpen]);
 
-  const handleViewImage = (trackingId: string | null) => {
-    if (!trackingId || !trackingImages[trackingId]) return;
-    
-    const imageUrl = trackingImages[trackingId];
-    window.open(imageUrl, '_blank');
+  const handleViewImage = (cacheKey: string | null) => {
+    if (!cacheKey || !rowImageUrls[cacheKey]) return;
+    window.open(rowImageUrls[cacheKey], "_blank");
   };
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl">
@@ -131,7 +146,9 @@ export default function StatusLogModal({
             </thead>
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
               {logs.length > 0 ? (
-                logs.map((log, index) => (
+                logs.map((log, index) => {
+                  const imageKey = getLogImageCacheKey(log);
+                  return (
                   <tr
                     key={index}
                     className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
@@ -161,12 +178,13 @@ export default function StatusLogModal({
                       </div>
                     </td>
                     <td className="px-4 py-2.5 whitespace-nowrap">
-                      {log.trackingId ? (
-                        loadingImages.has(log.trackingId) ? (
+                      {imageKey ? (
+                        loadingImages.has(imageKey) ? (
                           <span className="text-xs text-gray-400 dark:text-gray-500">Memuat...</span>
-                        ) : trackingImages[log.trackingId] ? (
+                        ) : rowImageUrls[imageKey] ? (
                           <button
-                            onClick={() => handleViewImage(log.trackingId!)}
+                            type="button"
+                            onClick={() => handleViewImage(imageKey)}
                             className="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 underline cursor-pointer"
                           >
                             Lihat Gambar
@@ -179,7 +197,8 @@ export default function StatusLogModal({
                       )}
                     </td>
                   </tr>
-                ))
+                );
+                })
               ) : (
                 <tr>
                   <td colSpan={5} className="px-4 py-6 text-center">

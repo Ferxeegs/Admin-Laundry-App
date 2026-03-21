@@ -58,7 +58,7 @@ const navItems: NavItem[] = [
     icon: <QrCodeIcon />,
     name: "Scan QR",
     path: "/orders/scan",
-    requiredPermission: ["view_order"],
+    requiredPermission: ["create_order", "update_order"],
   },
   {
     icon: <PieChartIcon />,

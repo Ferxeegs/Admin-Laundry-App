@@ -13,6 +13,7 @@ import { orderAPI } from "../../utils/api";
 import { EyeIcon, PencilIcon, TrashBinIcon } from "../../icons";
 import { ConfirmModal } from "../../components/ui/modal";
 import { useModal } from "../../hooks/useModal";
+import { useAuth } from "../../context/AuthContext";
 
 interface Order {
   id: string;
@@ -35,6 +36,13 @@ interface Order {
 
 export default function OrdersList() {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
+
+  const canViewOrder = hasPermission("view_order");
+  const canCreateOrder = hasPermission("create_order");
+  const canUpdateOrder = hasPermission("update_order");
+  const canDeleteOrder = hasPermission("delete_order");
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -239,7 +247,7 @@ export default function OrdersList() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Bulk Actions Bar */}
-      {isSelectionMode && selectedOrders.size > 0 && (
+      {canDeleteOrder && isSelectionMode && selectedOrders.size > 0 && (
         <div className="flex items-center justify-between gap-3 p-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-brand-700 dark:text-brand-300">
@@ -306,43 +314,83 @@ export default function OrdersList() {
             <option value="COMPLETED">Selesai</option>
             <option value="PICKED_UP">Diambil</option>
           </select>
-          {/* Toggle Selection Mode Button - Mobile Only */}
-          <button
-            onClick={handleToggleSelectionMode}
-            className={`md:hidden inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg touch-manipulation transition-colors ${
-              isSelectionMode
-                ? "text-white bg-brand-500 hover:bg-brand-600"
-                : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
-            }`}
-          >
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {/* Mode pilih (hapus massal): mobile + desktop — checkbox tabel hanya saat mode ini aktif */}
+          {canDeleteOrder && (
+            <>
+              <button
+                type="button"
+                onClick={handleToggleSelectionMode}
+                className={`md:hidden inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg touch-manipulation transition-colors ${
+                  isSelectionMode
+                    ? "text-white bg-brand-500 hover:bg-brand-600"
+                    : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
+                }`}
+              >
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  {isSelectionMode ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
+                  )}
+                </svg>
+                {isSelectionMode ? "Batal" : "Pilih"}
+              </button>
+              <button
+                type="button"
+                onClick={handleToggleSelectionMode}
+                className={`hidden md:inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  isSelectionMode
+                    ? "text-white bg-brand-500 hover:bg-brand-600"
+                    : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
+                }`}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  {isSelectionMode ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
+                  )}
+                </svg>
+                {isSelectionMode ? "Batal pilih" : "Pilih order"}
+              </button>
+            </>
+          )}
+          {canCreateOrder && (
+            <button
+              type="button"
+              onClick={() => navigate("/orders/create")}
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
             >
-              {isSelectionMode ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              )}
-            </svg>
-            {isSelectionMode ? "Batal" : "Pilih"}
-          </button>
-          <button
-            onClick={() => navigate("/orders/create")}
-            className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
-          >
             <svg
               className="w-3.5 h-3.5 sm:w-4 sm:h-4"
               fill="none"
@@ -359,6 +407,7 @@ export default function OrdersList() {
             <span className="hidden sm:inline">Create Order</span>
             <span className="sm:hidden">Create</span>
           </button>
+          )}
         </div>
       </div>
 
@@ -399,13 +448,19 @@ export default function OrdersList() {
             <div
               key={order.id}
               className={`p-3 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 transition-colors ${
-                !isSelectionMode ? "active:bg-gray-50 dark:active:bg-gray-700/50 cursor-pointer" : ""
+                !isSelectionMode && canViewOrder
+                  ? "active:bg-gray-50 dark:active:bg-gray-700/50 cursor-pointer"
+                  : ""
               }`}
-              onClick={!isSelectionMode ? () => navigate(`/orders/${order.id}`) : undefined}
+              onClick={
+                !isSelectionMode && canViewOrder
+                  ? () => navigate(`/orders/${order.id}`)
+                  : undefined
+              }
             >
               <div className="flex items-start gap-2 mb-2.5">
                 {/* Checkbox - Only show in selection mode */}
-                {isSelectionMode && (
+                {canDeleteOrder && isSelectionMode && (
                   <input
                     type="checkbox"
                     checked={selectedOrders.has(order.id)}
@@ -444,29 +499,36 @@ export default function OrdersList() {
                 </div>
               </div>
               {/* Action Buttons - Only show in selection mode */}
-              {isSelectionMode && (
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+              {canDeleteOrder && isSelectionMode && (
+                <div className="flex items-center justify-end flex-wrap gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                  {canViewOrder && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/orders/${order.id}`);
+                      }}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
+                    >
+                      <EyeIcon className="w-3.5 h-3.5" />
+                      Lihat
+                    </button>
+                  )}
+                  {canUpdateOrder && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/orders/${order.id}/edit`);
+                      }}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
+                    >
+                      <PencilIcon className="w-3.5 h-3.5" />
+                      Edit
+                    </button>
+                  )}
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/orders/${order.id}`);
-                    }}
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
-                  >
-                    <EyeIcon className="w-3.5 h-3.5" />
-                    Lihat
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/orders/${order.id}/edit`);
-                    }}
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
-                  >
-                    <PencilIcon className="w-3.5 h-3.5" />
-                    Edit
-                  </button>
-                  <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteClick(order.id, order.order_number);
@@ -500,17 +562,19 @@ export default function OrdersList() {
               <Table>
                 <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
                   <TableRow>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-12"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedOrders.size === orders.length && orders.length > 0}
-                        onChange={handleSelectAll}
-                        className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-500 focus:ring-2 cursor-pointer"
-                      />
-                    </TableCell>
+                    {canDeleteOrder && isSelectionMode && (
+                      <TableCell
+                        isHeader
+                        className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-12"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedOrders.size === orders.length && orders.length > 0}
+                          onChange={handleSelectAll}
+                          className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-500 focus:ring-2 cursor-pointer"
+                        />
+                      </TableCell>
+                    )}
                     <TableCell
                       isHeader
                       className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
@@ -562,18 +626,26 @@ export default function OrdersList() {
                       key={order.id}
                       className="hover:bg-gray-50 dark:hover:bg-white/[0.02]"
                     >
-                      <TableCell className="px-5 py-4 w-12">
-                        <input
-                          type="checkbox"
-                          checked={selectedOrders.has(order.id)}
-                          onChange={() => handleToggleSelect(order.id)}
-                          className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-500 focus:ring-2 cursor-pointer"
-                        />
-                      </TableCell>
+                      {canDeleteOrder && isSelectionMode && (
+                        <TableCell className="px-5 py-4 w-12">
+                          <input
+                            type="checkbox"
+                            checked={selectedOrders.has(order.id)}
+                            onChange={() => handleToggleSelect(order.id)}
+                            className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-500 focus:ring-2 cursor-pointer"
+                          />
+                        </TableCell>
+                      )}
                       <TableCell className="px-5 py-4">
                         <div
-                          className="cursor-pointer font-medium text-gray-800 text-theme-sm dark:text-white/90"
-                          onClick={() => navigate(`/orders/${order.id}`)}
+                          className={
+                            canViewOrder
+                              ? "cursor-pointer font-medium text-gray-800 text-theme-sm dark:text-white/90"
+                              : "font-medium text-gray-800 text-theme-sm dark:text-white/90"
+                          }
+                          onClick={() => {
+                            if (canViewOrder) navigate(`/orders/${order.id}`);
+                          }}
                         >
                           {order.order_number}
                         </div>
@@ -606,38 +678,47 @@ export default function OrdersList() {
                         {formatDate(order.created_at)}
                       </TableCell>
                       <TableCell className="px-5 py-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                              e.stopPropagation();
-                              navigate(`/orders/${order.id}`);
-                            }}
-                            className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                            title="Lihat Detail"
-                          >
-                            <EyeIcon className="w-4 h-4 fill-current" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/orders/${order.id}/edit`);
-                            }}
-                            className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-                            title="Edit Order"
-                          >
-                            <PencilIcon className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick(order.id, order.order_number);
-                            }}
-                            disabled={deletingOrderId === order.id}
-                            className="inline-flex items-center justify-center w-8 h-8 text-red-500 transition-colors rounded-lg hover:bg-red-100 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-800 dark:hover:text-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Delete Order"
-                          >
-                            <TrashBinIcon className="w-4 h-4" />
-                          </button>
+                        <div className="flex items-center flex-wrap gap-2">
+                          {canViewOrder && (
+                            <button
+                              type="button"
+                              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                e.stopPropagation();
+                                navigate(`/orders/${order.id}`);
+                              }}
+                              className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                              title="Lihat Detail"
+                            >
+                              <EyeIcon className="w-4 h-4 fill-current" />
+                            </button>
+                          )}
+                          {canUpdateOrder && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/orders/${order.id}/edit`);
+                              }}
+                              className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                              title="Edit Order"
+                            >
+                              <PencilIcon className="w-4 h-4" />
+                            </button>
+                          )}
+                          {canDeleteOrder && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(order.id, order.order_number);
+                              }}
+                              disabled={deletingOrderId === order.id}
+                              className="inline-flex items-center justify-center w-8 h-8 text-red-500 transition-colors rounded-lg hover:bg-red-100 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-800 dark:hover:text-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Delete Order"
+                            >
+                              <TrashBinIcon className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

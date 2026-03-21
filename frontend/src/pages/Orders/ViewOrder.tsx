@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
@@ -11,6 +11,7 @@ import StatusLogModal from "../../components/Orders/StatusLogModal";
 import { orderAPI, studentAPI, userAPI, mediaAPI, getBaseUrl } from "../../utils/api";
 import { AngleLeftIcon, PencilIcon } from "../../icons";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 
 interface OrderTracking {
   id: string;
@@ -78,6 +79,9 @@ export default function ViewOrder() {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
   // const [ , setPricePerItem] = useState<number>(4000); // Default value
   const { success, error: showError } = useToast();
+  const { hasPermission } = useAuth();
+  const canUpdateOrder = hasPermission("update_order");
+
 
   useEffect(() => {
     if (id) {
@@ -87,23 +91,65 @@ export default function ViewOrder() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  const parseMediaArray = (data: unknown): Media[] => {
+    if (!data) return [];
+    if (typeof data === "object" && data !== null && "media" in data && Array.isArray((data as { media: unknown }).media)) {
+      return (data as { media: Media[] }).media;
+    }
+    if (Array.isArray(data)) {
+      return data as Media[];
+    }
+    return [];
+  };
+
+  const firstImageDisplayUrl = (data: unknown): string | null => {
+    const mediaArray = parseMediaArray(data);
+    if (mediaArray.length === 0) return null;
+    const u = mediaArray[0].url;
+    return u.startsWith("http")
+      ? u
+      : `${getBaseUrl()}${u.startsWith("/") ? u : `/${u}`}`;
+  };
+
   const fetchOrderImages = async (orderId: string) => {
     try {
-      const response = await mediaAPI.getMediaByModel('Order', orderId, 'images');
+      const response = await mediaAPI.getMediaByModel("Order", orderId, "images");
       if (response.success && response.data) {
-        // Response structure: { media: Array<...> }
-        let mediaArray: Media[] = [];
-        if (response.data.media && Array.isArray(response.data.media)) {
-          mediaArray = response.data.media;
-        } else if (Array.isArray(response.data)) {
-          mediaArray = response.data;
-        }
-        setImages(mediaArray);
+        setImages(parseMediaArray(response.data));
       }
     } catch (err) {
       console.error("Fetch order images error:", err);
     }
   };
+
+  const getRowImageUrl = useCallback(async (log: {
+    status: string;
+    orderId?: string;
+    trackingId?: string | null;
+  }): Promise<string | null> => {
+    if (log.status === "RECEIVED" && log.orderId) {
+      try {
+        const response = await mediaAPI.getMediaByModel("Order", log.orderId, "images");
+        if (response.success && response.data) {
+          return firstImageDisplayUrl(response.data);
+        }
+      } catch (err) {
+        console.error("Error fetching order images for status log:", err);
+      }
+      return null;
+    }
+    if (log.trackingId) {
+      try {
+        const response = await mediaAPI.getMediaByModel("OrderTracking", log.trackingId, "status_update");
+        if (response.success && response.data) {
+          return firstImageDisplayUrl(response.data);
+        }
+      } catch (err) {
+        console.error("Error fetching tracking image:", err);
+      }
+    }
+    return null;
+  }, []);
 
   // const fetchOrderSettings = async () => {
   //   try {
@@ -333,17 +379,19 @@ export default function ViewOrder() {
       staffId: string | null;
       notes: string | null;
       trackingId: string | null;
+      orderId?: string;
     }> = [];
 
-    // Add RECEIVED status from order
+    // Baris RECEIVED: catatan & gambar dari order (notes + media Order), bukan OrderTracking
     if (order) {
       logData.push({
         dateTime: order.created_at || "",
         action: "RECEIVED",
         status: "RECEIVED",
         staffId: order.created_by,
-        notes: null,
-        trackingId: null, // RECEIVED doesn't have tracking
+        notes: order.notes ?? null,
+        trackingId: null,
+        orderId: order.id,
       });
     }
 
@@ -366,6 +414,8 @@ export default function ViewOrder() {
       new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
     );
   };
+
+  const statusLogRows = useMemo(() => getStatusLogData(), [order]);
 
   const handleOpenStatusModal = () => {
     setStatusNotes("");
@@ -662,8 +712,10 @@ export default function ViewOrder() {
               {/* Next Status Button */}
               {getNextStatus(order.current_status) && (
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <button
+                  {canUpdateOrder && (
+                    <button
                     onClick={handleOpenStatusModal}
+
                     disabled={isUpdatingStatus}
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
@@ -672,6 +724,7 @@ export default function ViewOrder() {
                     </svg>
                     Lanjutkan ke {formatStatus(getNextStatus(order.current_status)!)}
                   </button>
+                )}
                 </div>
               )}
             </div>
@@ -816,36 +869,12 @@ export default function ViewOrder() {
       <StatusLogModal
         isOpen={isLogModalOpen}
         onClose={() => setIsLogModalOpen(false)}
-        logs={getStatusLogData()}
+        logs={statusLogRows}
         getStaffName={getStaffName}
         formatLogDateTime={formatLogDateTime}
         formatStatus={formatStatus}
         getStatusColor={getStatusColor}
-        getTrackingImageUrl={async (trackingId: string | null) => {
-          if (!trackingId) return null;
-          
-          try {
-            const response = await mediaAPI.getMediaByModel('OrderTracking', trackingId, 'status_update');
-            if (response.success && response.data) {
-              let mediaArray: Media[] = [];
-              if (response.data.media && Array.isArray(response.data.media)) {
-                mediaArray = response.data.media;
-              } else if (Array.isArray(response.data)) {
-                mediaArray = response.data;
-              }
-              
-              if (mediaArray.length > 0) {
-                const imageUrl = mediaArray[0].url.startsWith('http')
-                  ? mediaArray[0].url
-                  : `${getBaseUrl()}${mediaArray[0].url.startsWith('/') ? mediaArray[0].url : `/${mediaArray[0].url}`}`;
-                return imageUrl;
-              }
-            }
-          } catch (err) {
-            console.error("Error fetching tracking image:", err);
-          }
-          return null;
-        }}
+        getRowImageUrl={getRowImageUrl}
       />
 
       {/* Status Update Modal */}

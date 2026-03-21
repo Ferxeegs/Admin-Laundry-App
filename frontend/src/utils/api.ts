@@ -2164,7 +2164,7 @@ export const orderAPI = {
     // Check if data is FormData (for file upload) or regular object
     if (data instanceof FormData) {
       // For FormData, we need to make a custom request without JSON headers
-      const url = `${API_BASE_URL}/orders`;
+      const url = `${API_BASE_URL}/orders/`;
       
       // Get auth token from cookies or localStorage
       const token = localStorage.getItem('token') || document.cookie
@@ -2237,7 +2237,7 @@ export const orderAPI = {
         notes: string | null;
         created_at: string;
         updated_at: string;
-      }>("/orders", {
+      }>("/orders/", {
         method: "POST",
         body: JSON.stringify(data),
       });
