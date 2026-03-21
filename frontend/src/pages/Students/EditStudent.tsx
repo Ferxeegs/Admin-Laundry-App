@@ -29,7 +29,7 @@ export default function EditStudent() {
   const [countryCode, setCountryCode] = useState<string>("+62");
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
-  const [currentProfilePictureId, setCurrentProfilePictureId] = useState<number | null>(null);
+  const [profilePictureMediaId, setProfilePictureMediaId] = useState<number | null>(null);
   const [shouldDeleteProfilePicture, setShouldDeleteProfilePicture] = useState(false);
 
   useEffect(() => {
@@ -84,17 +84,17 @@ export default function EditStudent() {
                 mediaUrl = `/${mediaUrl}`;
               }
               setProfileImage(`${getBaseUrl()}${mediaUrl}`);
-              setCurrentProfilePictureId(media.id);
+              setProfilePictureMediaId(media.id);
             } else {
               setProfileImage(null);
-              setCurrentProfilePictureId(null);
+              setProfilePictureMediaId(null);
             }
           } else {
             setProfileImage(null);
-            setCurrentProfilePictureId(null);
+            setProfilePictureMediaId(null);
           }
         } catch (err) {
-          setCurrentProfilePictureId(null);
+          setProfilePictureMediaId(null);
         }
       } else {
         setError(response.message || "Gagal mengambil data siswa");
@@ -183,20 +183,23 @@ export default function EditStudent() {
       if (id) {
         try {
           // Delete old profile picture if user requested deletion
-          if (shouldDeleteProfilePicture && currentProfilePictureId) {
+          if (shouldDeleteProfilePicture && profilePictureMediaId) {
             try {
-              await mediaAPI.deleteMedia(currentProfilePictureId);
+              await mediaAPI.deleteMedia(profilePictureMediaId);
+              setProfilePictureMediaId(null);
+              setShouldDeleteProfilePicture(false);
             } catch (deleteErr: any) {
               // Continue even if delete fails
             }
           }
-          
+
           // Upload new profile picture if provided
           if (profileImageFile) {
             // Delete old profile picture before uploading new one
-            if (currentProfilePictureId) {
+            if (profilePictureMediaId) {
               try {
-                await mediaAPI.deleteMedia(currentProfilePictureId);
+                await mediaAPI.deleteMedia(profilePictureMediaId);
+                setProfilePictureMediaId(null);
               } catch (deleteErr: any) {
                 // Continue even if delete fails
               }
@@ -301,22 +304,17 @@ export default function EditStudent() {
           <div className="lg:col-span-1">
             <EditStudentSidebar
               profileImage={profileImage}
-              currentProfilePictureId={currentProfilePictureId}
               onProfileImageChange={(file) => {
                 setProfileImageFile(file);
                 setShouldDeleteProfilePicture(false);
                 if (file) {
                   setProfileImage(URL.createObjectURL(file));
-                } else {
-                  // If file is removed, fetch original image
-                  fetchStudentData();
                 }
               }}
               onProfileImageRemove={() => {
                 setProfileImageFile(null);
                 setShouldDeleteProfilePicture(true);
                 setProfileImage(null);
-                setCurrentProfilePictureId(null);
               }}
             />
           </div>

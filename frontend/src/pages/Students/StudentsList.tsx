@@ -9,11 +9,12 @@ import {
 } from "../../components/ui/table";
 import Badge from "../../components/ui/badge/Badge";
 import { studentAPI, getBaseUrl } from "../../utils/api";
-import { EyeIcon, PencilIcon, TrashBinIcon } from "../../icons";
+import { EyeIcon, PencilIcon, TrashBinIcon, CheckCircleIcon } from "../../icons";
 import TableSkeleton from "../../components/common/TableSkeleton";
 import { ConfirmModal } from "../../components/ui/modal";
 import { useModal } from "../../hooks/useModal";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 
 interface Student {
   id: string;
@@ -41,6 +42,19 @@ interface Student {
 export default function StudentsList() {
   const navigate = useNavigate();
   const { success, error: showError } = useToast();
+  const { hasPermission } = useAuth();
+
+  const canViewStudent = hasPermission("view_student");
+  const canCreateStudent = hasPermission("create_student");
+  const canUpdateStudent = hasPermission("update_student");
+  const canDeleteStudent = hasPermission("delete_student");
+  const canRestoreStudent = hasPermission("restore_student");
+  const canForceDeleteStudent = hasPermission("force_delete_student");
+  const canViewDeletedStudents = hasPermission([
+    "delete_student",
+    "force_delete_student",
+    "restore_student",
+  ]);
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,11 +68,14 @@ export default function StudentsList() {
   });
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletingStudentId, setDeletingStudentId] = useState<string | null>(null);
-  
+  const [restoringStudentId, setRestoringStudentId] = useState<string | null>(null);
+
   // Modal states
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
   const { isOpen: isSoftDeleteModalOpen, openModal: openSoftDeleteModal, closeModal: closeSoftDeleteModal } = useModal();
+  const { isOpen: isRestoreModalOpen, openModal: openRestoreModal, closeModal: closeRestoreModal } = useModal();
   const [selectedStudentForDelete, setSelectedStudentForDelete] = useState<{ id: string; name: string } | null>(null);
+  const [selectedStudentForRestore, setSelectedStudentForRestore] = useState<{ id: string; name: string } | null>(null);
 
   const fetchStudents = async (forceLoading = false) => {
     if (forceLoading || students.length === 0) {
@@ -181,6 +198,41 @@ export default function StudentsList() {
     }
   };
 
+  const handleRestoreClick = (studentId: string, studentName: string) => {
+    setSelectedStudentForRestore({ id: studentId, name: studentName });
+    openRestoreModal();
+  };
+
+  const handleRestore = async () => {
+    if (!selectedStudentForRestore) return;
+
+    const studentId = selectedStudentForRestore.id;
+    setRestoringStudentId(studentId);
+    setError(null);
+    closeRestoreModal();
+
+    try {
+      const response = await studentAPI.restoreStudent(studentId);
+
+      if (response.success) {
+        success("Siswa berhasil dipulihkan!");
+        fetchStudents();
+      } else {
+        const errorMessage = response.message || "Gagal memulihkan siswa";
+        setError(errorMessage);
+        showError(errorMessage);
+      }
+    } catch (err: any) {
+      const errorMessage = "Terjadi kesalahan saat memulihkan siswa";
+      setError(errorMessage);
+      showError(errorMessage);
+      console.error("Restore student error:", err);
+    } finally {
+      setRestoringStudentId(null);
+      setSelectedStudentForRestore(null);
+    }
+  };
+
   const getInitials = (student: Student) => {
     const names = student.fullname.split(" ");
     if (names.length >= 2) {
@@ -228,24 +280,29 @@ export default function StudentsList() {
           </svg>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => {
-              setShowDeleted(!showDeleted);
-              setPage(1);
-            }}
-            className={`px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors touch-manipulation ${
-              showDeleted
-                ? "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white"
-                : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
-            }`}
-          >
-            <span className="hidden sm:inline">{showDeleted ? "Show Active Students" : "Show Deleted Students"}</span>
-            <span className="sm:hidden">{showDeleted ? "Active" : "Deleted"}</span>
-          </button>
-          <button
-            onClick={() => navigate("/students/create")}
-            className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
-          >
+          {canViewDeletedStudents && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowDeleted(!showDeleted);
+                setPage(1);
+              }}
+              className={`px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors touch-manipulation ${
+                showDeleted
+                  ? "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white"
+                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
+              }`}
+            >
+              <span className="hidden sm:inline">{showDeleted ? "Show Active Students" : "Show Deleted Students"}</span>
+              <span className="sm:hidden">{showDeleted ? "Active" : "Deleted"}</span>
+            </button>
+          )}
+          {canCreateStudent && (
+            <button
+              type="button"
+              onClick={() => navigate("/students/create")}
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
+            >
             <svg
               className="w-3.5 h-3.5 sm:w-4 sm:h-4"
               fill="none"
@@ -262,6 +319,7 @@ export default function StudentsList() {
             <span className="hidden sm:inline">Create Student</span>
             <span className="sm:hidden">Create</span>
           </button>
+          )}
         </div>
       </div>
 
@@ -301,7 +359,12 @@ export default function StudentsList() {
             <div
               key={student.id}
               className="p-3 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 active:bg-gray-50 dark:active:bg-gray-700/50 transition-colors"
-              onClick={() => navigate(`/students/${student.id}`)}
+              onClick={() => {
+                if (!showDeleted && canViewStudent) {
+                  navigate(`/students/${student.id}`);
+                }
+              }}
+              role={!showDeleted && canViewStudent ? "button" : undefined}
             >
               {/* Main Info Row */}
               <div className="flex items-start gap-2.5 mb-2.5">
@@ -371,51 +434,79 @@ export default function StudentsList() {
               <div className="flex items-center gap-2 pt-2.5 border-t border-gray-100 dark:border-gray-700">
                 {!showDeleted && (
                   <>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/students/${student.id}`);
-                      }}
-                      className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 touch-manipulation"
-                    >
-                      <EyeIcon className="w-3.5 h-3.5" />
-                      View
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/students/${student.id}/edit`);
-                      }}
-                      className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
-                    >
-                      <PencilIcon className="w-3.5 h-3.5" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClick(student.id, student.fullname);
-                      }}
-                      disabled={deletingStudentId === student.id}
-                      className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-                    >
-                      <TrashBinIcon className="w-3.5 h-3.5" />
-                      Delete
-                    </button>
+                    {canViewStudent && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/students/${student.id}`);
+                        }}
+                        className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 touch-manipulation"
+                      >
+                        <EyeIcon className="w-3.5 h-3.5" />
+                        View
+                      </button>
+                    )}
+                    {canUpdateStudent && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/students/${student.id}/edit`);
+                        }}
+                        className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
+                      >
+                        <PencilIcon className="w-3.5 h-3.5" />
+                        Edit
+                      </button>
+                    )}
+                    {canDeleteStudent && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(student.id, student.fullname);
+                        }}
+                        disabled={deletingStudentId === student.id}
+                        className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                      >
+                        <TrashBinIcon className="w-3.5 h-3.5" />
+                        Delete
+                      </button>
+                    )}
                   </>
                 )}
                 {showDeleted && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleForceDeleteClick(student.id, student.fullname);
-                    }}
-                    disabled={deletingStudentId === student.id}
-                    className="w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-                  >
-                    <TrashBinIcon className="w-3.5 h-3.5" />
-                    {deletingStudentId === student.id ? "Deleting..." : "Force Delete"}
-                  </button>
+                  <div className="flex w-full gap-2">
+                    {canRestoreStudent && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRestoreClick(student.id, student.fullname);
+                        }}
+                        disabled={restoringStudentId === student.id || deletingStudentId === student.id}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                      >
+                        <CheckCircleIcon className="w-3.5 h-3.5" />
+                        {restoringStudentId === student.id ? "Memulihkan..." : "Pulihkan"}
+                      </button>
+                    )}
+                    {canForceDeleteStudent && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleForceDeleteClick(student.id, student.fullname);
+                        }}
+                        disabled={deletingStudentId === student.id || restoringStudentId === student.id}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                      >
+                        <TrashBinIcon className="w-3.5 h-3.5" />
+                        {deletingStudentId === student.id ? "Deleting..." : "Force Delete"}
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -494,8 +585,10 @@ export default function StudentsList() {
                   >
                     <TableCell className="px-5 py-4">
                       <div 
-                        className="flex items-center gap-3 cursor-pointer"
-                        onClick={() => navigate(`/students/${student.id}`)}
+                        className={`flex items-center gap-3 ${!showDeleted && canViewStudent ? "cursor-pointer" : ""}`}
+                        onClick={() => {
+                          if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
+                        }}
                       >
                         {student.profile_picture ? (
                           <img
@@ -522,32 +615,40 @@ export default function StudentsList() {
                     </TableCell>
                     <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
                       <div 
-                        className="cursor-pointer"
-                        onClick={() => navigate(`/students/${student.id}`)}
+                        className={!showDeleted && canViewStudent ? "cursor-pointer" : ""}
+                        onClick={() => {
+                          if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
+                        }}
                       >
                         {student.national_id_number}
                       </div>
                     </TableCell>
                     <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
                       <div 
-                        className="cursor-pointer"
-                        onClick={() => navigate(`/students/${student.id}`)}
+                        className={!showDeleted && canViewStudent ? "cursor-pointer" : ""}
+                        onClick={() => {
+                          if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
+                        }}
                       >
                         {student.dormitory || "-"}
                       </div>
                     </TableCell>
                     <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
                       <div 
-                        className="cursor-pointer"
-                        onClick={() => navigate(`/students/${student.id}`)}
+                        className={!showDeleted && canViewStudent ? "cursor-pointer" : ""}
+                        onClick={() => {
+                          if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
+                        }}
                       >
                         {student.grade_level || "-"}
                       </div>
                     </TableCell>
                     <TableCell className="px-5 py-4">
                       <div 
-                        className="cursor-pointer"
-                        onClick={() => navigate(`/students/${student.id}`)}
+                        className={!showDeleted && canViewStudent ? "cursor-pointer" : ""}
+                        onClick={() => {
+                          if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
+                        }}
                       >
                         <Badge size="sm" color={student.is_active ? "success" : "error"}>
                           {student.is_active ? "Aktif" : "Tidak Aktif"}
@@ -556,56 +657,83 @@ export default function StudentsList() {
                     </TableCell>
                     <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
                       <div 
-                        className="cursor-pointer"
-                        onClick={() => navigate(`/students/${student.id}`)}
+                        className={!showDeleted && canViewStudent ? "cursor-pointer" : ""}
+                        onClick={() => {
+                          if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
+                        }}
                       >
                         {formatDate(student.created_at)}
                       </div>
                     </TableCell>
                     <TableCell className="px-5 py-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center flex-wrap gap-2">
                         {!showDeleted && (
                           <>
-                            <button
-                              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                e.stopPropagation();
-                                navigate(`/students/${student.id}`);
-                              }}
-                              className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                              title="Lihat Detail"
-                            >
-                              <EyeIcon className="w-4 h-4 fill-current" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/students/${student.id}/edit`);
-                              }}
-                              className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-                              title="Edit Student"
-                            >
-                              <PencilIcon className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteClick(student.id, student.fullname);
-                              }}
-                              disabled={deletingStudentId === student.id}
-                              className="inline-flex items-center justify-center w-8 h-8 text-red-500 transition-colors rounded-lg hover:bg-red-100 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-800 dark:hover:text-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Delete Student"
-                            >
-                              <TrashBinIcon className="w-4 h-4" />
-                            </button>
+                            {canViewStudent && (
+                              <button
+                                type="button"
+                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                  e.stopPropagation();
+                                  navigate(`/students/${student.id}`);
+                                }}
+                                className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                                title="Lihat Detail"
+                              >
+                                <EyeIcon className="w-4 h-4 fill-current" />
+                              </button>
+                            )}
+                            {canUpdateStudent && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/students/${student.id}/edit`);
+                                }}
+                                className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                                title="Edit Student"
+                              >
+                                <PencilIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                            {canDeleteStudent && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClick(student.id, student.fullname);
+                                }}
+                                disabled={deletingStudentId === student.id}
+                                className="inline-flex items-center justify-center w-8 h-8 text-red-500 transition-colors rounded-lg hover:bg-red-100 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-800 dark:hover:text-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Delete Student"
+                              >
+                                <TrashBinIcon className="w-4 h-4" />
+                              </button>
+                            )}
                           </>
                         )}
-                        {showDeleted && (
+                        {showDeleted && canRestoreStudent && (
                           <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRestoreClick(student.id, student.fullname);
+                            }}
+                            disabled={restoringStudentId === student.id || deletingStudentId === student.id}
+                            className="inline-flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Pulihkan siswa"
+                          >
+                            <CheckCircleIcon className="w-4 h-4" />
+                            {restoringStudentId === student.id ? "Memulihkan..." : "Pulihkan"}
+                          </button>
+                        )}
+                        {showDeleted && canForceDeleteStudent && (
+                          <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleForceDeleteClick(student.id, student.fullname);
                             }}
-                            disabled={deletingStudentId === student.id}
+                            disabled={deletingStudentId === student.id || restoringStudentId === student.id}
                             className="inline-flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Force Delete (Permanent)"
                           >
@@ -667,6 +795,25 @@ export default function StudentsList() {
         isLoading={deletingStudentId === selectedStudentForDelete?.id}
         showWarning={true}
         warningMessage="Siswa akan dihapus (soft delete) dan dapat dipulihkan kembali dari halaman deleted students."
+      />
+
+      {/* Restore Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isRestoreModalOpen}
+        onClose={closeRestoreModal}
+        onConfirm={handleRestore}
+        title="Pulihkan Siswa"
+        message={
+          <>
+            Pulihkan siswa <strong className="text-gray-800 dark:text-white">{selectedStudentForRestore?.name}</strong> ke daftar aktif?
+          </>
+        }
+        confirmText="Pulihkan"
+        cancelText="Batal"
+        confirmButtonColor="primary"
+        icon={<CheckCircleIcon className="w-6 h-6" />}
+        isLoading={restoringStudentId === selectedStudentForRestore?.id}
+        showWarning={false}
       />
 
       {/* Force Delete Confirmation Modal */}

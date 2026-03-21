@@ -102,7 +102,9 @@ def get_deleted_students(
     limit: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission(['delete_student', 'force_delete_student']))
+    current_user: User = Depends(
+        require_permission(['delete_student', 'force_delete_student', 'restore_student'])
+    )
 ):
     """
     Get all deleted students with pagination and search.
@@ -336,6 +338,40 @@ def update_student(
     return WebResponse(
         status="success",
         message="Student updated successfully",
+        data=StudentRead.model_validate(student)
+    )
+
+
+@router.post("/{student_id}/restore", response_model=WebResponse[StudentRead])
+def restore_student(
+    student_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("restore_student"))
+):
+    """
+    Restore a soft-deleted student (clear deleted_at / deleted_by).
+    """
+    from datetime import datetime, timezone
+
+    student = db.query(Student).filter(
+        Student.id == student_id,
+        Student.deleted_at.isnot(None)
+    ).first()
+
+    if not student:
+        raise NotFoundException(f"Deleted student with ID {student_id} not found")
+
+    student.deleted_at = None
+    student.deleted_by = None
+    student.updated_by = current_user.id
+    student.updated_at = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(student)
+
+    return WebResponse(
+        status="success",
+        message="Student restored successfully",
         data=StudentRead.model_validate(student)
     )
 

@@ -1,20 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface EditStudentSidebarProps {
   profileImage?: string | null;
-  currentProfilePictureId?: number | null;
   onProfileImageChange?: (file: File | null) => void;
   onProfileImageRemove?: () => void;
 }
 
 export default function EditStudentSidebar({
   profileImage,
-  currentProfilePictureId,
   onProfileImageChange,
   onProfileImageRemove,
 }: EditStudentSidebarProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(profileImage || null);
   const [imageError, setImageError] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (profileImage) {
@@ -54,7 +53,9 @@ export default function EditStudentSidebar({
   const handleRemoveImage = () => {
     setImagePreview(null);
     setImageError(false);
-    onProfileImageChange?.(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
     onProfileImageRemove?.();
   };
 
@@ -118,6 +119,7 @@ export default function EditStudentSidebar({
           <div className="flex flex-col gap-2 w-full">
             <label className="cursor-pointer w-full">
               <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
@@ -127,7 +129,7 @@ export default function EditStudentSidebar({
                 {imagePreview ? "Ganti Foto" : "Upload Foto"}
               </span>
             </label>
-            {imagePreview && currentProfilePictureId && (
+            {imagePreview && (
               <button
                 type="button"
                 onClick={handleRemoveImage}

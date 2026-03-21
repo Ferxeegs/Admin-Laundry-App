@@ -568,7 +568,7 @@ export const userAPI = {
         name: string;
         guard_name: string;
       }>;
-    }>('/users', {
+    }>('/users/', {
       method: 'POST',
       body: JSON.stringify(requestBody),
     });
@@ -1938,7 +1938,7 @@ export const studentAPI = {
       is_active: boolean;
       created_at: string;
       updated_at: string;
-    }>('/students', {
+    }>('/students/', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -2023,6 +2023,31 @@ export const studentAPI = {
   deleteStudent: async (id: string) => {
     return apiRequest<null>(`/students/${id}`, {
       method: 'DELETE',
+    });
+  },
+
+  /**
+   * Restore soft-deleted student
+   */
+  restoreStudent: async (id: string) => {
+    return apiRequest<{
+      id: string;
+      national_id_number: string;
+      fullname: string;
+      phone_number: string | null;
+      dormitory: string | null;
+      grade_level: string | null;
+      unique_code: string | null;
+      guardian_name: string | null;
+      qr_code: string | null;
+      is_active: boolean;
+      created_at: string | null;
+      updated_at: string | null;
+      deleted_at: string | null;
+      created_by: string | null;
+      deleted_by: string | null;
+    }>(`/students/${id}/restore`, {
+      method: 'POST',
     });
   },
 
