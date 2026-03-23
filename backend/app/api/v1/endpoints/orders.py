@@ -43,27 +43,26 @@ def get_next_statuses(current_status: OrderStatus) -> List[OrderStatus]:
 
 def get_order_settings(db: Session) -> tuple[int, float]:
     """
-    Get monthly_quota and price_per_item from settings table.
-    Returns (monthly_quota: int, price_per_item: float).
+    Get free-item quota limit (setting key: monthly_quota) and price_per_item.
+    Quota resets daily; the legacy setting name is kept for DB compatibility.
+    Returns (quota_limit: int, price_per_item: float).
     Falls back to default values if settings not found.
     """
-    # Default values
-    default_monthly_quota = 4
+    default_quota = 4
     default_price_per_item = 4000.0
-    
-    # Get monthly_quota
-    monthly_quota_setting = db.query(Setting).filter(
+
+    quota_setting = db.query(Setting).filter(
         Setting.group == "order",
-        Setting.name == "monthly_quota"
+        Setting.name == "monthly_quota",
     ).first()
-    
-    if monthly_quota_setting and monthly_quota_setting.payload is not None:
+
+    if quota_setting and quota_setting.payload is not None:
         try:
-            monthly_quota = int(monthly_quota_setting.payload)
+            quota_limit = int(quota_setting.payload)
         except (ValueError, TypeError):
-            monthly_quota = default_monthly_quota
+            quota_limit = default_quota
     else:
-        monthly_quota = default_monthly_quota
+        quota_limit = default_quota
     
     # Get price_per_item
     price_per_item_setting = db.query(Setting).filter(
@@ -79,7 +78,7 @@ def get_order_settings(db: Session) -> tuple[int, float]:
     else:
         price_per_item = default_price_per_item
     
-    return monthly_quota, price_per_item
+    return quota_limit, price_per_item
 
 
 @router.get("/", response_model=WebResponse[dict])
@@ -177,12 +176,12 @@ async def create_order(
     """
     Create a new order for a student.
     Staff only inputs total_items, system automatically calculates:
-    - free_items_used (based on monthly quota: 4 free items per month)
+    - free_items_used (based on daily quota: N free items per day per student)
     - paid_items_count (items exceeding quota)
     - additional_fee (paid_items_count * 4000)
     """
-    from datetime import datetime, timezone
-    from sqlalchemy import func, extract
+    from datetime import datetime, timezone, timedelta
+    from sqlalchemy import func
 
     # Generate order number: "ORD-{YYMMDD}-{sequence}"
     # Format: ORD-240113-001 (where 001 is the order number for that day)
@@ -282,27 +281,21 @@ async def create_order(
     if not student:
         raise NotFoundException(f"Student with ID {student_id} not found")
 
-    # Calculate monthly quota usage
-    # Get settings from database
-    MONTHLY_QUOTA, PRICE_PER_ITEM = get_order_settings(db)
+    # Daily quota usage (UTC calendar day, same window as start_of_day above)
+    QUOTA_LIMIT, PRICE_PER_ITEM = get_order_settings(db)
+    start_of_next_day = start_of_day + timedelta(days=1)
 
-    # Get current month and year
-    current_month = now.month
-    current_year = now.year
-
-    # Calculate how many free items already used this month
-    free_items_used_this_month = (
+    free_items_used_today = (
         db.query(func.sum(Order.free_items_used))
         .filter(
             Order.student_id == student_id,
-            extract("month", Order.created_at) == current_month,
-            extract("year", Order.created_at) == current_year,
+            Order.created_at >= start_of_day,
+            Order.created_at < start_of_next_day,
         )
         .scalar() or 0
     )
 
-    # Calculate remaining quota
-    remaining_quota = max(0, MONTHLY_QUOTA - free_items_used_this_month)
+    remaining_quota = max(0, QUOTA_LIMIT - free_items_used_today)
 
     # Calculate free_items_used and paid_items_count for this order
     free_items_used = min(total_items, remaining_quota)
@@ -509,14 +502,14 @@ def update_order(
     """
     Update order fields (not status tracking).
     Staff only inputs total_items, system automatically recalculates:
-    - free_items_used (based on monthly quota: 4 free items per month)
+    - free_items_used (based on daily quota: N free items per day per student)
     - paid_items_count (items exceeding quota)
     - additional_fee (paid_items_count * 4000)
     
     Note: If order status is WASHING_DRYING or later, only notes can be updated.
     """
-    from datetime import datetime, timezone
-    from sqlalchemy import func, extract
+    from datetime import datetime, timezone, timedelta
+    from sqlalchemy import func
 
     order = db.query(Order).filter(Order.id == order_id).first()
 
@@ -552,27 +545,28 @@ def update_order(
 
     # If total_items is updated, recalculate free_items_used, paid_items_count, and additional_fee
     if "total_items" in update_data:
-        # Get settings from database
-        MONTHLY_QUOTA, PRICE_PER_ITEM = get_order_settings(db)
+        QUOTA_LIMIT, PRICE_PER_ITEM = get_order_settings(db)
 
-        # Get the month when this order was created (use original created_at)
-        order_month = order.created_at.month if order.created_at else datetime.now(timezone.utc).month
-        order_year = order.created_at.year if order.created_at else datetime.now(timezone.utc).year
+        oc = order.created_at or datetime.now(timezone.utc)
+        if oc.tzinfo is None:
+            oc = oc.replace(tzinfo=timezone.utc)
+        else:
+            oc = oc.astimezone(timezone.utc)
+        day_start = oc.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
 
-        # Calculate how many free items already used this month (excluding current order)
-        free_items_used_this_month = (
+        free_items_used_today = (
             db.query(func.sum(Order.free_items_used))
             .filter(
                 Order.student_id == order.student_id,
-                Order.id != order_id,  # Exclude current order
-                extract("month", Order.created_at) == order_month,
-                extract("year", Order.created_at) == order_year,
+                Order.id != order_id,
+                Order.created_at >= day_start,
+                Order.created_at < day_end,
             )
             .scalar() or 0
         )
 
-        # Calculate remaining quota
-        remaining_quota = max(0, MONTHLY_QUOTA - free_items_used_this_month)
+        remaining_quota = max(0, QUOTA_LIMIT - free_items_used_today)
 
         # Recalculate for updated total_items
         total_items = update_data["total_items"]

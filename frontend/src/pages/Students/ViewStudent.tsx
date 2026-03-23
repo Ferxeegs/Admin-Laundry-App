@@ -257,7 +257,7 @@ export default function ViewStudent() {
                       {student.fullname}
                     </p>
                     {student.unique_code && (
-                      <p className="text-xs sm:text-sm text-gray-700 font-mono mt-2 font-semibold break-all px-2">
+                      <p className="text-xs sm:text-sm text-gray-700 font-mono mt-2 font-bold break-all px-2">
                         {student.unique_code}
                       </p>
                     )}

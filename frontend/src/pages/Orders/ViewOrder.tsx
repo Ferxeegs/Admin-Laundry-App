@@ -8,7 +8,7 @@ import Badge from "../../components/ui/badge/Badge";
 import Label from "../../components/form/Label";
 import { Modal } from "../../components/ui/modal";
 import StatusLogModal from "../../components/Orders/StatusLogModal";
-import { orderAPI, studentAPI, userAPI, mediaAPI, getBaseUrl } from "../../utils/api";
+import { orderAPI, studentAPI, userAPI, mediaAPI, settingAPI, getBaseUrl } from "../../utils/api";
 import { AngleLeftIcon, PencilIcon } from "../../icons";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
@@ -77,6 +77,7 @@ export default function ViewOrder() {
   const [images, setImages] = useState<Media[]>([]);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
+  const [dailyQuotaLimit, setDailyQuotaLimit] = useState(4);
   // const [ , setPricePerItem] = useState<number>(4000); // Default value
   const { success, error: showError } = useToast();
   const { hasPermission } = useAuth();
@@ -178,7 +179,18 @@ export default function ViewOrder() {
     setError(null);
 
     try {
-      const response = await orderAPI.getOrderById(id);
+      const [response, settingsResponse] = await Promise.all([
+        orderAPI.getOrderById(id),
+        settingAPI.getByGroup("order"),
+      ]);
+
+      if (settingsResponse.success && settingsResponse.data) {
+        const mq = settingsResponse.data.monthly_quota;
+        const q =
+          typeof mq === "number" ? mq : typeof mq === "string" ? parseInt(mq, 10) || 4 : 4;
+        setDailyQuotaLimit(q);
+      }
+
       if (response.success && response.data) {
         const orderData = response.data as Order;
         setOrder(orderData);
@@ -773,7 +785,7 @@ export default function ViewOrder() {
                   Kuota Gratis Digunakan
                 </p>
                 <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                  {order.free_items_used} dari 4 pakaian/bulan
+                  {order.free_items_used} dari {dailyQuotaLimit} pakaian/hari
                 </p>
               </div>
               <div>

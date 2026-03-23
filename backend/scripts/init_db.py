@@ -336,7 +336,7 @@ def init_settings(db: Session):
             "name": "monthly_quota",
             "payload": 4,
             "locked": 0,
-        },
+        },  # legacy key: batas item gratis per siswa per hari (reset harian)
         {
             "group": "order",
             "name": "price_per_item",

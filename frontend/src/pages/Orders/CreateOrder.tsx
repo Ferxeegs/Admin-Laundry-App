@@ -412,7 +412,7 @@ export default function CreateOrder() {
                     disabled={isLoading}
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Sistem akan menghitung otomatis: kuota gratis (4 pakaian/bulan), pakaian berbayar, dan total biaya (Rp 4.000 per pakaian berbayar)
+                    Sistem akan menghitung otomatis: kuota gratis (sesuai pengaturan, reset per hari), pakaian berbayar, dan total biaya sesuai harga per item di pengaturan
                   </p>
                 </div>
 

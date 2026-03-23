@@ -4,7 +4,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
-import { studentAPI, mediaAPI, orderAPI, getBaseUrl } from "../../utils/api";
+import { studentAPI, mediaAPI, orderAPI, settingAPI, getBaseUrl } from "../../utils/api";
 import { Modal } from "../../components/ui/modal";
 import { useToast } from "../../context/ToastContext";
 import Label from "../../components/form/Label";
@@ -37,6 +37,7 @@ export default function ScanQR() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
   const [remainingQuota, setRemainingQuota] = useState<number | null>(null);
+  const [quotaLimit, setQuotaLimit] = useState<number | null>(null);
   const [isLoadingQuota, setIsLoadingQuota] = useState(false);
   const [activeOrder, setActiveOrder] = useState<{
     id: string;
@@ -220,8 +221,7 @@ export default function ScanQR() {
             setProfileImage(null);
           }
 
-          // Fetch monthly quota
-          await fetchMonthlyQuota(studentData.id);
+          await fetchRemainingDailyQuota(studentData.id);
           
           // Fetch active orders (not PICKED_UP)
           await fetchActiveOrder(studentData.id);
@@ -279,38 +279,47 @@ export default function ScanQR() {
     }
   };
 
-  const fetchMonthlyQuota = async (studentId: string) => {
+  const fetchRemainingDailyQuota = async (studentId: string) => {
     setIsLoadingQuota(true);
     try {
-      // Get current month start and end dates
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      const settingsRes = await settingAPI.getByGroup("order");
+      const orderSettings = settingsRes.success ? settingsRes.data : {};
+      const limit =
+        typeof orderSettings?.monthly_quota === "number"
+          ? orderSettings.monthly_quota
+          : typeof orderSettings?.monthly_quota === "string"
+            ? parseInt(orderSettings.monthly_quota, 10) || 4
+            : 4;
+      setQuotaLimit(limit);
 
-      // Fetch all orders for this student in current month
+      const now = new Date();
+      const dayStart = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)
+      );
+      const dayEndExclusive = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+
       let allOrders: any[] = [];
       let page = 1;
-      const limit = 100;
+      const pageLimit = 100;
       let hasMore = true;
 
       while (hasMore) {
         const response = await orderAPI.getAllOrders({
           page,
-          limit,
+          limit: pageLimit,
           student_id: studentId,
         });
 
         if (response.success && response.data) {
           const orders = response.data.orders || [];
-          
-          // Filter orders created in current month
-          const monthlyOrders = orders.filter((order: any) => {
+
+          const todaysOrders = orders.filter((order: any) => {
             if (!order.created_at) return false;
             const orderDate = new Date(order.created_at);
-            return orderDate >= monthStart && orderDate <= monthEnd;
+            return orderDate >= dayStart && orderDate < dayEndExclusive;
           });
 
-          allOrders = [...allOrders, ...monthlyOrders];
+          allOrders = [...allOrders, ...todaysOrders];
 
           const pagination = response.data.pagination;
           if (pagination && pagination.totalPages && page < pagination.totalPages) {
@@ -323,18 +332,15 @@ export default function ScanQR() {
         }
       }
 
-      // Calculate total free items used this month
       const totalFreeItemsUsed = allOrders.reduce((sum, order) => {
         return sum + (order.free_items_used || 0);
       }, 0);
 
-      // Monthly quota is 4 items
-      const monthlyQuota = 4;
-      const remaining = Math.max(0, monthlyQuota - totalFreeItemsUsed);
-      setRemainingQuota(remaining);
+      setRemainingQuota(Math.max(0, limit - totalFreeItemsUsed));
     } catch (err) {
-      console.error("Error fetching monthly quota:", err);
+      console.error("Error fetching daily quota:", err);
       setRemainingQuota(null);
+      setQuotaLimit(null);
     } finally {
       setIsLoadingQuota(false);
     }
@@ -346,6 +352,7 @@ export default function ScanQR() {
     setError(null);
     setScanError(null);
     setRemainingQuota(null);
+    setQuotaLimit(null);
     setActiveOrder(null);
     setStatusNotes("");
   };
@@ -514,7 +521,7 @@ export default function ScanQR() {
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
             Halaman ini digunakan untuk memindai QR code siswa saat penyerahan atau pengambilan laundry.
-            Setelah QR code terdeteksi, sistem akan menampilkan data siswa, sisa kuota gratis bulanan,
+            Setelah QR code terdeteksi, sistem akan menampilkan data siswa, sisa kuota gratis hari ini,
             dan order aktif (jika ada). Anda dapat membuat order baru atau mengubah status order
             (Diterima → Cuci & Kering → Setrika → Selesai → Diambil).
           </p>
@@ -657,7 +664,7 @@ export default function ScanQR() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                      Sisa Kuota Bulan Ini
+                      Sisa Kuota Hari Ini
                     </p>
                     {isLoadingQuota ? (
                       <p className="text-sm text-gray-500 dark:text-gray-400">Memuat...</p>
@@ -672,7 +679,7 @@ export default function ScanQR() {
                       Kuota Total
                     </p>
                     <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-                      4 pakaian/bulan
+                      {quotaLimit !== null ? `${quotaLimit} pakaian/hari` : "-"}
                     </p>
                   </div>
                 </div>

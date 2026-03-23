@@ -150,8 +150,8 @@ export default function StudentSidebar({
 
       if (uploadResponse.success && uploadResponse.data) {
         // Update state with new profile picture
-        setCurrentProfilePictureId(uploadResponse.data.id);
-        const serverUrl = `${getBaseUrl()}${uploadResponse.data.url}`;
+        setCurrentProfilePictureId((uploadResponse.data as any).id);
+        const serverUrl = `${getBaseUrl()}${(uploadResponse.data as any).url}`;
         setImagePreview(serverUrl);
         setImageError(false);
         

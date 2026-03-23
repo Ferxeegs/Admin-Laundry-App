@@ -57,7 +57,7 @@ class Order(Base, TimestampMixin, AuditMixin):
 
     # Item & Quota Management [cite: 159, 169]
     total_items = Column(Integer, default=0, nullable=False)
-    free_items_used = Column(Integer, default=0, nullable=False)  # Max 4 per bulan
+    free_items_used = Column(Integer, default=0, nullable=False)  # Gratis sesuai kuota harian (setting)
     paid_items_count = Column(Integer, default=0, nullable=False)
     additional_fee = Column(Numeric(10, 2), default=0.00, nullable=False)
 

@@ -2228,7 +2228,7 @@ export const orderAPI = {
   /**
    * Create new order
    * Staff only inputs total_items, system automatically calculates:
-   * - free_items_used (based on monthly quota: 4 free items per month)
+   * - free_items_used (based on daily quota from settings)
    * - paid_items_count (items exceeding quota)
    * - additional_fee (paid_items_count * 4000)
    */
@@ -2323,7 +2323,7 @@ export const orderAPI = {
   /**
    * Update order (not status)
    * Staff only inputs total_items, system automatically recalculates:
-   * - free_items_used (based on monthly quota: 4 free items per month)
+   * - free_items_used (based on daily quota from settings)
    * - paid_items_count (items exceeding quota)
    * - additional_fee (paid_items_count * 4000)
    */

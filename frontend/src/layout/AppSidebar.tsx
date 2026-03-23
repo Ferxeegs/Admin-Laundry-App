@@ -44,13 +44,13 @@ const navItems: NavItem[] = [
   // },
   {
     icon: <UserIcon />,
-    name: "Students",
+    name: "Siswa",
     path: "/students",
     requiredPermission: ["view_student"],
   },
   {
     icon: <ListIcon />,
-    name: "Orders",
+    name: "Pesanan",
     path: "/orders",
     requiredPermission: ["view_order"],
   },
@@ -67,7 +67,7 @@ const navItems: NavItem[] = [
   },
   {
     icon: <LockIcon />,
-    name: "Access",
+    name: "Akses",
     subItems: [
       // { 
       //   name: "User Profile", 
@@ -75,13 +75,13 @@ const navItems: NavItem[] = [
       //   pro: false,
       // },
       { 
-        name: "Users", 
+        name: "Pengguna", 
         path: "/users", 
         pro: false,
         requiredPermission: ["view_user"],
       },
       { 
-        name: "Roles", 
+        name: "Peran", 
         path: "/roles", 
         pro: false,
         requiredPermission: ["view_role"],
@@ -108,7 +108,7 @@ const navItems: NavItem[] = [
 const othersItems: NavItem[] = [
   {
     icon: <SettingsIcon />,
-    name: "Settings",
+    name: "Pengaturan",
     path: "/settings",
     requiredPermission: ["view_setting"],
   },

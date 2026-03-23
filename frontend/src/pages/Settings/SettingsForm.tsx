@@ -327,7 +327,7 @@ export default function SettingsForm() {
           settingsToUpdate.push({
             group: "appearance",
             name: "site_logo",
-            payload: logoResponse.data.url, // URL sudah dalam format /uploads/settings/...
+            payload: (logoResponse.data as any).url, // URL sudah dalam format /uploads/settings/...
           });
         }
       } else if (settings.appearance.site_logo) {
@@ -353,7 +353,7 @@ export default function SettingsForm() {
           settingsToUpdate.push({
             group: "appearance",
             name: "site_logo_dark",
-            payload: logoDarkResponse.data.url, // URL sudah dalam format /uploads/settings/...
+            payload: (logoDarkResponse.data as any).url, // URL sudah dalam format /uploads/settings/...
           });
         }
       } else if (settings.appearance.site_logo_dark) {
@@ -377,7 +377,7 @@ export default function SettingsForm() {
           settingsToUpdate.push({
             group: "appearance",
             name: "brand_logo_square",
-            payload: brandLogoSquareResponse.data.url,
+            payload: (brandLogoSquareResponse.data as any).url,
           });
         }
       } else if (settings.appearance.brand_logo_square) {
@@ -400,7 +400,7 @@ export default function SettingsForm() {
           settingsToUpdate.push({
             group: "appearance",
             name: "site_favicon",
-            payload: faviconResponse.data.url,
+            payload: (faviconResponse.data as any).url,
           });
         }
       } else if (settings.appearance.site_favicon) {
@@ -763,12 +763,12 @@ export default function SettingsForm() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2">
             <div>
-              <Label>Monthly Quota</Label>
+              <Label>Kuota gratis (item/siswa/hari)</Label>
               <Input
                 type="number"
                 value={settings.order.monthly_quota || ""}
                 onChange={(e) => handleInputChange("order", "monthly_quota", e.target.value)}
-                placeholder="Monthly Quota"
+                placeholder="Contoh: 4"
                 disabled={!canUpdateSettings}
               />
             </div>
