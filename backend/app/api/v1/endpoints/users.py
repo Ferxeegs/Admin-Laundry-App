@@ -13,7 +13,13 @@ from app.schemas.user import (
     UserRead, UserCreate, UserUpdate, UserRoleUpdate, UserPasswordReset, UserPasswordChange
 )
 from app.schemas.common import WebResponse
-from app.core.security import get_password_hash, create_access_token, decode_access_token, verify_password
+from app.core.security import (
+    get_password_hash,
+    create_access_token,
+    create_refresh_token,
+    decode_access_token,
+    verify_password,
+)
 from app.core.config import settings
 from app.core.exceptions import (
     NotFoundException, BadRequestException, ConflictException, ForbiddenException, UnauthorizedException
@@ -617,7 +623,18 @@ def impersonate_user(
         },
         expires_delta=access_token_expires
     )
-    
+
+    refresh_token = create_refresh_token(
+        {
+            "sub": target_user.username,
+            "user_id": target_user.id,
+            "original_user_id": current_user.id,
+            "original_username": current_user.username,
+            "is_impersonating": True,
+        }
+    )
+    refresh_max_age = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+
     # Set access token in HttpOnly cookie
     response.set_cookie(
         key="access_token",
@@ -627,6 +644,15 @@ def impersonate_user(
         samesite="lax",
         secure=False,  # Set to True in production with HTTPS
         path="/"
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        max_age=refresh_max_age,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        path="/",
     )
     
     # Eager load roles and permissions
@@ -694,7 +720,12 @@ def stop_impersonate(
         },
         expires_delta=access_token_expires
     )
-    
+
+    refresh_token = create_refresh_token(
+        {"sub": original_user.username, "user_id": original_user.id}
+    )
+    refresh_max_age = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+
     # Set access token in HttpOnly cookie
     response.set_cookie(
         key="access_token",
@@ -704,6 +735,15 @@ def stop_impersonate(
         samesite="lax",
         secure=False,  # Set to True in production with HTTPS
         path="/"
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        max_age=refresh_max_age,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        path="/",
     )
     
     # Eager load roles and permissions

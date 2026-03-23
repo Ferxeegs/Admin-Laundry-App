@@ -89,12 +89,57 @@ export interface ApiResponse<T = any> {
   error?: string;
 }
 
+async function parseResponseBody(response: Response): Promise<Record<string, unknown>> {
+  const text = await response.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+let refreshInFlight: Promise<boolean> | null = null;
+
+/**
+ * Mint access_token baru via cookie HttpOnly refresh_token (POST /auth/refresh).
+ * Dipakai saat access JWT habis masa berlaku tetapi pengguna masih punya sesi refresh.
+ */
+export async function tryRefreshSession(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    })().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
+function shouldAttemptRefreshOn401(requestUrl: string): boolean {
+  return (
+    !requestUrl.includes('/auth/login') &&
+    !requestUrl.includes('/auth/register') &&
+    !requestUrl.includes('/auth/refresh')
+  );
+}
+
 /**
  * Helper function untuk membuat request ke API
  */
 async function apiRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  allowRefreshRetry = true
 ): Promise<ApiResponse<T>> {
   const url = `${API_BASE_URL}${endpoint}`;
   
@@ -117,12 +162,17 @@ async function apiRequest<T>(
 
   try {
     const response = await fetch(url, config);
-    const data = await response.json();
+    const data = await parseResponseBody(response);
 
-    // Jika token expired (401), langsung return error
-    // Token sekarang di cookie, tidak ada refresh token mechanism
-    if (response.status === 401 && !url.includes('/auth/login')) {
-      // Session expired, user perlu login lagi
+    if (
+      response.status === 401 &&
+      allowRefreshRetry &&
+      shouldAttemptRefreshOn401(url)
+    ) {
+      const refreshed = await tryRefreshSession();
+      if (refreshed) {
+        return apiRequest<T>(endpoint, options, false);
+      }
       return {
         success: false,
         message: 'Session telah berakhir. Silakan login kembali.',
@@ -132,11 +182,17 @@ async function apiRequest<T>(
 
     if (!response.ok) {
       // Jika error dari backend, gunakan message atau error field
-      const errorMessage = data.message || data.error || 'Terjadi kesalahan';
+      const errorMessage =
+        (typeof data.message === 'string' && data.message) ||
+        (typeof data.error === 'string' && data.error) ||
+        'Terjadi kesalahan';
       return {
         success: false,
         message: errorMessage,
-        error: data.error || data.message || errorMessage,
+        error:
+          (typeof data.error === 'string' && data.error) ||
+          (typeof data.message === 'string' && data.message) ||
+          errorMessage,
       };
     }
 
@@ -145,9 +201,13 @@ async function apiRequest<T>(
     const isSuccess = data.status === "success" || data.success === true;
     return {
       success: isSuccess,
-      message: data.message || (isSuccess ? "Success" : "Error"),
-      data: data.data,
-      error: data.error || (!isSuccess ? data.message : undefined),
+      message:
+        (typeof data.message === 'string' && data.message) ||
+        (isSuccess ? "Success" : "Error"),
+      data: data.data as T | undefined,
+      error:
+        (typeof data.error === 'string' && data.error) ||
+        (!isSuccess && typeof data.message === 'string' ? data.message : undefined),
     };
   } catch (error: any) {
     return {
@@ -262,26 +322,42 @@ export const mediaAPI = {
     const headers: HeadersInit = {};
 
     try {
-      const response = await fetch(`${API_BASE_URL}/media/upload`, {
-        method: 'POST',
-        headers,
-        body: formData,
-        credentials: 'include', // Important: include cookies for authentication
-      });
+      const doUpload = () =>
+        fetch(`${API_BASE_URL}/media/upload`, {
+          method: 'POST',
+          headers,
+          body: formData,
+          credentials: 'include', // Important: include cookies for authentication
+        });
 
-      const data = await response.json();
+      let response = await doUpload();
+
+      if (response.status === 401) {
+        const refreshed = await tryRefreshSession();
+        if (refreshed) {
+          response = await doUpload();
+        }
+      }
+
+      const data = await parseResponseBody(response);
 
       if (!response.ok) {
         return {
           success: false,
-          message: data.message || data.error || 'Gagal mengupload file',
-          error: data.error || data.message || 'Upload failed',
+          message:
+            (typeof data.message === 'string' && data.message) ||
+            (typeof data.error === 'string' && data.error) ||
+            'Gagal mengupload file',
+          error:
+            (typeof data.error === 'string' && data.error) ||
+            (typeof data.message === 'string' && data.message) ||
+            'Upload failed',
         };
       }
 
       return {
         success: true,
-        message: data.message || 'File berhasil diupload',
+        message: (typeof data.message === 'string' && data.message) || 'File berhasil diupload',
         data: data.data,
       };
     } catch (error: any) {
