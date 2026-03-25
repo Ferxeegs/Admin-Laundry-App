@@ -5,6 +5,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import { studentAPI, mediaAPI, orderAPI, settingAPI, getBaseUrl } from "../../utils/api";
+import { compressOrderImage } from "../../utils/compressOrderImage";
 import { Modal } from "../../components/ui/modal";
 import { useToast } from "../../context/ToastContext";
 import Label from "../../components/form/Label";
@@ -51,6 +52,7 @@ export default function ScanQR() {
   const [statusNotes, setStatusNotes] = useState<string>("");
   const [statusImage, setStatusImage] = useState<File | null>(null);
   const [statusImagePreview, setStatusImagePreview] = useState<string | null>(null);
+  const [isCompressingStatusImage, setIsCompressingStatusImage] = useState(false);
   const scannerElementId = "qr-reader";
   const { success, error: showError } = useToast();
 
@@ -405,6 +407,7 @@ export default function ScanQR() {
     setStatusNotes("");
     setStatusImage(null);
     setStatusImagePreview(null);
+    setIsCompressingStatusImage(false);
     setIsStatusModalOpen(true);
   };
 
@@ -413,29 +416,45 @@ export default function ScanQR() {
     setStatusNotes("");
     setStatusImage(null);
     setStatusImagePreview(null);
+    setIsCompressingStatusImage(false);
   };
 
-  const handleStatusImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleStatusImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setStatusImage(file);
-      // Create preview
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showError("Hanya file gambar yang diizinkan.");
+      e.target.value = "";
+      return;
+    }
+
+    setIsCompressingStatusImage(true);
+    try {
+      const compressed = await compressOrderImage(file);
+      setStatusImage(compressed);
       const reader = new FileReader();
       reader.onloadend = () => {
         setStatusImagePreview(reader.result as string);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressed);
+    } catch {
+      showError("Gagal memproses gambar. Coba lagi atau pilih gambar lain.");
+      setStatusImage(null);
+      setStatusImagePreview(null);
+    } finally {
+      setIsCompressingStatusImage(false);
+      e.target.value = "";
     }
   };
 
   const handleRemoveStatusImage = () => {
     setStatusImage(null);
     setStatusImagePreview(null);
-    // Reset file input
-    const fileInput = document.getElementById('status-image-input') as HTMLInputElement;
-    if (fileInput) {
-      fileInput.value = '';
-    }
+    const fileInput = document.getElementById("status-image-input") as HTMLInputElement;
+    const cameraInput = document.getElementById("status-image-camera") as HTMLInputElement;
+    if (fileInput) fileInput.value = "";
+    if (cameraInput) cameraInput.value = "";
   };
 
   const handleUpdateStatus = async () => {
@@ -456,20 +475,19 @@ export default function ScanQR() {
       if (response.success) {
         // Upload image if provided
         if (statusImage && response.data?.trackings && response.data.trackings.length > 0) {
-          // Get the latest tracking (the one we just created)
           const latestTracking = response.data.trackings[response.data.trackings.length - 1];
-          
-          try {
-            await mediaAPI.uploadMedia(
-              statusImage,
-              "OrderTracking",
-              latestTracking.id,
-              "status_update"
+
+          const uploadResult = await mediaAPI.uploadMedia(
+            statusImage,
+            "OrderTracking",
+            latestTracking.id,
+            "status_update"
+          );
+          if (!uploadResult.success) {
+            showError(
+              uploadResult.message ||
+                "Gagal mengunggah foto status. Status order tetap diperbarui; silakan unggah foto dari halaman detail order jika perlu."
             );
-          } catch (uploadErr: any) {
-            console.error("Error uploading status image:", uploadErr);
-            // Don't fail the whole operation if image upload fails
-            // Just log the error
           }
         }
 
@@ -833,6 +851,7 @@ export default function ScanQR() {
                 onChange={(e) => setStatusNotes(e.target.value)}
                 placeholder="Masukkan catatan untuk perubahan status..."
                 rows={3}
+                disabled={isUpdatingStatus || isCompressingStatusImage}
                 className="w-full mt-2 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
               />
             </div>
@@ -852,7 +871,8 @@ export default function ScanQR() {
                     <button
                       type="button"
                       onClick={handleRemoveStatusImage}
-                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      disabled={isUpdatingStatus || isCompressingStatusImage}
+                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -860,7 +880,13 @@ export default function ScanQR() {
                     </button>
                   </div>
                 ) : (
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <>
+                    {isCompressingStatusImage && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Memampatkan gambar…
+                      </p>
+                    )}
+                    <div className="flex flex-col sm:flex-row gap-2">
                     <label
                       htmlFor="status-image-input"
                       className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
@@ -880,13 +906,15 @@ export default function ScanQR() {
                       </svg>
                       Ambil dari Kamera
                     </label>
-                  </div>
+                    </div>
+                  </>
                 )}
                 <input
                   id="status-image-input"
                   type="file"
                   accept="image/*"
                   onChange={handleStatusImageChange}
+                  disabled={isUpdatingStatus || isCompressingStatusImage}
                   className="hidden"
                 />
                 <input
@@ -895,8 +923,12 @@ export default function ScanQR() {
                   accept="image/*"
                   capture="environment"
                   onChange={handleStatusImageChange}
+                  disabled={isUpdatingStatus || isCompressingStatusImage}
                   className="hidden"
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Foto akan diperkecil (maks. 1024px) dan dikompres ke WebP sebelum diunggah.
+                </p>
               </div>
             </div>
 
@@ -910,7 +942,7 @@ export default function ScanQR() {
               <button
                 type="button"
                 onClick={handleCloseStatusModal}
-                disabled={isUpdatingStatus}
+                disabled={isUpdatingStatus || isCompressingStatusImage}
                 className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
               >
                 Batal
@@ -918,10 +950,14 @@ export default function ScanQR() {
               <button
                 type="button"
                 onClick={handleUpdateStatus}
-                disabled={isUpdatingStatus}
+                disabled={isUpdatingStatus || isCompressingStatusImage}
                 className="px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isUpdatingStatus ? "Mengupdate..." : "Konfirmasi Update"}
+                {isUpdatingStatus
+                  ? "Mengupdate..."
+                  : isCompressingStatusImage
+                    ? "Memampatkan gambar…"
+                    : "Konfirmasi Update"}
               </button>
             </div>
           </div>

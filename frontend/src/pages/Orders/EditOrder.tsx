@@ -3,7 +3,9 @@ import { useParams, useNavigate, Link } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import { orderAPI, mediaAPI, getBaseUrl } from "../../utils/api";
+import { compressOrderImage } from "../../utils/compressOrderImage";
 import { AngleLeftIcon } from "../../icons";
+import { useToast } from "../../context/ToastContext";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import TableSkeleton from "../../components/common/TableSkeleton";
@@ -23,6 +25,8 @@ export default function EditOrder() {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<Array<{ file: File; preview: string }>>([]);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [isCompressingImages, setIsCompressingImages] = useState(false);
+  const { error: showErrorToast } = useToast();
 
   const canEditOrder = (status: string): boolean => {
     return status === "RECEIVED";
@@ -93,58 +97,70 @@ export default function EditOrder() {
     }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const maxSize = 2 * 1024 * 1024; // 2MB
-    const newFiles: File[] = [];
+    const rawInputs = Array.from(files);
     const errors: string[] = [];
+    const toCompress: File[] = [];
 
-    // Validate all files first
-    Array.from(files).forEach((file) => {
-      if (!file.type.startsWith('image/')) {
+    for (const file of rawInputs) {
+      if (!file.type.startsWith("image/")) {
         errors.push(`File ${file.name} bukan file gambar`);
-        return;
+        continue;
       }
-      
-      if (file.size > maxSize) {
-        errors.push(`File ${file.name} melebihi ukuran maksimal 2MB`);
-        return;
-      }
-
-      newFiles.push(file);
-    });
+      toCompress.push(file);
+    }
 
     if (errors.length > 0) {
-      setError(errors.join(', '));
-      if (newFiles.length === 0) {
-        e.target.value = '';
+      setError(errors.join(", "));
+      if (toCompress.length === 0) {
+        e.target.value = "";
         return;
       }
     } else {
       setError(null);
     }
 
-    if (newFiles.length > 0) {
-      setSelectedImages((prev) => [...prev, ...newFiles]);
-      
-      newFiles.forEach((file) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImagePreviews((prev) => [
-            ...prev,
-            {
-              file,
-              preview: reader.result as string,
-            },
-          ]);
-        };
-        reader.readAsDataURL(file);
-      });
+    setIsCompressingImages(true);
+    const newFiles: File[] = [];
+    const compressErrors: string[] = [];
+
+    for (const file of toCompress) {
+      try {
+        newFiles.push(await compressOrderImage(file));
+      } catch {
+        compressErrors.push(file.name);
+      }
     }
 
-    e.target.value = '';
+    setIsCompressingImages(false);
+
+    if (compressErrors.length > 0) {
+      showErrorToast(
+        `Gagal memproses gambar: ${compressErrors.join(", ")}. Coba lagi atau pilih gambar lain.`
+      );
+    }
+
+    if (newFiles.length === 0) {
+      e.target.value = "";
+      return;
+    }
+
+    const previewEntries: Array<{ file: File; preview: string }> = [];
+    for (const file of newFiles) {
+      const preview = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+      previewEntries.push({ file, preview });
+    }
+
+    setSelectedImages((prev) => [...prev, ...newFiles]);
+    setImagePreviews((prev) => [...prev, ...previewEntries]);
+    e.target.value = "";
   };
 
   const removeImage = (index: number) => {
@@ -202,24 +218,31 @@ export default function EditOrder() {
         return;
       }
 
-      // Upload new images if any
       if (selectedImages.length > 0 && id) {
         setIsUploadingImages(true);
         try {
-          const uploadPromises = selectedImages.map((file) =>
-            mediaAPI.uploadMedia(file, 'Order', id, 'images')
+          const results = await Promise.all(
+            selectedImages.map((file) =>
+              mediaAPI.uploadMedia(file, "Order", id, "images")
+            )
           );
-          
-          await Promise.all(uploadPromises);
+          const failed = results.filter((r) => !r.success);
+          if (failed.length > 0) {
+            const detail =
+              failed.length === selectedImages.length
+                ? failed[0].message || "Gagal mengunggah gambar. Silakan coba lagi."
+                : `${failed.length} dari ${selectedImages.length} gambar gagal diunggah.`;
+            showErrorToast(detail);
+          }
         } catch (uploadErr) {
           console.error("Upload images error:", uploadErr);
-          // Don't fail the whole update if image upload fails
+          showErrorToast("Gagal mengunggah gambar. Silakan coba lagi.");
         } finally {
           setIsUploadingImages(false);
         }
       }
 
-      // Redirect to view order page
+      setIsLoading(false);
       navigate(`/orders/${id}`);
     } catch (err: any) {
       setError("Terjadi kesalahan saat mengupdate order");
@@ -322,7 +345,7 @@ export default function EditOrder() {
                     onChange={(e) => handleFormChange(e.target.name, parseInt(e.target.value) || 0)}
                     placeholder="Masukkan jumlah pakaian"
                     min="1"
-                    disabled={isLoading || !canEditOrder(orderStatus)}
+                    disabled={isLoading || isCompressingImages || !canEditOrder(orderStatus)}
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Sistem akan menghitung otomatis: kuota gratis (sesuai pengaturan, reset per hari), pakaian berbayar, dan total biaya sesuai harga per item di pengaturan
@@ -341,7 +364,7 @@ export default function EditOrder() {
                     value={formData.notes}
                     onChange={(e) => handleFormChange(e.target.name, e.target.value)}
                     placeholder="Masukkan catatan (opsional)"
-                    disabled={isLoading}
+                    disabled={isLoading || isCompressingImages}
                     rows={4}
                     className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                   />
@@ -382,7 +405,7 @@ export default function EditOrder() {
                     )}
 
                     {/* Add New Images */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                       <label className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -393,10 +416,15 @@ export default function EditOrder() {
                           accept="image/*"
                           multiple
                           onChange={handleImageChange}
-                          disabled={isLoading || isUploadingImages}
+                          disabled={isLoading || isUploadingImages || isCompressingImages}
                           className="hidden"
                         />
                       </label>
+                      {isCompressingImages && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          Memampatkan gambar…
+                        </span>
+                      )}
                       {selectedImages.length > 0 && (
                         <button
                           type="button"
@@ -437,7 +465,7 @@ export default function EditOrder() {
                     )}
 
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Format yang didukung: JPG, PNG, GIF. Maksimal 2MB per file. Anda dapat memilih lebih dari satu gambar.
+                      Foto akan otomatis diperkecil (maks. lebar/tinggi 1024px) dan dikompres ke WebP sebelum diunggah. Anda dapat memilih lebih dari satu gambar.
                     </p>
                   </div>
                 </div>
@@ -448,7 +476,7 @@ export default function EditOrder() {
                 <button
                   type="button"
                   onClick={() => navigate(`/orders/${id}`)}
-                  disabled={isLoading}
+                  disabled={isLoading || isCompressingImages}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
                 >
                   <AngleLeftIcon className="w-4 h-4" />
@@ -456,10 +484,14 @@ export default function EditOrder() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading || isUploadingImages || !canEditOrder(orderStatus)}
+                  disabled={isLoading || isUploadingImages || isCompressingImages || !canEditOrder(orderStatus)}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading || isUploadingImages ? "Memperbarui..." : "Perbarui Pesanan"}
+                  {isLoading || isUploadingImages
+                    ? "Memperbarui..."
+                    : isCompressingImages
+                      ? "Memampatkan gambar…"
+                      : "Perbarui Pesanan"}
                 </button>
               </div>
             </div>

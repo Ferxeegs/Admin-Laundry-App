@@ -1,9 +1,9 @@
 """
 Order management endpoints.
 """
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
-from fastapi import APIRouter, Depends, Query, status, UploadFile, File, Form, Request
+from fastapi import APIRouter, Depends, Query, status, UploadFile, File, Form, Request, BackgroundTasks
 from starlette.datastructures import UploadFile as StarletteUploadFile
 from sqlalchemy.orm import Session, joinedload
 
@@ -15,12 +15,14 @@ from app.models.common import Setting
 from app.schemas.common import WebResponse
 from app.schemas.order import (
     OrderRead,
+    OrderCreated,
     OrderCreate,
     OrderUpdate,
     OrderWithTrackingRead,
     OrderTrackingRead,
     OrderTrackingCreate,
 )
+from app.services.order_image_background import process_order_images_background
 from app.core.exceptions import NotFoundException, BadRequestException
 
 router = APIRouter()
@@ -166,10 +168,11 @@ def get_order_by_id(
 
 
 @router.post(
-    "/", response_model=WebResponse[OrderRead], status_code=status.HTTP_201_CREATED
+    "/", response_model=WebResponse[OrderCreated], status_code=status.HTTP_201_CREATED
 )
 async def create_order(
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("create_order")),
 ):
@@ -337,158 +340,31 @@ async def create_order(
         logger.error(f"Error creating order: {e}", exc_info=True)
         raise BadRequestException(f"Failed to create order: {str(e)}")
 
-    # Handle image uploads if provided
-    if images and len(images) > 0:
-        logger.info(f"Processing {len(images)} images for order {order.id}")
-        try:
-            from app.models.common import Media
-            from app.api.v1.endpoints.media import ensure_upload_dir
-            from pathlib import Path
-            import uuid
-            from app.core.config import settings
-            
-            model_type = "Order"
-            collection = "images"
-            upload_dir = ensure_upload_dir(model_type, collection)
-            logger.info(f"Upload directory: {upload_dir}")
-            
-            media_records = []
-            
-            # Process each image
-            for idx, image in enumerate(images):
-                try:
-                    logger.info(f"Processing image {idx + 1}/{len(images)}: {image.filename}")
-                    
-                    # Validate file type (only images)
-                    if not image.content_type or not image.content_type.startswith('image/'):
-                        logger.warning(f"Skipping non-image file: {image.filename} (content_type: {image.content_type})")
-                        continue
-                    
-                    # Read file content
-                    file_content = await image.read()
-                    file_size = len(file_content)
-                    logger.info(f"Image {image.filename} size: {file_size} bytes")
-                    
-                    # Validate file size
-                    if file_size == 0:
-                        logger.warning(f"Skipping empty file: {image.filename}")
-                        continue
-                    if file_size > settings.MAX_UPLOAD_SIZE:
-                        logger.warning(f"Skipping file {image.filename}: size exceeds maximum ({settings.MAX_UPLOAD_SIZE / 1024 / 1024:.2f}MB)")
-                        continue
-                    
-                    # Generate unique filename
-                    file_ext = Path(image.filename).suffix if image.filename else '.jpg'
-                    unique_filename = f"{uuid.uuid4().hex}{file_ext}"
-                    file_path = upload_dir / unique_filename
-                    logger.info(f"Saving file to: {file_path}")
-                    
-                    # Save file to filesystem
-                    with open(file_path, 'wb') as f:
-                        f.write(file_content)
-                    
-                    # Verify file was saved
-                    if not file_path.exists():
-                        logger.error(f"File was not saved: {file_path}")
-                        continue
-                    
-                    saved_size = file_path.stat().st_size
-                    if saved_size != file_size:
-                        logger.error(f"File size mismatch: expected {file_size}, got {saved_size}")
-                        # Delete the file if size mismatch
-                        try:
-                            file_path.unlink()
-                        except:
-                            pass
-                        continue
-                    
-                    logger.info(f"File saved successfully: {file_path} (size: {saved_size} bytes)")
-                    
-                    # Generate URL
-                    relative_url = f"/uploads/{model_type.lower()}/{collection}/{unique_filename}"
-                    
-                    # Create media record
-                    media = Media(
-                        model_type=model_type,
-                        model_id=order.id,
-                        collection=collection,
-                        url=relative_url,
-                        file_name=image.filename or unique_filename,
-                        name=unique_filename,
-                        mime_type=image.content_type or 'image/jpeg',
-                        size=file_size
-                    )
-                    
-                    db.add(media)
-                    media_records.append(media)
-                    logger.info(f"Media record added to session: {media.file_name}")
-                    
-                except Exception as e:
-                    # Log error for individual image but continue with other images
-                    logger.error(f"Error uploading image {image.filename} for order {order.id}: {e}", exc_info=True)
-                    continue
-            
-            # Commit all media records at once (using a separate transaction)
-            if media_records:
-                try:
-                    # Use flush first to validate, then commit
-                    db.flush()
-                    db.commit()
-                    logger.info(f"Successfully committed {len(media_records)} media records to database for order {order.id}")
-                    
-                    # Refresh all media records to get their IDs
-                    for media in media_records:
-                        db.refresh(media)
-                        logger.info(f"Media record saved: ID={media.id}, model_id={media.model_id}, url={media.url}")
-                    
-                    # Verify records were actually saved
-                    saved_count = db.query(Media).filter(
-                        Media.model_type == model_type,
-                        Media.model_id == order.id,
-                        Media.collection == collection
-                    ).count()
-                    logger.info(f"Verified: {saved_count} media records found in database for order {order.id}")
-                    
-                    if saved_count != len(media_records):
-                        logger.warning(f"Media count mismatch: expected {len(media_records)}, found {saved_count}")
-                        
-                except Exception as e:
-                    db.rollback()
-                    logger.error(f"Error committing media records to database: {e}", exc_info=True)
-                    # Delete files that were saved but not committed to DB
-                    for media in media_records:
-                        try:
-                            file_path = upload_dir / media.name
-                            if file_path.exists():
-                                file_path.unlink()
-                                logger.info(f"Deleted file due to DB error: {file_path}")
-                        except Exception as del_err:
-                            logger.error(f"Error deleting file {media.name}: {del_err}")
-                    # Don't raise - order was already created, just log the error
-                    logger.error(f"Order {order.id} created but images failed to save to database")
-            else:
-                logger.info("No media records to commit")
-                
-        except BadRequestException:
-            raise
-        except Exception as e:
-            # Log error but don't fail order creation if image upload fails
-            logger.error(f"Error uploading images for order {order.id}: {e}", exc_info=True)
-            # Rollback any uncommitted changes
+    # Read image bytes in the request thread, then persist in a background task so the
+    # client gets HTTP 201 without waiting for disk I/O.
+    image_payloads: List[Tuple[bytes, Optional[str], Optional[str]]] = []
+    if images:
+        logger.info(f"Queueing {len(images)} image(s) for background processing for order {order.id}")
+        for image in images:
             try:
-                db.rollback()
-            except:
-                pass
-            # Continue without images
-    else:
-        logger.info(f"No images to process for order {order.id}")
+                file_content = await image.read()
+                image_payloads.append((file_content, image.filename, image.content_type))
+            except Exception as e:
+                logger.error(f"Failed to read uploaded image for order {order.id}: {e}", exc_info=True)
+
+    if image_payloads:
+        background_tasks.add_task(process_order_images_background, str(order.id), image_payloads)
 
     db.refresh(order)
 
+    order_created = OrderCreated(
+        **OrderRead.model_validate(order).model_dump(),
+        images_queued=len(image_payloads),
+    )
     return WebResponse(
         status="success",
         message="Order created successfully",
-        data=OrderRead.model_validate(order),
+        data=order_created,
     )
 
 

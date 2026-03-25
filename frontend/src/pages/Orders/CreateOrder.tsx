@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import { orderAPI, studentAPI } from "../../utils/api";
+import { compressOrderImage } from "../../utils/compressOrderImage";
 import { AngleLeftIcon } from "../../icons";
 import { useToast } from "../../context/ToastContext";
 import Label from "../../components/form/Label";
@@ -35,6 +36,7 @@ export default function CreateOrder() {
   });
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<Array<{ file: File; preview: string }>>([]);
+  const [isCompressingImages, setIsCompressingImages] = useState(false);
 
   useEffect(() => {
     // Check if student_id is passed from navigation state (e.g., from ScanQR)
@@ -124,68 +126,75 @@ export default function CreateOrder() {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const maxSize = 2 * 1024 * 1024; // 2MB
-    const newFiles: File[] = [];
+    const rawInputs = Array.from(files);
     const errors: string[] = [];
+    const toCompress: File[] = [];
 
-    // Validate all files first
-    Array.from(files).forEach((file) => {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
+    for (const file of rawInputs) {
+      if (!file.type.startsWith("image/")) {
         errors.push(`File ${file.name} bukan file gambar`);
-        return;
+        continue;
       }
-      
-      // Validate file size
-      if (file.size > maxSize) {
-        errors.push(`File ${file.name} melebihi ukuran maksimal 2MB`);
-        return;
-      }
+      toCompress.push(file);
+    }
 
-      newFiles.push(file);
-    });
-
-    // Show errors if any
     if (errors.length > 0) {
-      setError(errors.join(', '));
-      // Still add valid files if any
-      if (newFiles.length === 0) {
-        e.target.value = '';
+      setError(errors.join(", "));
+      if (toCompress.length === 0) {
+        e.target.value = "";
         return;
       }
     } else {
       setError(null);
     }
 
-    // Add valid files to selected images and create previews
-    if (newFiles.length > 0) {
-      // Create previews for new files first
-      const previewPromises = newFiles.map((file) => {
-        return new Promise<{ file: File; preview: string }>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            resolve({
-              file,
-              preview: reader.result as string,
-            });
-          };
-          reader.readAsDataURL(file);
-        });
-      });
+    setIsCompressingImages(true);
+    const newFiles: File[] = [];
+    const compressErrors: string[] = [];
 
-      // Wait for all previews to be created, then update both states
-      Promise.all(previewPromises).then((previews) => {
-        setSelectedImages((prev) => [...prev, ...newFiles]);
-        setImagePreviews((prev) => [...prev, ...previews]);
-      });
+    // Kompresi di klien (resize + WebP) sebelum upload; tidak mengirim file kamera mentah
+    for (const file of toCompress) {
+      try {
+        newFiles.push(await compressOrderImage(file));
+      } catch {
+        compressErrors.push(file.name);
+      }
     }
 
-    // Reset input to allow selecting the same file again
-    e.target.value = '';
+    setIsCompressingImages(false);
+
+    if (compressErrors.length > 0) {
+      showError(
+        `Gagal memproses gambar: ${compressErrors.join(", ")}. Coba lagi atau pilih gambar lain.`
+      );
+    }
+
+    if (newFiles.length === 0) {
+      e.target.value = "";
+      return;
+    }
+
+    const previewPromises = newFiles.map((file) => {
+      return new Promise<{ file: File; preview: string }>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve({
+            file,
+            preview: reader.result as string,
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    const previews = await Promise.all(previewPromises);
+    setSelectedImages((prev) => [...prev, ...newFiles]);
+    setImagePreviews((prev) => [...prev, ...previews]);
+    e.target.value = "";
   };
 
   const removeImage = (index: number) => {
@@ -270,10 +279,18 @@ export default function CreateOrder() {
         return;
       }
 
-      // Show success notification
       success("Order berhasil dibuat!");
-      
-      // Redirect to view order page
+
+      const created = createResponse.data as
+        | { id?: string; images_queued?: number }
+        | undefined;
+      if (selectedImages.length > 0 && (created?.images_queued ?? 0) === 0) {
+        showError(
+          "Gagal mengunggah gambar pesanan. Order tetap dibuat; tambahkan gambar lewat edit pesanan jika perlu."
+        );
+      }
+
+      setIsLoading(false);
       if (createResponse.data?.id) {
         setTimeout(() => {
           navigate(`/orders/${createResponse.data.id}`);
@@ -374,7 +391,7 @@ export default function CreateOrder() {
                     name="student_id"
                     value={formData.student_id}
                     onChange={(e) => handleFormChange(e.target.name, e.target.value)}
-                    disabled={isLoading || isFetchingStudents}
+                    disabled={isLoading || isFetchingStudents || isCompressingImages}
                     className="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                   >
                     <option value="">
@@ -409,7 +426,7 @@ export default function CreateOrder() {
                     onChange={handleTotalItemsChange}
                     placeholder="Masukkan jumlah pakaian"
                     min="1"
-                    disabled={isLoading}
+                    disabled={isLoading || isCompressingImages}
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Sistem akan menghitung otomatis: kuota gratis (sesuai pengaturan, reset per hari), pakaian berbayar, dan total biaya sesuai harga per item di pengaturan
@@ -423,7 +440,7 @@ export default function CreateOrder() {
                     value={formData.notes}
                     onChange={(e) => handleFormChange(e.target.name, e.target.value)}
                     placeholder="Masukkan catatan (opsional)"
-                    disabled={isLoading}
+                    disabled={isLoading || isCompressingImages}
                     rows={4}
                     className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                   />
@@ -445,10 +462,15 @@ export default function CreateOrder() {
                           accept="image/*"
                           capture="environment"
                           onChange={handleImageChange}
-                          disabled={isLoading}
+                          disabled={isLoading || isCompressingImages}
                           className="hidden"
                         />
                       </label>
+                      {isCompressingImages && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          Memampatkan gambar…
+                        </span>
+                      )}
                       
                       {/* Pilih dari Galeri */}
                       <label className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700">
@@ -461,7 +483,7 @@ export default function CreateOrder() {
                           accept="image/*"
                           multiple
                           onChange={handleImageChange}
-                          disabled={isLoading}
+                          disabled={isLoading || isCompressingImages}
                           className="hidden"
                         />
                       </label>
@@ -506,7 +528,7 @@ export default function CreateOrder() {
                       </div>
                     )}
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                      Format yang didukung: JPG, PNG, GIF. Maksimal 2MB per file. Anda dapat memilih lebih dari satu gambar.
+                      Foto akan otomatis diperkecil (maks. lebar/tinggi 1024px) dan dikompres ke WebP sebelum diunggah agar lebih cepat. Anda dapat memilih lebih dari satu gambar.
                     </p>
                   </div>
                 </div>
@@ -517,7 +539,7 @@ export default function CreateOrder() {
                 <button
                   type="button"
                   onClick={() => navigate("/orders")}
-                  disabled={isLoading}
+                  disabled={isLoading || isCompressingImages}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
                 >
                   <AngleLeftIcon className="w-4 h-4" />
@@ -525,7 +547,7 @@ export default function CreateOrder() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || isCompressingImages}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg
@@ -541,7 +563,7 @@ export default function CreateOrder() {
                       d="M12 4v16m8-8H4"
                     />
                   </svg>
-                  {isLoading ? "Membuat..." : "Tambah Pesanan"}
+                  {isLoading ? "Membuat..." : isCompressingImages ? "Memampatkan gambar…" : "Tambah Pesanan"}
                 </button>
               </div>
             </div>

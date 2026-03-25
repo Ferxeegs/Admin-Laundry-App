@@ -80,6 +80,11 @@ class OrderRead(OrderBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class OrderCreated(OrderRead):
+    """Response after POST /orders/; includes images queued for async persistence."""
+    images_queued: int = 0
+
+
 class OrderTrackingBase(BaseModel):
     """Base schema for order tracking."""
     status_to: str
