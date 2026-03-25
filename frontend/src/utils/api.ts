@@ -303,6 +303,19 @@ export const authAPI = {
 
 };
 
+/** Payload returned in `data` after a successful media upload */
+export type MediaUploadRecord = {
+  id: number;
+  url: string;
+  file_name?: string;
+  mime_type?: string;
+  size?: number;
+};
+
+export type MediaUploadResult =
+  | { success: true; message: string; data: MediaUploadRecord }
+  | { success: false; message: string; error?: string };
+
 /**
  * Media API functions
  */
@@ -310,7 +323,12 @@ export const mediaAPI = {
   /**
    * Upload a single media file
    */
-  uploadMedia: async (file: File, model_type: string, model_id: string, collection: string = 'default') => {
+  uploadMedia: async (
+    file: File,
+    model_type: string,
+    model_id: string,
+    collection: string = 'default'
+  ): Promise<MediaUploadResult> => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('model_type', model_type);
@@ -358,7 +376,7 @@ export const mediaAPI = {
       return {
         success: true,
         message: (typeof data.message === 'string' && data.message) || 'File berhasil diupload',
-        data: data.data,
+        data: data.data as MediaUploadRecord,
       };
     } catch (error: any) {
       console.error('Upload media error:', error);
