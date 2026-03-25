@@ -7,12 +7,12 @@ export default function Students() {
   return (
     <>
       <PageMeta
-        title="Students"
-        description="Manage all students in the system"
+        title="Siswa"
+        description="Mengelola semua siswa dalam sistem"
       />
-      <PageBreadcrumb pageTitle="Students" />
+      <PageBreadcrumb pageTitle="Siswa" />
       <div className="space-y-6">
-        <ComponentCard title="Daftar Students">
+        <ComponentCard title="Daftar Siswa">
           <StudentsList />
         </ComponentCard>
       </div>

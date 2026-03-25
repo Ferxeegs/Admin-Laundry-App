@@ -324,7 +324,7 @@ export default function CreateOrder() {
 
   return (
     <>
-      <PageMeta title="Create Order" description="Create new order" />
+      <PageMeta title="Tambah Pesanan" description="Tambahkan pesanan baru" />
       <PageBreadcrumb
         pageTitle={
           <div className="flex items-center gap-2 font-normal text-base">
@@ -332,10 +332,10 @@ export default function CreateOrder() {
               to="/orders"
               className="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             >
-              Orders
+              Pesanan
             </Link>
             <span className="text-gray-600">&gt;</span>
-            <span>Create Order</span>
+            <span>Tambah Pesanan</span>
           </div>
         }
         hideBreadcrumb={true}
@@ -351,7 +351,7 @@ export default function CreateOrder() {
             <AngleLeftIcon className="w-5 h-5" />
           </Link>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white flex-1">
-            Create New Order
+            Tambah Pesanan
           </h1>
         </div>
 
@@ -521,7 +521,7 @@ export default function CreateOrder() {
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
                 >
                   <AngleLeftIcon className="w-4 h-4" />
-                  Back
+                  Kembali
                 </button>
                 <button
                   type="submit"
@@ -541,7 +541,7 @@ export default function CreateOrder() {
                       d="M12 4v16m8-8H4"
                     />
                   </svg>
-                  {isLoading ? "Creating..." : "Create Order"}
+                  {isLoading ? "Membuat..." : "Tambah Pesanan"}
                 </button>
               </div>
             </div>

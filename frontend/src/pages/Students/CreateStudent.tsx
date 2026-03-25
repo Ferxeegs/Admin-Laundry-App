@@ -39,7 +39,7 @@ export default function CreateStudent() {
 
     // Client-side validation
     if (formData.national_id_number.trim().length === 0) {
-      setError("NIK wajib diisi");
+      setError("NIS wajib diisi");
       return;
     }
 
@@ -89,7 +89,7 @@ export default function CreateStudent() {
       });
 
       if (!createResponse.success) {
-        const errorMessage = createResponse.message || "Gagal membuat siswa";
+        const errorMessage = createResponse.message || "Gagal menambahkan siswa";
         setError(errorMessage);
         showError(errorMessage);
         setIsLoading(false);
@@ -112,7 +112,7 @@ export default function CreateStudent() {
       }
 
       // Redirect to view student page
-      success("Siswa berhasil dibuat!");
+      success("Siswa berhasil ditambahkan!");
       if (createResponse.data?.id) {
         navigate(`/students/${createResponse.data.id}`);
       } else {
@@ -130,8 +130,8 @@ export default function CreateStudent() {
   return (
     <>
       <PageMeta
-        title="Create Student"
-        description="Create new student"
+        title="Tambah Siswa"
+        description="Tambahkan siswa baru"
       />
       <PageBreadcrumb
         pageTitle={
@@ -140,10 +140,10 @@ export default function CreateStudent() {
               to="/students"
               className="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             >
-              Students
+              Siswa
             </Link>
             <span className="text-gray-600">&gt;</span>
-            <span>Create Student</span>
+            <span>Tambah Siswa</span>
           </div>
         }
         hideBreadcrumb={true}
@@ -159,7 +159,7 @@ export default function CreateStudent() {
             <AngleLeftIcon className="w-5 h-5" />
           </Link>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white flex-1">
-            Create New Student
+            Tambah Siswa
           </h1>
         </div>
 
@@ -187,14 +187,14 @@ export default function CreateStudent() {
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <Label>
-                    NIK (Nomor Induk Kependudukan) <span className="text-error-500">*</span>
+                    NIS (Nomor Induk Siswa) <span className="text-error-500">*</span>
                   </Label>
                   <Input
                     type="text"
                     name="national_id_number"
                     value={formData.national_id_number}
                     onChange={(e) => handleFormChange(e.target.name, e.target.value)}
-                    placeholder="Masukkan NIK"
+                    placeholder="Masukkan NIS"
                     disabled={isLoading}
                   />
                 </div>
@@ -301,7 +301,7 @@ export default function CreateStudent() {
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
                 >
                   <AngleLeftIcon className="w-4 h-4" />
-                  Back
+                  Kembali
                 </button>
                 <button
                   type="submit"
@@ -321,7 +321,7 @@ export default function CreateStudent() {
                       d="M12 4v16m8-8H4"
                     />
                   </svg>
-                  {isLoading ? "Creating..." : "Create Student"}
+                  {isLoading ? "Membuat..." : "Tambah Siswa"}
                 </button>
               </div>
             </div>

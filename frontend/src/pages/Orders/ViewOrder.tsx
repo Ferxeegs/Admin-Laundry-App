@@ -531,8 +531,8 @@ export default function ViewOrder() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <PageBreadcrumb pageTitle="View Order" />
-      <PageMeta title="View Order" description="View order details" />
+      <PageBreadcrumb pageTitle="Detail Pesanan" />
+      <PageMeta title="Detail Pesanan" description="Detail pesanan details" />
 
       {/* Header - Mobile Optimized */}
       <div className="flex items-center gap-2 sm:gap-3 pb-2 sm:pb-0">
@@ -547,7 +547,7 @@ export default function ViewOrder() {
             {order.order_number}
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
-            Detail informasi order laundry
+            Detail informasi pesanan laundry
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -560,7 +560,7 @@ export default function ViewOrder() {
               className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation sm:px-4 sm:py-2.5"
             >
               <PencilIcon className="w-4 h-4" />
-              <span className="hidden sm:inline">Edit</span>
+              <span className="hidden sm:inline">Edit Pesanan</span>
             </Link>
           )}
         </div>
@@ -574,7 +574,7 @@ export default function ViewOrder() {
               {/* Header with View Log Button */}
               <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Alur Proses Order
+                  Alur Proses Pesanan
                 </h3>
                 <button
                   onClick={() => setIsLogModalOpen(true)}
@@ -583,7 +583,7 @@ export default function ViewOrder() {
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  Log
+                  Log Pesanan
                 </button>
               </div>
               {/* Progress Bar */}
@@ -743,11 +743,11 @@ export default function ViewOrder() {
           </ComponentCard>
 
           {/* Order Info */}
-          <ComponentCard title="Informasi Order">
+          <ComponentCard title="Informasi Pesanan">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-                  Nomor Order
+                  Nomor Pesanan
                 </p>
                 <p className="text-sm font-semibold text-gray-800 dark:text-white break-all">
                   {order.order_number}
@@ -893,12 +893,12 @@ export default function ViewOrder() {
       <Modal isOpen={isStatusModalOpen} onClose={handleCloseStatusModal} className="max-w-md">
         <div className="p-5">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Update Status Order
+            Update Status Pesanan
           </h2>
           
           <div className="mb-5">
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              Anda akan mengubah status order dari{" "}
+              Anda akan mengubah status pesanan dari{" "}
               <span className="font-semibold text-gray-900 dark:text-white">
                 {formatStatus(order.current_status)}
               </span>{" "}

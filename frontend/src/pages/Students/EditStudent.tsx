@@ -232,8 +232,8 @@ export default function EditStudent() {
   if (isFetching) {
     return (
       <div className="space-y-5">
-        <PageBreadcrumb pageTitle="Edit Student" />
-        <PageMeta title="Edit Student" description="Edit student information" />
+        <PageBreadcrumb pageTitle="Edit Siswa" />
+        <PageMeta title="Edit Siswa" description="Edit informasi siswa" />
         <div className="p-5 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
           <TableSkeleton rows={10} columns={2} />
         </div>
@@ -244,8 +244,8 @@ export default function EditStudent() {
   if (error && !formData.fullname) {
     return (
       <div className="space-y-5">
-        <PageBreadcrumb pageTitle="Edit Student" />
-        <PageMeta title="Edit Student" description="Edit student information" />
+        <PageBreadcrumb pageTitle="Edit Siswa" />
+        <PageMeta title="Edit Siswa" description="Edit informasi siswa" />
         <div className="p-5 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
           <div className="text-center">
             <p className="text-red-600 dark:text-red-400">{error}</p>
@@ -264,8 +264,8 @@ export default function EditStudent() {
   return (
     <>
       <PageMeta
-        title="Edit Student"
-        description="Edit student information"
+        title="Edit Siswa"
+        description="Edit informasi siswa"
       />
       <PageBreadcrumb
         pageTitle={
@@ -274,17 +274,17 @@ export default function EditStudent() {
               to="/students"
               className="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             >
-              Students
+              Siswa
             </Link>
             <span className="text-gray-600">&gt;</span>
             <Link
               to={`/students/${id}`}
               className="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             >
-              View Student
+              Detail Siswa
             </Link>
             <span className="text-gray-600">&gt;</span>
-            <span>Edit Student</span>
+            <span>Edit Siswa</span>
           </div>
         }
         hideBreadcrumb={true}
@@ -294,7 +294,7 @@ export default function EditStudent() {
         {/* Header with Title */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-            Edit Student
+            Edit Siswa
           </h1>
         </div>
 
@@ -333,14 +333,14 @@ export default function EditStudent() {
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <Label>
-                    NIK (Nomor Induk Kependudukan) <span className="text-error-500">*</span>
+                    NIS (Nomor Induk Siswa) <span className="text-error-500">*</span>
                   </Label>
                   <Input
                     type="text"
                     name="national_id_number"
                     value={formData.national_id_number}
                     onChange={(e) => handleFormChange(e.target.name, e.target.value)}
-                    placeholder="Masukkan NIK"
+                    placeholder="Masukkan NIS"
                     disabled={isLoading}
                   />
                 </div>
@@ -447,14 +447,14 @@ export default function EditStudent() {
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
                 >
                   <AngleLeftIcon className="w-4 h-4" />
-                  Back
+                  Kembali
                 </button>
                 <button
                   type="submit"
                   disabled={isLoading}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? "Updating..." : "Update Student"}
+                  {isLoading ? "Memperbarui..." : "Simpan Perubahan"}
                 </button>
               </div>
             </div>

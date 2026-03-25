@@ -22,55 +22,55 @@ const searchCommands: SearchCommand[] = [
     category: "Navigasi",
   },
   {
-    name: "Orders",
+    name: "Pesanan",
     path: "/orders",
     keywords: ["order", "orders", "laundry", "transaksi"],
     category: "Laundry",
   },
   {
-    name: "Scan QR Order",
+    name: "Scan QR",
     path: "/orders/scan",
     keywords: ["scan", "qr", "scan qr", "scanner"],
     category: "Laundry",
   },
   {
-    name: "Students",
+    name: "Siswa",
     path: "/students",
     keywords: ["siswa", "santri", "student"],
     category: "Data",
   },
   {
-    name: "Users",
+    name: "Pengguna",
     path: "/users",
     keywords: ["users", "user", "pengguna", "akun"],
     category: "Akses",
   },
   {
-    name: "Roles",
+    name: "Peran",
     path: "/roles",
     keywords: ["roles", "role", "peran", "hak akses"],
     category: "Akses",
   },
   {
-    name: "Reports",
+    name: "Laporan",
     path: "/reports",
     keywords: ["reports", "report", "laporan", "statistik"],
     category: "Analitik",
   },
+  // {
+  //   name: "Calendar",
+  //   path: "/calendar",
+  //   keywords: ["calendar", "kalender", "jadwal"],
+  //   category: "Navigasi",
+  // },
   {
-    name: "Calendar",
-    path: "/calendar",
-    keywords: ["calendar", "kalender", "jadwal"],
-    category: "Navigasi",
-  },
-  {
-    name: "Settings",
+    name: "Pengaturan",
     path: "/settings",
     keywords: ["settings", "setting", "pengaturan", "konfigurasi"],
     category: "Sistem",
   },
   {
-    name: "Profile",
+    name: "Profil",
     path: "/profile",
     keywords: ["profile", "profil", "account", "akun"],
     category: "Navigasi",
@@ -356,7 +356,7 @@ const AppHeader: React.FC = () => {
                   <input
                     ref={inputRef}
                     type="text"
-                    placeholder="Search or type command..."
+                    placeholder="Cari atau ketik perintah..."
                     value={searchQuery}
                     onChange={handleSearchChange}
                     onKeyDown={handleInputKeyDown}

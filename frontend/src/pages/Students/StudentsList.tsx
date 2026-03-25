@@ -293,8 +293,8 @@ export default function StudentsList() {
                   : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
               }`}
             >
-              <span className="hidden sm:inline">{showDeleted ? "Show Active Students" : "Show Deleted Students"}</span>
-              <span className="sm:hidden">{showDeleted ? "Active" : "Deleted"}</span>
+              <span className="hidden sm:inline">{showDeleted ? "Tampilkan Siswa Aktif" : "Tampilkan Siswa Terhapus"}</span>
+              <span className="sm:hidden">{showDeleted ? "Aktif" : "Terhapus"}</span>
             </button>
           )}
           {canCreateStudent && (
@@ -316,8 +316,8 @@ export default function StudentsList() {
                 d="M12 4v16m8-8H4"
               />
             </svg>
-            <span className="hidden sm:inline">Create Student</span>
-            <span className="sm:hidden">Create</span>
+            <span className="hidden sm:inline">Tambah Siswa</span>
+            <span className="sm:hidden">Tambah</span>
           </button>
           )}
         </div>
@@ -523,8 +523,8 @@ export default function StudentsList() {
         <div className="flex items-center justify-center py-12">
           <div className="text-gray-500 dark:text-gray-400">
             {search 
-              ? `Tidak ada ${showDeleted ? "deleted " : ""}siswa yang ditemukan` 
-              : `Belum ada ${showDeleted ? "deleted " : ""}siswa`}
+              ? `Tidak ada ${showDeleted ? "siswa terhapus" : ""} yang ditemukan` 
+              : `Belum ada ${showDeleted ? "siswa terhapus " : ""}`}
           </div>
         </div>
           ) : (
@@ -542,7 +542,7 @@ export default function StudentsList() {
                     isHeader
                     className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                   >
-                    NIK
+                    NIS
                   </TableCell>
                   <TableCell
                     isHeader
@@ -572,7 +572,7 @@ export default function StudentsList() {
                     isHeader
                     className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                   >
-                    Actions
+                    Aksi
                   </TableCell>
                 </TableRow>
               </TableHeader>
@@ -690,7 +690,7 @@ export default function StudentsList() {
                                   navigate(`/students/${student.id}/edit`);
                                 }}
                                 className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-                                title="Edit Student"
+                                title="Edit Siswa"
                               >
                                 <PencilIcon className="w-4 h-4" />
                               </button>
@@ -704,7 +704,7 @@ export default function StudentsList() {
                                 }}
                                 disabled={deletingStudentId === student.id}
                                 className="inline-flex items-center justify-center w-8 h-8 text-red-500 transition-colors rounded-lg hover:bg-red-100 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-800 dark:hover:text-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Delete Student"
+                                title="Hapus Siswa"
                               >
                                 <TrashBinIcon className="w-4 h-4" />
                               </button>
@@ -735,10 +735,10 @@ export default function StudentsList() {
                             }}
                             disabled={deletingStudentId === student.id || restoringStudentId === student.id}
                             className="inline-flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Force Delete (Permanent)"
+                            title="Hapus Permanen"
                           >
                             <TrashBinIcon className="w-4 h-4" />
-                            {deletingStudentId === student.id ? "Deleting..." : "Force Delete"}
+                            {deletingStudentId === student.id ? "Menghapus..." : "Hapus Permanen"}
                           </button>
                         )}
                       </div>
@@ -764,14 +764,14 @@ export default function StudentsList() {
               disabled={page === 1}
               className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700 touch-manipulation"
             >
-              Previous
+              Sebelumnya
             </button>
             <button
               onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
               disabled={page === pagination.totalPages}
               className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700 touch-manipulation"
             >
-              Next
+              Selanjutnya
             </button>
           </div>
         </div>
@@ -788,13 +788,13 @@ export default function StudentsList() {
             Apakah Anda yakin ingin menghapus siswa <strong className="text-gray-800 dark:text-white">{selectedStudentForDelete?.name}</strong>?
           </>
         }
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText="Hapus"
+        cancelText="Batal"
         confirmButtonColor="danger"
         icon={<TrashBinIcon className="w-6 h-6" />}
         isLoading={deletingStudentId === selectedStudentForDelete?.id}
         showWarning={true}
-        warningMessage="Siswa akan dihapus (soft delete) dan dapat dipulihkan kembali dari halaman deleted students."
+        warningMessage="Siswa akan dihapus (soft delete) dan dapat dipulihkan kembali dari halaman siswa terhapus."
       />
 
       {/* Restore Confirmation Modal */}
@@ -827,13 +827,13 @@ export default function StudentsList() {
             Apakah Anda yakin ingin menghapus permanen siswa <strong className="text-gray-800 dark:text-white">{selectedStudentForDelete?.name}</strong>?
           </>
         }
-        confirmText="Delete Permanently"
-        cancelText="Cancel"
+        confirmText="Hapus Permanen"
+        cancelText="Batal"
         confirmButtonColor="danger"
         icon={<TrashBinIcon className="w-6 h-6" />}
         isLoading={deletingStudentId === selectedStudentForDelete?.id}
         showWarning={true}
-        warningMessage="Tindakan ini TIDAK DAPAT DIBATALKAN dan akan menghapus semua data terkait siswa ini secara permanen termasuk semua order laundry."
+        warningMessage="Tindakan ini TIDAK DAPAT DIBATALKAN dan akan menghapus semua data terkait siswa ini secara permanen termasuk semua pesanan laundry."
       />
     </div>
   );

@@ -231,8 +231,8 @@ export default function EditOrder() {
   if (isFetching) {
     return (
       <div className="space-y-5">
-        <PageBreadcrumb pageTitle="Edit Order" />
-        <PageMeta title="Edit Order" description="Edit order information" />
+        <PageBreadcrumb pageTitle="Edit Pesanan" />
+        <PageMeta title="Edit Pesanan" description="Edit informasi pesanan" />
         <div className="p-5 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
           <TableSkeleton rows={10} columns={2} />
         </div>
@@ -243,8 +243,8 @@ export default function EditOrder() {
   if (error && !formData.total_items) {
     return (
       <div className="space-y-5">
-        <PageBreadcrumb pageTitle="Edit Order" />
-        <PageMeta title="Edit Order" description="Edit order information" />
+        <PageBreadcrumb pageTitle="Edit Pesanan" />
+        <PageMeta title="Edit Pesanan" description="Edit informasi pesanan" />
         <div className="p-5 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
           <div className="text-center">
             <p className="text-red-600 dark:text-red-400">{error}</p>
@@ -252,7 +252,7 @@ export default function EditOrder() {
               onClick={() => navigate("/orders")}
               className="mt-4 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600"
             >
-              Kembali ke Daftar Order
+              Kembali ke Daftar Pesanan
             </button>
           </div>
         </div>
@@ -262,7 +262,7 @@ export default function EditOrder() {
 
   return (
     <>
-      <PageMeta title="Edit Order" description="Edit order information" />
+      <PageMeta title="Edit Pesanan" description="Edit informasi pesanan" />
       <PageBreadcrumb
         pageTitle={
           <div className="flex items-center gap-2 font-normal text-base">
@@ -270,17 +270,17 @@ export default function EditOrder() {
               to="/orders"
               className="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             >
-              Orders
+              Pesanan
             </Link>
             <span className="text-gray-600">&gt;</span>
             <Link
               to={`/orders/${id}`}
               className="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             >
-              View Order
+              Lihat Pesanan
             </Link>
             <span className="text-gray-600">&gt;</span>
-            <span>Edit Order</span>
+            <span>Edit Pesanan</span>
           </div>
         }
         hideBreadcrumb={true}
@@ -290,7 +290,7 @@ export default function EditOrder() {
         {/* Header with Title */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-            Edit Order
+            Edit Pesanan
           </h1>
         </div>
 
@@ -348,7 +348,7 @@ export default function EditOrder() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <Label>Gambar Order</Label>
+                  <Label>Gambar Pesanan</Label>
                   <div className="space-y-3 mt-2">
                     {/* Existing Images */}
                     {images.length > 0 && (
@@ -452,14 +452,14 @@ export default function EditOrder() {
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
                 >
                   <AngleLeftIcon className="w-4 h-4" />
-                  Back
+                  Kembali
                 </button>
                 <button
                   type="submit"
                   disabled={isLoading || isUploadingImages || !canEditOrder(orderStatus)}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading || isUploadingImages ? "Updating..." : "Update Order"}
+                  {isLoading || isUploadingImages ? "Memperbarui..." : "Perbarui Pesanan"}
                 </button>
               </div>
             </div>

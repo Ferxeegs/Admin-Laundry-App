@@ -165,8 +165,8 @@ export default function ViewStudent() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <PageBreadcrumb pageTitle="View Student" />
-      <PageMeta title="View Student" description="View student details" />
+      <PageBreadcrumb pageTitle="Detail Siswa" />
+      <PageMeta title="Detail Siswa" description="Detail informasi siswa" />
 
       {/* Header - Mobile Optimized */}
       <div className="flex items-center gap-2 sm:gap-3 pb-2 sm:pb-0">
@@ -189,7 +189,7 @@ export default function ViewStudent() {
           className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation flex-shrink-0 sm:px-4 sm:py-2.5"
         >
           <PencilIcon className="w-4 h-4" />
-          <span className="hidden sm:inline">Edit</span>
+          <span className="hidden sm:inline">Edit Siswa</span>
         </Link>
       </div>
 
@@ -198,7 +198,7 @@ export default function ViewStudent() {
         {/* Left Sidebar - Profile & QR Code (Mobile: Full Width, Desktop: 1/3) */}
         <div className="lg:col-span-1 space-y-4">
           {/* Profile Card */}
-          <ComponentCard title="Profile">
+          <ComponentCard title="Profil">
             <div className="space-y-5">
               {/* Profile Picture Display */}
               <StudentSidebar
@@ -235,7 +235,7 @@ export default function ViewStudent() {
 
           {/* QR Code Card - Mobile Optimized */}
           {student.qr_code && (
-            <ComponentCard title="QR Code">
+            <ComponentCard title="Kode QR">
               <div className="flex flex-col items-center gap-4">
                 {/* QR Code Display - Optimized for mobile */}
                 <div 
@@ -280,7 +280,7 @@ export default function ViewStudent() {
                       d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                     />
                   </svg>
-                  Download QR Code
+                  Unduh Kode QR
                 </button>
               </div>
             </ComponentCard>
@@ -290,7 +290,7 @@ export default function ViewStudent() {
         {/* Main Content - Student Information (Mobile: Full Width, Desktop: 2/3) */}
         <div className="lg:col-span-2 space-y-4">
           {/* Student Information */}
-          <ComponentCard title="Informasi Siswa">
+          <ComponentCard title="Detail Siswa">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Nama Lengkap</p>

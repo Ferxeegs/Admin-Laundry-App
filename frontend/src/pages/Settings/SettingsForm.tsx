@@ -759,7 +759,7 @@ export default function SettingsForm() {
       </ComponentCard>
 
       {/* Order Settings */}
-      <ComponentCard title="Order Settings" className="mb-6">
+      <ComponentCard title="Pengaturan Pesanan" className="mb-6">
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2">
             <div>
@@ -773,12 +773,12 @@ export default function SettingsForm() {
               />
             </div>
             <div>
-              <Label>Price Per Item</Label>
+              <Label>Harga per item</Label>
               <Input
                 type="number"
                 value={settings.order.price_per_item || ""}
                 onChange={(e) => handleInputChange("order", "price_per_item", e.target.value)}
-                placeholder="Price Per Item"
+                placeholder="Harga per item"
                 disabled={!canUpdateSettings}
               />
             </div>

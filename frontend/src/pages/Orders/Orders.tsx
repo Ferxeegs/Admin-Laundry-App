@@ -7,12 +7,12 @@ export default function Orders() {
   return (
     <>
       <PageMeta
-        title="Orders"
+        title="Pesanan"
         description="Manage all laundry orders in the system"
       />
-      <PageBreadcrumb pageTitle="Orders" />
+      <PageBreadcrumb pageTitle="Pesanan" />
       <div className="space-y-6">
-        <ComponentCard title="Daftar Orders">
+        <ComponentCard title="Daftar Pesanan">
           <OrdersList />
         </ComponentCard>
       </div>

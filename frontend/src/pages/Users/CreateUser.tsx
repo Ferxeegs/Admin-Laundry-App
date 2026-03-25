@@ -173,8 +173,8 @@ export default function CreateUser() {
   return (
     <>
       <PageMeta
-        title="Create User"
-        description="Create new user"
+        title="Tambah Pengguna"
+        description="Tambahkan pengguna baru"
       />
       <PageBreadcrumb
         pageTitle={
@@ -183,10 +183,10 @@ export default function CreateUser() {
               to="/users"
               className="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             >
-              Users
+              Pengguna
             </Link>
             <span className="text-gray-600">&gt;</span>
-            <span>Create User</span>
+            <span>Tambah Pengguna</span>
           </div>
         }
         hideBreadcrumb={true}
@@ -202,7 +202,7 @@ export default function CreateUser() {
             <AngleLeftIcon className="w-5 h-5" />
           </Link>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white flex-1">
-            Create New User
+            Tambah Pengguna
           </h1>
         </div>
 
@@ -234,7 +234,7 @@ export default function CreateUser() {
                 }`}
               >
                 <InfoIcon className="w-4 h-4" />
-                Details
+                Detail
               </button>
               <button
                 type="button"
@@ -246,7 +246,7 @@ export default function CreateUser() {
                 }`}
               >
                 <LockIcon className="w-4 h-4" />
-                Roles
+                Role Pengguna
               </button>
             </div>
 
@@ -287,7 +287,7 @@ export default function CreateUser() {
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
                 >
                   <AngleLeftIcon className="w-4 h-4" />
-                  Back
+                  Kembali
                 </button>
                 <button
                   type="submit"
@@ -307,7 +307,7 @@ export default function CreateUser() {
                       d="M12 4v16m8-8H4"
                     />
                   </svg>
-                  {isLoading ? "Creating..." : "Create User"}
+                  {isLoading ? "Membuat..." : "Tambah Pengguna"}
                 </button>
               </div>
             </form>

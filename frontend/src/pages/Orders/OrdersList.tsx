@@ -251,7 +251,7 @@ export default function OrdersList() {
         <div className="flex items-center justify-between gap-3 p-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-brand-700 dark:text-brand-300">
-              {selectedOrders.size} order dipilih
+              {selectedOrders.size} pesanan dipilih
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -277,7 +277,7 @@ export default function OrdersList() {
         <div className="relative flex-1 max-w-md">
           <input
             type="text"
-            placeholder="Cari nomor order..."
+            placeholder="Cari nomor pesanan..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-10 sm:h-11 rounded-lg border border-gray-200 bg-transparent py-2 pl-10 sm:pl-12 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
@@ -381,7 +381,7 @@ export default function OrdersList() {
                     />
                   )}
                 </svg>
-                {isSelectionMode ? "Batal pilih" : "Pilih order"}
+                {isSelectionMode ? "Batal pilih" : "Pilih pesanan"}
               </button>
             </>
           )}
@@ -404,8 +404,8 @@ export default function OrdersList() {
                 d="M12 4v16m8-8H4"
               />
             </svg>
-            <span className="hidden sm:inline">Create Order</span>
-            <span className="sm:hidden">Create</span>
+            <span className="hidden sm:inline">Tambah Pesanan</span>
+            <span className="sm:hidden">Tambah</span>
           </button>
           )}
         </div>
@@ -440,7 +440,7 @@ export default function OrdersList() {
         ) : orders.length === 0 ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-gray-500 dark:text-gray-400 text-sm text-center">
-              {search ? "Tidak ada order yang ditemukan" : "Belum ada order"}
+              {search ? "Tidak ada pesanan yang ditemukan" : "Belum ada pesanan"}
             </div>
           </div>
         ) : (
@@ -554,7 +554,7 @@ export default function OrdersList() {
           ) : orders.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-500 dark:text-gray-400">
-                {search ? "Tidak ada order yang ditemukan" : "Belum ada order"}
+                {search ? "Tidak ada pesanan yang ditemukan" : "Belum ada pesanan"}
               </div>
             </div>
           ) : (
@@ -579,7 +579,7 @@ export default function OrdersList() {
                       isHeader
                       className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                     >
-                      Nomor Order
+                      Nomor Pesanan
                     </TableCell>
                     <TableCell
                       isHeader
@@ -744,7 +744,7 @@ export default function OrdersList() {
               disabled={page === 1}
               className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700 touch-manipulation"
             >
-              Previous
+              Sebelumnya
             </button>
             <button
               onClick={() =>
@@ -753,7 +753,7 @@ export default function OrdersList() {
               disabled={page === pagination.totalPages}
               className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700 touch-manipulation"
             >
-              Next
+              Selanjutnya
             </button>
           </div>
         </div>
@@ -764,19 +764,19 @@ export default function OrdersList() {
         isOpen={isDeleteModalOpen}
         onClose={closeDeleteModal}
         onConfirm={handleDelete}
-        title="Hapus Order"
+        title="Hapus Pesanan"
         message={
           <>
-            Apakah Anda yakin ingin menghapus order <strong className="text-gray-800 dark:text-white">{selectedOrderForDelete?.orderNumber}</strong>?
+            Apakah Anda yakin ingin menghapus pesanan <strong className="text-gray-800 dark:text-white">{selectedOrderForDelete?.orderNumber}</strong>?
           </>
         }
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText="Hapus"
+        cancelText="Batal"
         confirmButtonColor="danger"
         icon={<TrashBinIcon className="w-6 h-6" />}
         isLoading={deletingOrderId === selectedOrderForDelete?.id}
         showWarning={true}
-        warningMessage="Tindakan ini akan menghapus order dan semua data tracking terkait secara permanen."
+        warningMessage="Tindakan ini akan menghapus pesanan dan semua data tracking terkait secara permanen."
       />
     </div>
   );
