@@ -1,54 +1,66 @@
 import { useState, useEffect } from "react";
+import { compressProfileImage } from "../../utils/compressOrderImage";
+import { useToast } from "../../context/ToastContext";
 
 interface CreateStudentSidebarProps {
-  profileImage?: string | null;
+  profileImageFile?: File | null;
   onProfileImageChange?: (file: File | null) => void;
+  onCompressingChange?: (compressing: boolean) => void;
 }
 
 export default function CreateStudentSidebar({
-  profileImage,
+  profileImageFile,
   onProfileImageChange,
+  onCompressingChange,
 }: CreateStudentSidebarProps) {
-  const [imagePreview, setImagePreview] = useState<string | null>(profileImage || null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const { error: showErrorToast } = useToast();
 
   useEffect(() => {
-    if (profileImage) {
-      setImagePreview(profileImage);
+    if (!profileImageFile) {
+      setImagePreview(null);
+      return;
     }
-  }, [profileImage]);
+    const url = URL.createObjectURL(profileImageFile);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [profileImageFile]);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        alert('Hanya file gambar yang diizinkan');
-        return;
-      }
+    e.target.value = "";
 
-      // Validate file size (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Ukuran file maksimal 5MB');
-        return;
-      }
+    if (!file) return;
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      onProfileImageChange?.(file);
+    if (!file.type.startsWith("image/")) {
+      showErrorToast("Hanya file gambar yang diizinkan.");
+      return;
+    }
+
+    setIsCompressing(true);
+    try {
+      const compressed = await compressProfileImage(file);
+      onProfileImageChange?.(compressed);
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Gagal memproses gambar. Coba gambar lain atau ukuran lebih kecil.";
+      showErrorToast(msg);
+      onProfileImageChange?.(null);
+    } finally {
+      setIsCompressing(false);
+      onCompressingChange?.(false);
     }
   };
 
   const handleRemoveImage = () => {
-    setImagePreview(null);
     onProfileImageChange?.(null);
   };
 
   return (
     <div className="w-full space-y-6">
-      {/* Profile Picture Upload */}
       <div className="p-6 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
         <h3 className="mb-4 text-sm font-medium text-gray-700 dark:text-gray-300">
           Foto Profil
@@ -65,7 +77,8 @@ export default function CreateStudentSidebar({
                 <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="absolute -top-2 -right-2 p-1 text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                  disabled={isCompressing}
+                  className="absolute -top-2 -right-2 p-1 text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg
                     className="w-4 h-4"
@@ -100,23 +113,31 @@ export default function CreateStudentSidebar({
               </div>
             )}
           </div>
-          <label className="cursor-pointer">
+          <label
+            className={
+              isCompressing ? "cursor-not-allowed opacity-70" : "cursor-pointer"
+            }
+          >
             <input
               type="file"
               accept="image/*"
               onChange={handleImageChange}
+              disabled={isCompressing}
               className="hidden"
             />
             <span className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 transition-colors">
-              {imagePreview ? "Ganti Foto" : "Upload Foto"}
+              {isCompressing
+                ? "Memproses…"
+                : imagePreview
+                  ? "Ganti Foto"
+                  : "Upload Foto"}
             </span>
           </label>
           <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
-            Maksimal 5MB. Format: JPG, PNG, GIF
+            Maks. 1 MB setelah kompresi (WebP). Foto diperkecil otomatis.
           </p>
         </div>
       </div>
     </div>
   );
 }
-

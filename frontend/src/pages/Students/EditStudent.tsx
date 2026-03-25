@@ -31,6 +31,7 @@ export default function EditStudent() {
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [profilePictureMediaId, setProfilePictureMediaId] = useState<number | null>(null);
   const [shouldDeleteProfilePicture, setShouldDeleteProfilePicture] = useState(false);
+  const [isCompressingProfile, setIsCompressingProfile] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -175,49 +176,50 @@ export default function EditStudent() {
         const errorMessage = updateResponse.message || "Gagal mengupdate siswa";
         setError(errorMessage);
         showError(errorMessage);
-        setIsLoading(false);
         return;
       }
 
-      // Handle profile picture: delete old one if needed, then upload new one if provided
       if (id) {
         try {
-          // Delete old profile picture if user requested deletion
           if (shouldDeleteProfilePicture && profilePictureMediaId) {
             try {
               await mediaAPI.deleteMedia(profilePictureMediaId);
               setProfilePictureMediaId(null);
               setShouldDeleteProfilePicture(false);
-            } catch (deleteErr: any) {
-              // Continue even if delete fails
+            } catch {
+              // continue
             }
           }
 
-          // Upload new profile picture if provided
           if (profileImageFile) {
-            // Delete old profile picture before uploading new one
             if (profilePictureMediaId) {
               try {
                 await mediaAPI.deleteMedia(profilePictureMediaId);
                 setProfilePictureMediaId(null);
-              } catch (deleteErr: any) {
-                // Continue even if delete fails
+              } catch {
+                // continue
               }
             }
-            
-            await mediaAPI.uploadMedia(
+
+            const uploadResult = await mediaAPI.uploadMedia(
               profileImageFile,
-              'Student',
+              "Student",
               id,
-              'profile-pictures'
+              "profile-pictures"
             );
+            if (!uploadResult.success) {
+              showError(
+                uploadResult.message ||
+                  "Gagal mengunggah foto profil (misalnya ukuran atau batas server). Data siswa sudah tersimpan."
+              );
+            }
           }
-        } catch (uploadErr: any) {
-          // Continue even if upload fails
+        } catch (uploadErr: unknown) {
+          console.error("Profile picture error:", uploadErr);
+          showError("Gagal memproses foto profil. Data siswa mungkin sudah tersimpan.");
         }
       }
 
-      // Redirect to view student page
       success("Siswa berhasil diupdate!");
       navigate(`/students/${id}`);
     } catch (err: any) {
@@ -225,6 +227,7 @@ export default function EditStudent() {
       setError(errorMessage);
       showError(errorMessage);
       console.error("Update student error:", err);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -303,19 +306,18 @@ export default function EditStudent() {
           {/* Left Sidebar */}
           <div className="lg:col-span-1">
             <EditStudentSidebar
-              profileImage={profileImage}
+              profileImageUrl={profileImage}
+              profileImageFile={profileImageFile}
               onProfileImageChange={(file) => {
                 setProfileImageFile(file);
                 setShouldDeleteProfilePicture(false);
-                if (file) {
-                  setProfileImage(URL.createObjectURL(file));
-                }
               }}
               onProfileImageRemove={() => {
                 setProfileImageFile(null);
                 setShouldDeleteProfilePicture(true);
                 setProfileImage(null);
               }}
+              onCompressingChange={setIsCompressingProfile}
             />
           </div>
 
@@ -341,7 +343,7 @@ export default function EditStudent() {
                     value={formData.national_id_number}
                     onChange={(e) => handleFormChange(e.target.name, e.target.value)}
                     placeholder="Masukkan NIS"
-                    disabled={isLoading}
+                    disabled={isLoading || isCompressingProfile}
                   />
                 </div>
 
@@ -355,7 +357,7 @@ export default function EditStudent() {
                     value={formData.fullname}
                     onChange={(e) => handleFormChange(e.target.name, e.target.value)}
                     placeholder="Masukkan nama lengkap"
-                    disabled={isLoading}
+                    disabled={isLoading || isCompressingProfile}
                   />
                 </div>
 
@@ -367,7 +369,7 @@ export default function EditStudent() {
                     value={formData.dormitory}
                     onChange={(e) => handleFormChange(e.target.name, e.target.value)}
                     placeholder="Masukkan asrama"
-                    disabled={isLoading}
+                    disabled={isLoading || isCompressingProfile}
                   />
                 </div>
 
@@ -379,7 +381,7 @@ export default function EditStudent() {
                     value={formData.grade_level}
                     onChange={(e) => handleFormChange(e.target.name, e.target.value)}
                     placeholder="Masukkan kelas"
-                    disabled={isLoading}
+                    disabled={isLoading || isCompressingProfile}
                   />
                 </div>
 
@@ -389,7 +391,7 @@ export default function EditStudent() {
                   <div className="flex gap-2">
                     <select
                       className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                      disabled={isLoading}
+                      disabled={isLoading || isCompressingProfile}
                       value={countryCode}
                       onChange={(e) => setCountryCode(e.target.value)}
                     >
@@ -402,7 +404,7 @@ export default function EditStudent() {
                       value={formData.phone_number}
                       onChange={(e) => handleFormChange(e.target.name, e.target.value)}
                       placeholder="0821-3351-3522"
-                      disabled={isLoading}
+                      disabled={isLoading || isCompressingProfile}
                       className="flex-1"
                     />
                   </div>
@@ -416,7 +418,7 @@ export default function EditStudent() {
                     value={formData.guardian_name}
                     onChange={(e) => handleFormChange(e.target.name, e.target.value)}
                     placeholder="Masukkan nama wali"
-                    disabled={isLoading}
+                    disabled={isLoading || isCompressingProfile}
                   />
                 </div>
 
@@ -428,7 +430,7 @@ export default function EditStudent() {
                       name="is_active"
                       checked={formData.is_active}
                       onChange={(e) => handleFormChange(e.target.name, e.target.checked)}
-                      disabled={isLoading}
+                      disabled={isLoading || isCompressingProfile}
                       className="w-4 h-4 text-brand-500 bg-gray-100 border-gray-300 rounded focus:ring-brand-500 dark:focus:ring-brand-500 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                     />
                     <Label htmlFor="is_active" className="cursor-pointer">
@@ -443,7 +445,7 @@ export default function EditStudent() {
                 <button
                   type="button"
                   onClick={() => navigate(`/students/${id}`)}
-                  disabled={isLoading}
+                  disabled={isLoading || isCompressingProfile}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
                 >
                   <AngleLeftIcon className="w-4 h-4" />
@@ -451,10 +453,14 @@ export default function EditStudent() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || isCompressingProfile}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? "Memperbarui..." : "Simpan Perubahan"}
+                  {isLoading
+                    ? "Memperbarui..."
+                    : isCompressingProfile
+                      ? "Memproses foto…"
+                      : "Simpan Perubahan"}
                 </button>
               </div>
             </div>
