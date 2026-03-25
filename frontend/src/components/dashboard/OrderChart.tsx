@@ -13,12 +13,37 @@ export default function OrderChart() {
   useEffect(() => {
     let cancelled = false;
 
+    // Display several previous months, not only the current month.
+    // Backend fills missing months between start_date..end_date (monthly period).
+    const monthsToShow = 6; // include current month
+
+    const formatYMDUTC = (d: Date) => {
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(d.getUTCDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
     async function fetchData() {
       setLoading(true);
       setError(null);
       try {
+        const now = new Date();
+        const endDt = new Date(
+          Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+        );
+        const startDt = new Date(
+          Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+        );
+        startDt.setUTCMonth(startDt.getUTCMonth() - (monthsToShow - 1));
+
+        const start_date = formatYMDUTC(startDt);
+        const end_date = formatYMDUTC(endDt);
+
         const res = await reportsAPI.getOperationalReport({
           period: "monthly",
+          start_date,
+          end_date,
         });
         if (cancelled) return;
         if (res.success && res.data?.breakdown) {
