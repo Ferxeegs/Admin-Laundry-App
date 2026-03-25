@@ -450,33 +450,36 @@ export default function EditUser() {
       />
 
       <div className="space-y-4 sm:space-y-6">
-        {/* Header - Mobile Optimized */}
-        <div className="flex items-center gap-2 sm:gap-3 pb-2 sm:pb-0">
-          <Link
-            to="/users"
-            className="inline-flex items-center justify-center w-10 h-10 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation flex-shrink-0"
-          >
-            <AngleLeftIcon className="w-5 h-5" />
-          </Link>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white flex-1 truncate">
-            Edit {userFullName}
-          </h1>
-          <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <Link
+              to="/users"
+              className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white touch-manipulation"
+            >
+              <AngleLeftIcon className="h-5 w-5" />
+            </Link>
+            <h1 className="min-w-0 flex-1 truncate text-lg font-bold text-gray-800 dark:text-white sm:text-2xl">
+              Edit {userFullName}
+            </h1>
+          </div>
+          <div className="flex w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-nowrap sm:items-center">
             {hasSuperAdminRole && (
               <button
                 type="button"
                 onClick={handleImpersonateClick}
                 disabled={isImpersonating}
-                className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-orange-500 px-3 py-2.5 text-sm font-medium text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-initial sm:py-2 touch-manipulation"
               >
-                <UserCircleIcon className="w-4 h-4" />
-                <span className="hidden md:inline">{isImpersonating ? "Impersonating..." : "Impersonate"}</span>
+                <UserCircleIcon className="h-4 w-4 shrink-0" />
+                <span className="truncate sm:inline">
+                  {isImpersonating ? "Impersonating…" : "Impersonate"}
+                </span>
               </button>
             )}
             <button
               type="button"
               onClick={openResetPasswordModal}
-              className="px-3 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 sm:px-4"
+              className="inline-flex flex-1 items-center justify-center rounded-lg bg-orange-600 px-3 py-2.5 text-sm font-medium text-white hover:bg-orange-700 sm:flex-initial sm:px-4 sm:py-2 touch-manipulation"
             >
               <span className="hidden sm:inline">Reset Password</span>
               <span className="sm:hidden">Reset</span>
@@ -485,9 +488,9 @@ export default function EditUser() {
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+        <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-4">
           {/* Left Sidebar */}
-          <div className="lg:col-span-1">
+          <div className="min-w-0 lg:col-span-1">
             <UserSidebar
               userId={id!}
               emailVerifiedAt={userData.email_verified_at}
@@ -511,34 +514,36 @@ export default function EditUser() {
           </div>
 
           {/* Main Content Area */}
-          <div className="lg:col-span-3">
-            <div className="p-6 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-              {/* Tabs */}
-              <div className="flex items-center gap-1 mb-6 border-b border-gray-200 dark:border-gray-700">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("details")}
-                  className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 transition-colors ${
-                    activeTab === "details"
-                      ? "border-brand-500 text-brand-500"
-                      : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                  }`}
-                >
-                  <InfoIcon className="w-4 h-4" />
-                  Details
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("roles")}
-                  className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 transition-colors ${
-                    activeTab === "roles"
-                      ? "border-brand-500 text-brand-500"
-                      : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                  }`}
-                >
-                  <LockIcon className="w-4 h-4" />
-                  Roles
-                </button>
+          <div className="min-w-0 lg:col-span-3">
+            <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 sm:p-6">
+              {/* Tabs — scroll horizontal on narrow screens */}
+              <div className="-mx-4 mb-6 border-b border-gray-200 px-4 dark:border-gray-700 sm:mx-0 sm:px-0">
+                <div className="flex min-w-0 flex-nowrap gap-1 overflow-x-auto pb-px [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("details")}
+                    className={`flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium transition-colors sm:px-4 ${
+                      activeTab === "details"
+                        ? "border-brand-500 text-brand-500"
+                        : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                    }`}
+                  >
+                    <InfoIcon className="h-4 w-4 shrink-0" />
+                    Details
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("roles")}
+                    className={`flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium transition-colors sm:px-4 ${
+                      activeTab === "roles"
+                        ? "border-brand-500 text-brand-500"
+                        : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                    }`}
+                  >
+                    <LockIcon className="h-4 w-4 shrink-0" />
+                    Roles
+                  </button>
+                </div>
               </div>
 
               {/* Tab Content */}
@@ -569,14 +574,14 @@ export default function EditUser() {
                 </div>
 
                 {/* Bottom Action Buttons */}
-                <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+                <div className="mt-6 flex flex-col gap-2 border-t border-gray-200 pt-6 dark:border-gray-700 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
                   <button
                     type="button"
                     onClick={() => navigate("/users")}
                     disabled={isLoading}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
+                    className="order-2 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 sm:order-none sm:w-auto sm:py-2 touch-manipulation"
                   >
-                    <AngleLeftIcon className="w-4 h-4" />
+                    <AngleLeftIcon className="h-4 w-4" />
                     Back
                   </button>
                   {hasPermission(['delete_user', 'delete_any_user']) && (
@@ -584,9 +589,9 @@ export default function EditUser() {
                       type="button"
                       onClick={handleDeleteUserClick}
                       disabled={isLoading}
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="order-4 flex w-full items-center justify-center gap-2 rounded-lg bg-red-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50 sm:order-none sm:w-auto sm:py-2 touch-manipulation"
                     >
-                      <TrashBinIcon className="w-4 h-4" />
+                      <TrashBinIcon className="h-4 w-4" />
                       Delete
                     </button>
                   )}
@@ -595,10 +600,10 @@ export default function EditUser() {
                       type="button"
                       onClick={() => navigate("/users/create")}
                       disabled={isLoading}
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="order-3 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50 sm:order-none sm:w-auto sm:py-2 touch-manipulation"
                     >
                       <svg
-                        className="w-4 h-4"
+                        className="h-4 w-4"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -610,16 +615,17 @@ export default function EditUser() {
                           d="M12 4v16m8-8H4"
                         />
                       </svg>
-                      Create Another
+                      <span className="hidden sm:inline">Create Another</span>
+                      <span className="sm:hidden">New User</span>
                     </button>
                   )}
                   {hasPermission('update_user') && (
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="order-1 flex w-full items-center justify-center gap-2 rounded-lg bg-green-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50 sm:order-none sm:w-auto sm:py-2 touch-manipulation"
                     >
-                      <CheckLineIcon className="w-4 h-4" />
+                      <CheckLineIcon className="h-4 w-4" />
                       {isLoading ? "Saving..." : "Save Changes"}
                     </button>
                   )}

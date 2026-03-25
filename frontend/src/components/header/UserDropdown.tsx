@@ -73,7 +73,7 @@ export default function UserDropdown() {
           )}
         </span>
 
-        <span className="block mr-1 font-medium text-theme-sm">
+        <span className="mr-1 max-w-[5.5rem] truncate font-medium text-theme-sm sm:max-w-[12rem] lg:max-w-none">
           {displayName}
         </span>
         <svg

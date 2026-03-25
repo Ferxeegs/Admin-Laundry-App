@@ -82,8 +82,10 @@ const AppHeader: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isStoppingImpersonate, setIsStoppingImpersonate] = useState(false);
 
-  const { isImpersonating, impersonatedBy, user, hasPermission } = useAuth();
+  const { isImpersonating, impersonatedBy, user, hasPermission, stopImpersonate } =
+    useAuth();
   const { getLogoUrl } = useSettings();
   const navigate = useNavigate();
   const location = useLocation();
@@ -228,9 +230,68 @@ const AppHeader: React.FC = () => {
     setSearchQuery("");
   }, [location.pathname]);
 
+  const handleStopImpersonateFromBanner = async () => {
+    setIsStoppingImpersonate(true);
+    try {
+      const returnPath = await stopImpersonate();
+      navigate(returnPath || "/users");
+    } catch (e: unknown) {
+      console.error(e);
+    } finally {
+      setIsStoppingImpersonate(false);
+    }
+  };
+
   return (
-    <header className="sticky top-0 flex w-full bg-white border-gray-200 z-99999 dark:border-gray-800 dark:bg-gray-900 lg:border-b">
-      <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
+    <header className="sticky top-0 z-99999 flex w-full flex-col bg-white dark:bg-gray-900 lg:border-b lg:border-gray-200 dark:lg:border-gray-800">
+      {isImpersonating && impersonatedBy && (
+        <div
+          className="w-full border-b border-amber-200 bg-amber-50 dark:border-amber-800/80 dark:bg-amber-950/50"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 lg:px-6">
+            <div className="flex min-w-0 flex-1 items-start gap-2 sm:items-center">
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-amber-900 dark:text-amber-100 sm:text-sm">
+                  Mode impersonate
+                </p>
+                <p className="truncate text-[11px] leading-snug text-amber-800/90 dark:text-amber-200/90 sm:text-xs">
+                  <span className="text-amber-700/80 dark:text-amber-300/80">
+                    Admin:{" "}
+                  </span>
+                  <span className="font-medium">{impersonatedBy.username}</span>
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleStopImpersonateFromBanner}
+              disabled={isStoppingImpersonate}
+              className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60 sm:py-1.5 sm:text-sm touch-manipulation w-full sm:w-auto"
+            >
+              {isStoppingImpersonate ? "Memproses…" : "Keluar dari impersonate"}
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="flex grow flex-col items-center justify-between lg:flex-row lg:px-6">
         <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
           {/* Sidebar toggle */}
           <button
@@ -442,30 +503,9 @@ const AppHeader: React.FC = () => {
             isApplicationMenuOpen ? "flex" : "hidden"
           } items-center justify-between w-full gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
         >
-          <div className="flex items-center gap-2 2xsm:gap-3">
-            {isImpersonating && impersonatedBy && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-100 border border-yellow-300 rounded-lg dark:bg-yellow-900/30 dark:border-yellow-800">
-                <svg
-                  className="w-4 h-4 text-yellow-600 dark:text-yellow-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-                <span className="text-xs font-medium text-yellow-800 dark:text-yellow-300">
-                  Impersonating
-                </span>
-              </div>
-            )}
-
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2 2xsm:gap-3 lg:flex-none">
             {user?.roles && user.roles.length > 0 && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-100 border border-brand-300 rounded-lg dark:bg-brand-900/30 dark:border-brand-800 max-w-[180px] sm:max-w-none">
+              <div className="flex min-w-0 max-w-[100px] items-center gap-1 rounded-lg border border-brand-300 bg-brand-100 px-1.5 py-1 sm:max-w-[220px] md:max-w-none dark:border-brand-800 dark:bg-brand-900/30 sm:gap-2 sm:px-3 sm:py-1.5">
                 <svg
                   className="w-4 h-4 text-brand-600 dark:text-brand-400"
                   fill="none"
