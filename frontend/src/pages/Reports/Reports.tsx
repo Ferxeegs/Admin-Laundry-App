@@ -12,6 +12,7 @@ import "flatpickr/dist/flatpickr.css";
 import OperationalBreakdownChart, {
   PeriodType,
 } from "../../components/charts/OperationalBreakdownChart";
+import StatisticsChart from "../../components/ecommerce/StatisticsChart";
 
 interface ReportData {
   period: string;
@@ -526,21 +527,15 @@ export default function Reports() {
               </ComponentCard>
 
               {/* Revenue Chart */}
-              <ComponentCard
-                title={`Grafik Pendapatan (${getPeriodLabel(period)})`}
-                desc="Visualisasi pendapatan laundry per periode"
-              >
-                <div className="max-w-full overflow-x-auto custom-scrollbar">
-                  <div className="min-w-[400px]">
-                    <OperationalBreakdownChart
-                      period={period}
-                      breakdown={reportData.breakdown}
-                      variant="revenue"
-                      height={300}
-                    />
-                  </div>
-                </div>
-              </ComponentCard>
+              <div className="min-w-0">
+                <StatisticsChart
+                  categories={reportData.breakdown.map((b) => b.label)}
+                  values={reportData.breakdown.map((b) => b.revenue)}
+                  title="Pendapatan"
+                  description={`Total pendapatan berdasarkan ${getPeriodLabel(period).toLowerCase()}`}
+                  seriesName="Pendapatan"
+                />
+              </div>
             </div>
 
             {/* Transaction Breakdown Table */}

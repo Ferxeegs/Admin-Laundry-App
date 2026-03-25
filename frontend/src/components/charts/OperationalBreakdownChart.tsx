@@ -68,8 +68,9 @@ export default function OperationalBreakdownChart(props: {
             axisTicks: { show: false },
             labels: {
               style: { fontSize: "12px" },
-              rotate: period === "daily" ? -45 : 0,
-              rotateAlways: period === "daily",
+              // Weekly labels cenderung cukup panjang, supaya tidak tumpang tindih
+              rotate: period === "daily" || period === "weekly" ? -45 : 0,
+              rotateAlways: period === "daily" || period === "weekly",
             },
           },
           yaxis: {
@@ -118,8 +119,9 @@ export default function OperationalBreakdownChart(props: {
             axisTicks: { show: false },
             labels: {
               style: { fontSize: "12px" },
-              rotate: period === "daily" ? -45 : 0,
-              rotateAlways: period === "daily",
+              // Weekly labels cenderung cukup panjang, supaya lebih rapih
+              rotate: period === "daily" || period === "weekly" ? -45 : 0,
+              rotateAlways: period === "daily" || period === "weekly",
             },
           },
           yaxis: {

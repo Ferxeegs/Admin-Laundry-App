@@ -2,10 +2,26 @@ import { useEffect, useRef } from "react";
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import flatpickr from "flatpickr";
-import ChartTab from "../common/ChartTab";
-import { CalenderIcon } from "../../icons";
+// import ChartTab from "../common/ChartTab";
+// import { CalenderIcon } from "../../icons";
 
-export default function StatisticsChart() {
+type StatisticsChartProps = {
+  categories?: string[];
+  values?: number[];
+  title?: string;
+  description?: string;
+  seriesName?: string;
+  height?: number;
+};
+
+export default function StatisticsChart({
+  categories,
+  values,
+  title = "Statistics",
+  description = "Target you've set for each month",
+  seriesName = "Revenue",
+  height = 310,
+}: StatisticsChartProps) {
   const datePickerRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -35,6 +51,31 @@ export default function StatisticsChart() {
     };
   }, []);
 
+  const safeCategories =
+    categories && categories.length > 0
+      ? categories
+      : [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+  const safeValues =
+    typeof values !== "undefined" && values.length > 0 ? values : [];
+
+  // Reduce forced horizontal scroll on mobile; only allow small scroll when many categories.
+  const preferredMinWidth = safeCategories.length > 6
+    ? Math.max(520, Math.min(980, safeCategories.length * 90))
+    : 0;
+
   const options: ApexOptions = {
     legend: {
       show: false, // Hide legend
@@ -44,7 +85,7 @@ export default function StatisticsChart() {
     colors: ["#465FFF", "#9CB9FF"], // Define line colors
     chart: {
       fontFamily: "Outfit, sans-serif",
-      height: 310,
+      height,
       type: "line", // Set the chart type to 'line'
       toolbar: {
         show: false, // Hide chart toolbar
@@ -93,25 +134,19 @@ export default function StatisticsChart() {
     },
     xaxis: {
       type: "category", // Category-based x-axis
-      categories: [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ],
+      categories: safeCategories,
       axisBorder: {
         show: false, // Hide x-axis border
       },
       axisTicks: {
         show: false, // Hide x-axis ticks
+      },
+      labels: {
+        trim: true,
+        rotate: safeCategories.length > 6 ? -45 : 0,
+        rotateAlways: safeCategories.length > 6,
+        hideOverlappingLabels: true,
+        style: { fontSize: "12px", colors: ["#6B7280"] },
       },
       tooltip: {
         enabled: false, // Disable tooltip for x-axis points
@@ -131,16 +166,35 @@ export default function StatisticsChart() {
         },
       },
     },
+    responsive: [
+      {
+        breakpoint: 640,
+        options: {
+          chart: { height: 260 },
+          markers: { size: 0 },
+          xaxis: {
+            labels: {
+              rotate: -45,
+              rotateAlways: true,
+              hideOverlappingLabels: true,
+              style: { fontSize: "11px", colors: ["#6B7280"] },
+            },
+          },
+          yaxis: {
+            labels: { style: { fontSize: "11px", colors: ["#6B7280"] } },
+          },
+        },
+      },
+    ],
   };
 
   const series = [
     {
-      name: "Sales",
-      data: [180, 190, 170, 160, 175, 165, 170, 205, 230, 210, 240, 235],
-    },
-    {
-      name: "Revenue",
-      data: [40, 30, 50, 40, 55, 40, 70, 100, 110, 120, 150, 140],
+      name: seriesName,
+      data:
+        safeValues.length > 0
+          ? safeValues
+          : [40, 30, 50, 40, 55, 40, 70, 100, 110, 120, 150, 140],
     },
   ];
   return (
@@ -148,13 +202,13 @@ export default function StatisticsChart() {
       <div className="flex flex-col gap-5 mb-6 sm:flex-row sm:justify-between">
         <div className="w-full">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            Statistics
+            {title}
           </h3>
           <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-            Target you've set for each month
+            {description}
           </p>
         </div>
-        <div className="flex items-center gap-3 sm:justify-end">
+        {/* <div className="flex items-center gap-3 sm:justify-end">
           <ChartTab />
           <div className="relative inline-flex items-center">
             <CalenderIcon className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 lg:left-3 lg:top-1/2 lg:translate-x-0 lg:-translate-y-1/2 size-5 text-gray-500 dark:text-gray-400 pointer-events-none z-10" />
@@ -164,12 +218,15 @@ export default function StatisticsChart() {
               placeholder="Select date range"
             />
           </div>
-        </div>
+        </div> */}
       </div>
 
       <div className="max-w-full overflow-x-auto custom-scrollbar">
-        <div className="min-w-[1000px] xl:min-w-full">
-          <Chart options={options} series={series} type="area" height={310} />
+        <div
+          className="xl:min-w-full"
+          style={{ minWidth: preferredMinWidth > 0 ? preferredMinWidth : undefined }}
+        >
+          <Chart options={options} series={series} type="area" height={height} />
         </div>
       </div>
     </div>
