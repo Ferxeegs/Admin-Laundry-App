@@ -31,6 +31,8 @@ import EditOrder from "./pages/Orders/EditOrder";
 import ViewOrder from "./pages/Orders/ViewOrder";
 import ScanQR from "./pages/Orders/ScanQR";
 import Reports from "./pages/Reports/Reports";
+import Invoices from "./pages/Invoices/Invoices";
+import CreateInvoice from "./pages/Invoices/CreateInvoice";
 
 import Settings from "./pages/Settings/Settings";
 
@@ -186,6 +188,22 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <Reports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/invoices"
+              element={
+                <ProtectedRoute>
+                  <Invoices />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/invoices/create"
+              element={
+                <ProtectedRoute>
+                  <CreateInvoice />
                 </ProtectedRoute>
               }
             />

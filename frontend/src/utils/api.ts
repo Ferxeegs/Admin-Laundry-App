@@ -2185,6 +2185,7 @@ export const orderAPI = {
         id: string;
         order_number: string;
         student_id: string;
+        invoice_id: string | null;
         total_items: number;
         free_items_used: number;
         paid_items_count: number;
@@ -2220,6 +2221,7 @@ export const orderAPI = {
       id: string;
       order_number: string;
       student_id: string;
+      invoice_id: string | null;
       total_items: number;
       free_items_used: number;
       paid_items_count: number;
@@ -2432,6 +2434,139 @@ export const orderAPI = {
     }>(`/orders/${id}/trackings`, {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  },
+};
+
+/**
+ * Invoice API functions
+ */
+export const invoiceAPI = {
+  getAllInvoices: async (params?: {
+    page?: number;
+    limit?: number;
+    student_id?: string;
+    billing_period?: string; // YYYY-MM-01
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.student_id) queryParams.append("student_id", params.student_id);
+    if (params?.billing_period) queryParams.append("billing_period", params.billing_period);
+
+    const endpoint = `/invoices/${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+
+    return apiRequest<{
+      invoices: Array<{
+        id: string;
+        invoice_number: string;
+        student_id: string;
+        billing_period: string;
+        total_amount: number;
+        status: "unpaid" | "waiting_confirmation" | "paid" | "cancelled";
+        paid_at: string | null;
+        created_at: string | null;
+        updated_at: string | null;
+        created_by: string | null;
+        updated_by: string | null;
+        deleted_at: string | null;
+        deleted_by: string | null;
+        student?: {
+          id: string;
+          fullname: string;
+          unique_code: string | null;
+        };
+      }>;
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
+    }>(endpoint, {
+      method: "GET",
+    });
+  },
+
+  getEligibleOrders: async (params: { student_id: string; billing_period: string }) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append("student_id", params.student_id);
+    queryParams.append("billing_period", params.billing_period);
+
+    return apiRequest<{
+      orders: Array<{
+        id: string;
+        order_number: string;
+        student_id: string;
+        invoice_id: string | null;
+        total_items: number;
+        free_items_used: number;
+        paid_items_count: number;
+        additional_fee: number;
+        current_status: string;
+        notes: string | null;
+        created_at: string | null;
+        updated_at: string | null;
+        created_by: string | null;
+        updated_by: string | null;
+      }>;
+      total_amount: number;
+    }>(`/invoices/eligible-orders?${queryParams.toString()}`, {
+      method: "GET",
+    });
+  },
+
+  createInvoice: async (data: { student_id: string; billing_period: string }) => {
+    return apiRequest<{
+      id: string;
+      invoice_number: string;
+      student_id: string;
+      billing_period: string;
+      total_amount: number;
+      status: "unpaid" | "waiting_confirmation" | "paid" | "cancelled";
+      paid_at: string | null;
+      created_at: string | null;
+      updated_at: string | null;
+      created_by: string | null;
+      updated_by: string | null;
+      deleted_at: string | null;
+      deleted_by: string | null;
+    }>(`/invoices/`, {
+      method: "POST",
+      body: JSON.stringify({
+        student_id: data.student_id,
+        billing_period: data.billing_period,
+      }),
+    });
+  },
+
+  updateInvoice: async (
+    invoice_id: string,
+    data: { status: "unpaid" | "waiting_confirmation" | "paid" | "cancelled"; paid_at?: string | null }
+  ) => {
+    return apiRequest<{
+      id: string;
+      invoice_number: string;
+      student_id: string;
+      billing_period: string;
+      total_amount: number;
+      status: "unpaid" | "waiting_confirmation" | "paid" | "cancelled";
+      paid_at: string | null;
+      created_at: string | null;
+      updated_at: string | null;
+      created_by: string | null;
+      updated_by: string | null;
+      deleted_at: string | null;
+      deleted_by: string | null;
+    }>(`/invoices/${invoice_id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteInvoice: async (invoice_id: string) => {
+    return apiRequest<null>(`/invoices/${invoice_id}`, {
+      method: "DELETE",
     });
   },
 };

@@ -5,6 +5,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base_class import Base
 from .base import TimestampMixin, AuditMixin
+from .invoice import Invoice
 
 
 # --- Enum untuk Status Laundry ---
@@ -38,6 +39,7 @@ class Student(Base, TimestampMixin, AuditMixin):
 
     # Relationships
     orders = relationship("Order", back_populates="student", cascade="all, delete-orphan")
+    invoices = relationship(Invoice, back_populates="student", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Student(id={self.id}, fullname={self.fullname}, unique_code={self.unique_code})>"
@@ -53,6 +55,7 @@ class Order(Base, TimestampMixin, AuditMixin):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     student_id = Column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    invoice_id = Column(String(36), ForeignKey("invoices.id", ondelete="SET NULL"), nullable=True, index=True)
     order_number = Column(String(255), unique=True, nullable=False, index=True)
 
     # Item & Quota Management [cite: 159, 169]
@@ -67,6 +70,7 @@ class Order(Base, TimestampMixin, AuditMixin):
 
     # Relationships
     student = relationship("Student", back_populates="orders")
+    invoice = relationship(Invoice, back_populates="orders")
     trackings = relationship("OrderTracking", back_populates="order", cascade="all, delete-orphan", order_by="OrderTracking.created_at")
 
     def __repr__(self):

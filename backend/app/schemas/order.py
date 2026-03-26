@@ -12,6 +12,7 @@ from app.models.order import OrderStatus
 class OrderBase(BaseModel):
     """Base schema for Order with common fields."""
     student_id: str
+    invoice_id: Optional[str] = None
     total_items: int = 0
     free_items_used: int = 0
     paid_items_count: int = 0

@@ -12,6 +12,7 @@ import {
   UserIcon,
   QrCodeIcon,
   PieChartIcon,
+  FileIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
@@ -64,6 +65,11 @@ const navItems: NavItem[] = [
     icon: <PieChartIcon />,
     name: "Laporan",
     path: "/reports",
+  },
+  {
+    icon: <FileIcon />,
+    name: "Invoice",
+    path: "/invoices",
   },
   {
     icon: <LockIcon />,
