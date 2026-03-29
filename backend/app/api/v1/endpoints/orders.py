@@ -5,12 +5,13 @@ from typing import Optional, List, Tuple
 
 from fastapi import APIRouter, Depends, Query, status, UploadFile, File, Form, Request, BackgroundTasks
 from starlette.datastructures import UploadFile as StarletteUploadFile
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_db, get_current_active_user
 from app.core.deps_permission import require_permission
 from app.models.auth import User
-from app.models.order import Order, OrderStatus, OrderTracking
+from app.models.order import Order, OrderStatus, OrderTracking, Student
 from app.models.common import Setting
 from app.schemas.common import WebResponse
 from app.schemas.order import (
@@ -105,8 +106,13 @@ def get_all_orders(
         query = query.filter(Order.student_id == student_id)
 
     if search:
-        # For now, search by order_number
-        query = query.filter(Order.order_number.ilike(f"%{search}%"))
+        term = f"%{search}%"
+        query = query.join(Order.student).filter(
+            or_(
+                Order.order_number.ilike(term),
+                Student.fullname.ilike(term),
+            )
+        )
 
     total = query.count()
     offset = (page - 1) * limit

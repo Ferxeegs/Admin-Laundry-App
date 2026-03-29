@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { Html5Qrcode } from "html5-qrcode";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
@@ -28,6 +28,25 @@ interface Student {
   updated_at: string | null;
 }
 
+function resolvePublicMediaUrl(url: string): string {
+  if (url.startsWith("http")) return url;
+  let mediaUrl = url.replace(/^\/api\/v1/, "").replace(/^\/api/, "");
+  if (!mediaUrl.startsWith("/")) mediaUrl = `/${mediaUrl}`;
+  return `${getBaseUrl()}${mediaUrl}`;
+}
+
+function parseOrderMediaData(data: unknown): Array<{ url: string }> {
+  if (!data) return [];
+  if (typeof data === "object" && data !== null && "media" in data) {
+    const m = (data as { media: unknown }).media;
+    if (Array.isArray(m)) return m.filter((x): x is { url: string } => !!x && typeof x === "object" && "url" in x && typeof (x as { url: string }).url === "string");
+  }
+  if (Array.isArray(data)) {
+    return data.filter((x): x is { url: string } => !!x && typeof x === "object" && "url" in x && typeof (x as { url: string }).url === "string");
+  }
+  return [];
+}
+
 export default function ScanQR() {
   const navigate = useNavigate();
   const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -36,6 +55,7 @@ export default function ScanQR() {
   const [error, setError] = useState<string | null>(null);
   const [scannedStudent, setScannedStudent] = useState<Student | null>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImageFailed, setProfileImageFailed] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [remainingQuota, setRemainingQuota] = useState<number | null>(null);
   const [quotaLimit, setQuotaLimit] = useState<number | null>(null);
@@ -46,7 +66,11 @@ export default function ScanQR() {
     current_status: string;
     total_items: number;
     created_at: string | null;
+    notes: string | null;
   } | null>(null);
+  const [orderImageUrls, setOrderImageUrls] = useState<string[]>([]);
+  const [orderNotesExpanded, setOrderNotesExpanded] = useState(false);
+  const [orderImageLightbox, setOrderImageLightbox] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [statusNotes, setStatusNotes] = useState<string>("");
@@ -63,12 +87,40 @@ export default function ScanQR() {
     };
   }, []);
 
+  useEffect(() => {
+    setProfileImageFailed(false);
+  }, [scannedStudent?.id, profileImage]);
+
+  const fetchOrderImages = useCallback(async (orderId: string) => {
+    try {
+      const res = await mediaAPI.getMediaByModel("Order", orderId, "images");
+      if (!res.success || !res.data) {
+        setOrderImageUrls([]);
+        return;
+      }
+      const items = parseOrderMediaData(res.data);
+      setOrderImageUrls(items.map((m) => resolvePublicMediaUrl(m.url)));
+    } catch {
+      setOrderImageUrls([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!activeOrder?.id) {
+      setOrderImageUrls([]);
+      setOrderNotesExpanded(false);
+      return;
+    }
+    void fetchOrderImages(activeOrder.id);
+  }, [activeOrder?.id, fetchOrderImages]);
+
   const startScanning = async () => {
     try {
       setError(null);
       setScanError(null);
       setScannedStudent(null);
       setProfileImage(null);
+      setProfileImageFailed(false);
 
       // Set scanning state first to render the element
       setIsScanning(true);
@@ -223,10 +275,15 @@ export default function ScanQR() {
             setProfileImage(null);
           }
 
-          await fetchRemainingDailyQuota(studentData.id);
-          
-          // Fetch active orders (not PICKED_UP)
-          await fetchActiveOrder(studentData.id);
+          // Order aktif dulu: kuota hanya relevan jika belum ada order (buat order baru)
+          const hasActiveOrder = await fetchActiveOrder(studentData.id);
+          if (!hasActiveOrder) {
+            await fetchRemainingDailyQuota(studentData.id);
+          } else {
+            setRemainingQuota(null);
+            setQuotaLimit(null);
+            setIsLoadingQuota(false);
+          }
         } else {
           setError("Siswa tidak ditemukan. Pastikan QR code valid dan siswa terdaftar.");
         }
@@ -248,7 +305,8 @@ export default function ScanQR() {
     }
   };
 
-  const fetchActiveOrder = async (studentId: string) => {
+  /** Mengembalikan true jika ada order aktif (bukan PICKED_UP). */
+  const fetchActiveOrder = async (studentId: string): Promise<boolean> => {
     try {
       const response = await orderAPI.getAllOrders({
         page: 1,
@@ -258,7 +316,6 @@ export default function ScanQR() {
 
       if (response.success && response.data) {
         const orders = response.data.orders || [];
-        // Find order that is not PICKED_UP (most recent first)
         const active = orders.find(
           (order: any) => order.current_status !== "PICKED_UP"
         ) as any | undefined;
@@ -270,15 +327,22 @@ export default function ScanQR() {
             current_status: active.current_status,
             total_items: active.total_items,
             created_at: active.created_at,
+            notes:
+              typeof active.notes === "string" && active.notes.trim() !== ""
+                ? active.notes.trim()
+                : null,
           });
-        } else {
-          setActiveOrder(null);
+          return true;
         }
+        setActiveOrder(null);
+        return false;
       }
+      setActiveOrder(null);
     } catch (err) {
       console.error("Error fetching active order:", err);
       setActiveOrder(null);
     }
+    return false;
   };
 
   const fetchRemainingDailyQuota = async (studentId: string) => {
@@ -351,11 +415,15 @@ export default function ScanQR() {
   const handleScanAgain = () => {
     setScannedStudent(null);
     setProfileImage(null);
+    setProfileImageFailed(false);
     setError(null);
     setScanError(null);
     setRemainingQuota(null);
     setQuotaLimit(null);
     setActiveOrder(null);
+    setOrderImageUrls([]);
+    setOrderNotesExpanded(false);
+    setOrderImageLightbox(null);
     setStatusNotes("");
   };
 
@@ -496,10 +564,14 @@ export default function ScanQR() {
         // Reset semua state dan kembali ke mode scan
         setScannedStudent(null);
         setProfileImage(null);
+        setProfileImageFailed(false);
         setError(null);
         setScanError(null);
         setRemainingQuota(null);
         setActiveOrder(null);
+        setOrderImageUrls([]);
+        setOrderNotesExpanded(false);
+        setOrderImageLightbox(null);
         setStatusNotes("");
         setStatusImage(null);
         setStatusImagePreview(null);
@@ -644,178 +716,288 @@ export default function ScanQR() {
           </ComponentCard>
         )}
 
-        {/* Student Verification Section */}
+        {/* Student Verification — compact on mobile, order photos + notes */}
         {scannedStudent && !isLoading && (
-          <ComponentCard title="Verifikasi Siswa">
-            <div className="space-y-4">
-              {/* Profile Picture - Larger and Centered */}
-              <div className="flex justify-center">
-                {profileImage ? (
-                  <img
-                    src={profileImage}
-                    alt={scannedStudent.fullname}
-                    className="w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover border-4 border-gray-200 dark:border-gray-700 shadow-lg"
-                    onError={(e) => {
-                      console.error('Failed to load profile picture:', profileImage);
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
+          <div className="pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+            <ComponentCard title="Hasil scan">
+              <div className="space-y-2.5 sm:space-y-4 md:space-y-5">
+                {/* Identitas siswa — foto besar untuk verifikasi */}
+                <div className="relative overflow-hidden rounded-xl border border-gray-200/90 bg-gradient-to-b from-slate-50 via-white to-gray-50/80 shadow-sm dark:border-gray-700/90 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950/90 sm:rounded-2xl">
+                  <div
+                    className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-brand-500/[0.07] blur-2xl dark:bg-brand-400/[0.12] sm:-right-16 sm:-top-16 sm:h-48 sm:w-48 sm:blur-3xl"
+                    aria-hidden
                   />
-                ) : (
-                  <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-4xl sm:text-5xl border-4 border-gray-200 dark:border-gray-700 shadow-lg">
-                    {getInitials(scannedStudent.fullname)}
-                  </div>
-                )}
-              </div>
-
-              {/* Student Name - Centered */}
-              <div className="text-center">
-                <h3 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-1">
-                  {scannedStudent.fullname}
-                </h3>
-                <Badge size="sm" color={scannedStudent.is_active ? "success" : "error"}>
-                  {scannedStudent.is_active ? "Aktif" : "Tidak Aktif"}
-                </Badge>
-              </div>
-
-              {/* Quota Info - Prominent */}
-              <div className="bg-gradient-to-r from-brand-50 to-brand-100 dark:from-brand-900/20 dark:to-brand-800/20 rounded-lg p-4 border border-brand-200 dark:border-brand-800">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                      Sisa Kuota Hari Ini
+                  <div
+                    className="pointer-events-none absolute -bottom-14 -left-12 h-44 w-44 rounded-full bg-brand-400/[0.06] blur-2xl dark:bg-brand-500/[0.08] sm:-bottom-20 sm:-left-16 sm:h-56 sm:w-56 sm:blur-3xl"
+                    aria-hidden
+                  />
+                  <div className="relative px-3 pb-4 pt-3.5 text-center sm:px-8 sm:pb-8 sm:pt-7">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400 sm:text-[11px] sm:tracking-[0.22em]">
+                      Verifikasi identitas
                     </p>
+                    <div className="mx-auto mt-2.5 flex max-w-[min(100%,20rem)] justify-center sm:mt-5">
+                      <div className="relative">
+                        <div
+                          className="absolute inset-0 scale-[1.08] rounded-full bg-gradient-to-br from-brand-400/25 via-transparent to-brand-600/10 blur-lg dark:from-brand-400/20 dark:to-brand-500/15 sm:blur-xl"
+                          aria-hidden
+                        />
+                        <div className="relative rounded-full bg-gradient-to-br from-white via-gray-50 to-gray-100 p-[2px] shadow-[0_8px_28px_-10px_rgba(0,0,0,0.22)] ring-1 ring-black/[0.04] dark:from-gray-700 dark:via-gray-800 dark:to-gray-900 dark:ring-white/[0.06] sm:p-1 sm:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.25)]">
+                          <div className="overflow-hidden rounded-full ring-2 ring-white dark:ring-gray-950 sm:ring-[3px] md:ring-4">
+                            {profileImage && !profileImageFailed ? (
+                              <img
+                                src={profileImage}
+                                alt={scannedStudent.fullname}
+                                className="aspect-square h-32 w-32 object-cover sm:h-44 sm:w-44 md:h-48 md:w-48"
+                                onError={() => setProfileImageFailed(true)}
+                              />
+                            ) : (
+                              <div className="flex aspect-square h-32 w-32 items-center justify-center bg-gradient-to-br from-brand-500 to-brand-600 text-3xl font-semibold tracking-tight text-white shadow-inner sm:h-44 sm:w-44 sm:text-5xl md:h-48 md:w-48 md:text-6xl">
+                                {getInitials(scannedStudent.fullname)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <h3 className="mx-auto mt-3 max-w-lg px-0.5 text-lg font-semibold leading-snug tracking-tight text-gray-900 dark:text-white sm:mt-6 sm:px-1 sm:text-2xl md:text-[1.65rem]">
+                      {scannedStudent.fullname}
+                    </h3>
+                    <div className="mt-2 flex justify-center sm:mt-3.5">
+                      <Badge size="sm" color={scannedStudent.is_active ? "success" : "error"}>
+                        {scannedStudent.is_active ? "Aktif" : "Tidak Aktif"}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Kuota hanya jika belum ada order aktif (alur buat order baru) */}
+                {!activeOrder && (
+                  <div className="flex items-center justify-between gap-2 rounded-lg border border-brand-200/70 bg-gradient-to-r from-brand-50/95 to-brand-100/60 px-3 py-2 shadow-sm dark:border-brand-800/50 dark:from-brand-900/30 dark:to-brand-800/20 sm:rounded-xl sm:px-5 sm:py-3.5">
+                    <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300 sm:text-sm">
+                      Kuota hari ini
+                    </span>
                     {isLoadingQuota ? (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Memuat...</p>
+                      <span className="text-sm text-gray-500">Memuat…</span>
                     ) : (
-                      <p className="text-2xl sm:text-3xl font-bold text-brand-600 dark:text-brand-400">
-                        {remainingQuota !== null ? `${remainingQuota} pakaian` : "-"}
-                      </p>
+                      <span className="text-right">
+                        <span className="text-lg font-bold tabular-nums text-brand-600 dark:text-brand-400 sm:text-xl">
+                          {remainingQuota !== null ? remainingQuota : "—"}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 sm:text-sm">
+                          {" "}
+                          / {quotaLimit !== null ? quotaLimit : "—"} pakaian
+                        </span>
+                      </span>
                     )}
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                      Kuota Total
-                    </p>
-                    <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-                      {quotaLimit !== null ? `${quotaLimit} pakaian/hari` : "-"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Student Details - Compact Grid */}
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                {scannedStudent.unique_code && (
-                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
-                    <p className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      Kode Unik
-                    </p>
-                    <p className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-white font-mono break-all">
-                      {scannedStudent.unique_code}
-                    </p>
-                  </div>
                 )}
 
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
-                  <p className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    NIK
-                  </p>
-                  <p className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-white break-all">
-                    {scannedStudent.national_id_number}
-                  </p>
-                </div>
-
-                {scannedStudent.grade_level && (
-                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
-                    <p className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      Kelas
-                    </p>
-                    <p className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-white">
-                      {scannedStudent.grade_level}
-                    </p>
-                  </div>
-                )}
-
-                {scannedStudent.dormitory && (
-                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
-                    <p className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      Asrama
-                    </p>
-                    <p className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-white">
-                      {scannedStudent.dormitory}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Active Order Section */}
-              {activeOrder && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex-1">
-                      <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">
-                        Order Aktif
+                {/* Kode unik + NIK — satu baris, ringkas di mobile */}
+                <div className="grid grid-cols-2 gap-0 overflow-hidden rounded-lg border border-gray-200/80 bg-white shadow-sm dark:border-gray-700/80 dark:bg-gray-900/50 sm:rounded-xl">
+                  {scannedStudent.unique_code ? (
+                    <>
+                      <div className="min-w-0 border-r border-gray-100 p-2 dark:border-gray-700/80 sm:p-3">
+                        <p className="text-[9px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 sm:text-[10px]">
+                          Kode unik
+                        </p>
+                        <p className="mt-0.5 break-all font-mono text-[11px] font-semibold leading-tight text-gray-900 dark:text-white sm:text-xs md:text-sm">
+                          {scannedStudent.unique_code}
+                        </p>
+                      </div>
+                      <div className="min-w-0 p-2 sm:p-3">
+                        <p className="text-[9px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 sm:text-[10px]">
+                          NIS
+                        </p>
+                        <p className="mt-0.5 break-all text-[11px] font-semibold leading-tight text-gray-900 dark:text-white sm:text-xs md:text-sm">
+                          {scannedStudent.national_id_number}
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="col-span-2 min-w-0 p-2 sm:p-3">
+                      <p className="text-[9px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 sm:text-[10px]">
+                        NIK
                       </p>
-                      <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                        {activeOrder.order_number}
-                      </p>
-                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                        Total: {activeOrder.total_items} pakaian
+                      <p className="mt-0.5 break-all text-[11px] font-semibold leading-tight text-gray-900 dark:text-white sm:text-xs md:text-sm">
+                        {scannedStudent.national_id_number}
                       </p>
                     </div>
-                    <Badge size="sm" color={getStatusColor(activeOrder.current_status)}>
-                      {formatStatus(activeOrder.current_status)}
-                    </Badge>
+                  )}
+                </div>
+
+                {/* Order aktif: foto order + catatan dari tabel orders */}
+                {activeOrder && (
+                  <div className="overflow-hidden rounded-lg border border-blue-200/90 bg-blue-50/50 dark:border-blue-800/70 dark:bg-blue-950/25 sm:rounded-xl">
+                    <div className="flex items-start justify-between gap-2 border-b border-blue-200/60 px-2.5 py-2 dark:border-blue-800/50 sm:px-4 sm:py-3">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
+                          Order aktif
+                        </p>
+                        <p className="truncate font-mono text-sm font-semibold text-blue-950 dark:text-blue-50">
+                          {activeOrder.order_number}
+                        </p>
+                        <p className="text-xs text-blue-700/90 dark:text-blue-300/90">
+                          {activeOrder.total_items} pakaian
+                        </p>
+                      </div>
+                      <Badge size="sm" color={getStatusColor(activeOrder.current_status)}>
+                        {formatStatus(activeOrder.current_status)}
+                      </Badge>
+                    </div>
+
+                    {orderImageUrls.length > 0 && (
+                      <div className="border-b border-blue-200/40 px-1.5 py-1.5 dark:border-blue-800/40 sm:px-2 sm:py-2">
+                        <p className="mb-1 px-0.5 text-[9px] font-medium uppercase tracking-wide text-blue-800/80 dark:text-blue-300/80 sm:px-1 sm:text-[10px]">
+                          Foto order
+                        </p>
+                        <div className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2 sm:pb-1">
+                          {orderImageUrls.map((url, idx) => (
+                            <button
+                              key={`${url}-${idx}`}
+                              type="button"
+                              onClick={() => setOrderImageLightbox(url)}
+                              className="h-[4.5rem] w-[4.5rem] shrink-0 snap-start overflow-hidden rounded-md border border-blue-200/80 bg-white shadow-sm ring-offset-2 transition hover:ring-2 hover:ring-blue-400 dark:border-blue-700 dark:bg-gray-900 sm:h-24 sm:w-24 sm:rounded-lg"
+                            >
+                              <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {activeOrder.notes && (
+                      <div className="px-2.5 py-2 sm:px-4 sm:py-3">
+                        <p className="text-[9px] font-semibold uppercase tracking-wide text-blue-800/80 dark:text-blue-300/80 sm:text-[10px]">
+                          Catatan order
+                        </p>
+                        <p
+                          className={`mt-0.5 whitespace-pre-wrap text-xs leading-snug text-blue-950/90 dark:text-blue-50/90 sm:mt-1 sm:text-sm ${
+                            orderNotesExpanded ? "" : "line-clamp-3"
+                          }`}
+                        >
+                          {activeOrder.notes}
+                        </p>
+                        {activeOrder.notes.length > 90 && (
+                          <button
+                            type="button"
+                            onClick={() => setOrderNotesExpanded((e) => !e)}
+                            className="mt-1 text-xs font-medium text-blue-700 underline decoration-blue-400/60 underline-offset-2 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200"
+                          >
+                            {orderNotesExpanded ? "Ringkas" : "Selengkapnya"}
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {!activeOrder.notes && orderImageUrls.length === 0 && (
+                      <p className="px-2.5 py-1.5 text-[11px] text-blue-800/70 dark:text-blue-300/70 sm:px-4 sm:py-2 sm:text-xs">
+                        Belum ada foto atau catatan pada order ini.
+                      </p>
+                    )}
+
+                    {getNextStatus(activeOrder.current_status) && (
+                      <div className="border-t border-blue-200/50 p-1.5 dark:border-blue-800/50 sm:p-3">
+                        <button
+                          type="button"
+                          onClick={handleOpenStatusModal}
+                          className="flex w-full items-center justify-center gap-1.5 rounded-md bg-blue-600 px-2.5 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-blue-700 active:bg-blue-800 touch-manipulation sm:gap-2 sm:rounded-lg sm:px-3 sm:py-2.5 sm:text-sm"
+                        >
+                          <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                          <span className="truncate">
+                            Lanjut ke {formatStatus(getNextStatus(activeOrder.current_status)!)}
+                          </span>
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  
-                  {getNextStatus(activeOrder.current_status) && (
+                )}
+
+                {!scannedStudent.is_active && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-[11px] leading-snug text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200 sm:p-2.5 sm:text-sm">
+                    Siswa tidak aktif — tidak dapat membuat order baru.
+                  </div>
+                )}
+
+                {/* Aksi desktop/tablet — di mobile dipakai bar tetap bawah */}
+                <div className="hidden flex-col gap-2 border-t border-gray-200 pt-2.5 dark:border-gray-700 md:flex md:flex-row md:items-center md:justify-end md:gap-3 md:pt-4">
+                  <button
+                    type="button"
+                    onClick={handleScanAgain}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 touch-manipulation"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Scan lagi
+                  </button>
+                  {!activeOrder && (
                     <button
-                      onClick={handleOpenStatusModal}
-                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors touch-manipulation"
+                      type="button"
+                      onClick={handleCreateOrder}
+                      disabled={!scannedStudent.is_active}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
-                      Lanjutkan ke {formatStatus(getNextStatus(activeOrder.current_status)!)}
+                      Buat order
                     </button>
                   )}
                 </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={handleScanAgain}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors touch-manipulation"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Scan Lagi
-                </button>
-                {!activeOrder && (
-                  <button
-                    onClick={handleCreateOrder}
-                    disabled={!scannedStudent.is_active}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors touch-manipulation"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Buat Order
-                  </button>
-                )}
               </div>
+            </ComponentCard>
 
-              {!scannedStudent.is_active && (
-                <div className="p-3 text-sm text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800">
-                  Siswa tidak aktif. Tidak dapat membuat order untuk siswa ini.
-                </div>
+            {/* Bar aksi mobile — tetap di bawah layar, minim scroll */}
+            <div
+              className="fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t border-gray-200 bg-white/95 px-3 py-2 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/95 md:hidden"
+              style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+            >
+              <button
+                type="button"
+                onClick={handleScanAgain}
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white py-2.5 text-sm font-medium text-gray-800 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 touch-manipulation"
+              >
+                <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Scan lagi
+              </button>
+              {!activeOrder && (
+                <button
+                  type="button"
+                  onClick={handleCreateOrder}
+                  disabled={!scannedStudent.is_active}
+                  className="inline-flex flex-[1.2] items-center justify-center gap-1.5 rounded-lg bg-brand-500 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation"
+                >
+                  <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Buat order
+                </button>
               )}
             </div>
-          </ComponentCard>
+          </div>
         )}
       </div>
+
+      {/* Lightbox foto order (hasil scan) */}
+      <Modal
+        isOpen={!!orderImageLightbox}
+        onClose={() => setOrderImageLightbox(null)}
+        className="max-w-2xl"
+      >
+        <div className="p-3 sm:p-5">
+          {orderImageLightbox && (
+            <img
+              src={orderImageLightbox}
+              alt="Foto order"
+              className="mx-auto max-h-[min(85vh,720px)] w-full rounded-xl object-contain"
+            />
+          )}
+        </div>
+      </Modal>
 
       {/* Status Update Modal */}
       {activeOrder && (

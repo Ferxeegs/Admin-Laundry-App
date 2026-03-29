@@ -277,7 +277,7 @@ export default function OrdersList() {
         <div className="relative flex-1 max-w-md">
           <input
             type="text"
-            placeholder="Cari nomor pesanan..."
+            placeholder="Cari nama siswa atau nomor pesanan..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-10 sm:h-11 rounded-lg border border-gray-200 bg-transparent py-2 pl-10 sm:pl-12 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
