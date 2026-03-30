@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { Html5Qrcode } from "html5-qrcode";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
@@ -49,7 +49,10 @@ function parseOrderMediaData(data: unknown): Array<{ url: string }> {
 
 export default function ScanQR() {
   const navigate = useNavigate();
+  const location = useLocation();
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const isStartingRef = useRef(false);
+  const isMountedRef = useRef(true);
   const [isScanning, setIsScanning] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,11 +84,38 @@ export default function ScanQR() {
   const { success, error: showError } = useToast();
 
   useEffect(() => {
+    isMountedRef.current = true;
     // Cleanup on unmount
     return () => {
+      isMountedRef.current = false;
       stopScanning();
     };
   }, []);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (location.state?.autoStart) {
+      // Clear location state silently so it doesn't re-trigger on reload
+      window.history.replaceState({}, '');
+
+      const initScanner = async () => {
+        // Wait a small delay to let page transition finish
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        
+        if (isCancelled) return; // Prevent strict mode double invoke from proceeding
+        
+        startScanning();
+      };
+      
+      initScanner();
+    }
+    
+    return () => {
+      isCancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   useEffect(() => {
     setProfileImageFailed(false);
@@ -115,6 +145,9 @@ export default function ScanQR() {
   }, [activeOrder?.id, fetchOrderImages]);
 
   const startScanning = async () => {
+    if (isStartingRef.current || scannerRef.current) return;
+    isStartingRef.current = true;
+    
     try {
       setError(null);
       setScanError(null);
@@ -122,17 +155,17 @@ export default function ScanQR() {
       setProfileImage(null);
       setProfileImageFailed(false);
 
-      // Set scanning state first to render the element
+      // Set scanning state to show the scanner UI
       setIsScanning(true);
 
-      // Wait for the element to be rendered in the DOM
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Give a tiny tick for the DOM to process the class update
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
-      // Check if element exists
       const element = document.getElementById(scannerElementId);
       if (!element) {
         setError("Elemen scanner tidak ditemukan. Silakan coba lagi.");
         setIsScanning(false);
+        isStartingRef.current = false;
         return;
       }
 
@@ -178,8 +211,13 @@ export default function ScanQR() {
           },
           (errorMessage) => {
             // Ignore scanning errors (they're normal during scanning)
-            // Only show error if it's not a "not found" error
-            if (!errorMessage.includes("No QR code found")) {
+            // Common errors: "No MultiFormat Readers were able to detect the code" or "No barcode or QR code detected"
+            if (
+              !errorMessage.includes("No QR code found") &&
+              !errorMessage.includes("No MultiFormat Readers") &&
+              !errorMessage.includes("NotFoundException") &&
+              !errorMessage.includes("No barcode")
+            ) {
               setScanError(errorMessage);
             }
           }
@@ -192,6 +230,8 @@ export default function ScanQR() {
       console.error("Error starting scanner:", err);
       setError(err.message || "Gagal memulai scanner. Pastikan izin kamera telah diberikan.");
       setIsScanning(false);
+    } finally {
+      isStartingRef.current = false;
     }
   };
 
@@ -206,6 +246,7 @@ export default function ScanQR() {
       scannerRef.current = null;
     }
     setIsScanning(false);
+    setScanError(null);
   };
 
   const handleQRCodeScanned = async (qrCodeValue: string) => {
@@ -668,14 +709,16 @@ export default function ScanQR() {
               )}
 
               {/* Fullscreen Scanner */}
-              {isScanning && (
-                <div className="fixed inset-0 z-[999999] bg-black flex flex-col items-center justify-center p-4" style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
-                  {/* Scanner Container */}
-                  <div className="w-full max-w-md relative flex flex-col items-center">
-                    <div id={scannerElementId} className="w-full rounded-lg overflow-hidden" />
-                    
-                    {/* Instructions */}
-                    <div className="mt-4 text-center px-4">
+              <div 
+                className={`fixed inset-0 z-[999999] bg-black flex flex-col items-center justify-center p-4 transition-all duration-200 ${isScanning ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`} 
+                style={{ top: 0, left: 0, right: 0, bottom: 0 }}
+              >
+                {/* Scanner Container */}
+                <div className="w-full max-w-md relative flex flex-col items-center">
+                  <div id={scannerElementId} className="w-full rounded-lg overflow-hidden" />
+                  
+                  {/* Instructions */}
+                  <div className="mt-4 text-center px-4">
                       <p className="text-white text-sm sm:text-base mb-2 font-medium">
                         Arahkan kamera ke QR code siswa
                       </p>
@@ -694,9 +737,8 @@ export default function ScanQR() {
                       </svg>
                       Hentikan Scan
                     </button>
-                  </div>
                 </div>
-              )}
+              </div>
 
               {scanError && !isScanning && (
                 <div className="p-3 text-sm text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800">
