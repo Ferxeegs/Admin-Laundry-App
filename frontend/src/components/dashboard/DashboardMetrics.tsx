@@ -69,15 +69,16 @@ export default function DashboardMetrics() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
-        {[1, 2, 3].map((i) => (
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5">
+        <div className="col-span-2 sm:col-span-1 rounded-2xl bg-gray-200/50 p-5 dark:bg-gray-800/30 animate-pulse sm:p-6 h-[140px]" />
+        {[1, 2].map((i) => (
           <div
             key={i}
-            className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] animate-pulse"
+            className="col-span-1 rounded-2xl border border-gray-100 bg-white p-5 dark:border-gray-800/50 dark:bg-white/[0.02] animate-pulse sm:p-6 h-[140px]"
           >
-            <div className="h-11 w-11 rounded-xl bg-gray-200 dark:bg-gray-700 sm:h-12 sm:w-12" />
-            <div className="mt-4 h-4 w-24 rounded bg-gray-200 dark:bg-gray-700" />
-            <div className="mt-2 h-6 w-16 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-10 w-10 rounded-xl bg-gray-200 dark:bg-gray-700 sm:h-12 sm:w-12" />
+            <div className="mt-6 h-6 w-16 rounded bg-gray-200 dark:bg-gray-700 sm:mt-8" />
+            <div className="mt-2 h-4 w-20 rounded bg-gray-200 dark:bg-gray-700" />
           </div>
         ))}
       </div>
@@ -120,26 +121,48 @@ export default function DashboardMetrics() {
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-      {cards.map(({ label, value, sub, icon: Icon, iconBg, iconColor }) => (
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5">
+      {/* Primary Card - Total Siswa (Spans full width on mobile) */}
+      <div className="col-span-2 sm:col-span-1 flex min-h-[120px] sm:min-h-[140px] flex-col rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 p-5 sm:p-6 shadow-md shadow-brand-500/20 relative overflow-hidden group">
+        <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 blur-2xl transition-transform group-hover:scale-110" />
+        <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-brand-400/20 blur-3xl" />
+        
+        <div className="relative flex items-start justify-between">
+          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm text-white">
+            <GroupIcon className="size-5 sm:size-6" />
+          </div>
+        </div>
+        
+        <div className="relative mt-auto pt-4">
+          <p className="text-3xl font-bold tracking-tight text-white drop-shadow-sm sm:text-4xl">
+            {stats.totalStudents.toLocaleString("id-ID")}
+          </p>
+          <span className="mt-1 block text-sm font-medium text-brand-100/90 sm:text-base">
+            Total Siswa Aktif
+          </span>
+        </div>
+      </div>
+
+      {/* Secondary Cards */}
+      {cards.slice(1).map(({ label, value, sub, icon: Icon, iconBg, iconColor }) => (
         <div
           key={label}
-          className="flex min-h-[120px] flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-white/[0.03] sm:min-h-[128px]"
+          className="col-span-1 flex min-h-[120px] sm:min-h-[140px] flex-col rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm shadow-gray-200/50 dark:border-gray-800/60 dark:bg-white/[0.02] dark:shadow-none hover:shadow-md transition-shadow"
         >
           <div
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${iconBg}`}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${iconBg}`}
           >
             <Icon className={`size-5 sm:size-6 ${iconColor}`} />
           </div>
-          <div className="mt-4 min-w-0 flex-1 pb-0.5">
-            <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 sm:text-sm">
-              {label}
-            </span>
-            <p className="mt-1.5 break-words font-semibold leading-snug text-gray-800 dark:text-white/90 sm:text-base">
+          <div className="mt-auto pt-4 min-w-0 flex-1 flex flex-col justify-end">
+            <p className="break-words text-lg sm:text-2xl font-bold leading-none tracking-tight text-gray-900 dark:text-white/95">
               {value}
             </p>
+            <span className="mt-1 block text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">
+              {label}
+            </span>
             {sub && (
-              <p className="mt-1 text-xs leading-normal text-gray-400 dark:text-gray-500">
+              <p className="mt-0.5 text-[10px] sm:text-xs leading-none text-gray-400 dark:text-gray-500">
                 {sub}
               </p>
             )}

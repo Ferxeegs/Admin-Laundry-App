@@ -123,14 +123,14 @@ export default function OrderChart() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 dark:border-gray-800/50 dark:bg-white/[0.02] sm:p-6">
           <div className="h-5 w-36 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
-          <div className="mt-5 h-[220px] animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800 sm:h-[260px]" />
+          <div className="mt-5 h-[220px] animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800/50 sm:h-[260px]" />
         </div>
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 dark:border-gray-800/50 dark:bg-white/[0.02] sm:p-6">
           <div className="h-5 w-40 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
-          <div className="mt-5 h-[220px] animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800 sm:h-[260px]" />
+          <div className="mt-5 h-[220px] animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800/50 sm:h-[260px]" />
         </div>
       </div>
     );
@@ -138,23 +138,23 @@ export default function OrderChart() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white px-4 py-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
+      <div className="rounded-2xl border border-gray-100 bg-white px-4 py-5 dark:border-gray-800/50 dark:bg-white/[0.02] sm:px-6">
         <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
-        <h3 className="text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
+    <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
+      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm shadow-gray-200/50 dark:border-gray-800/60 dark:bg-white/[0.02] dark:shadow-none hover:shadow-md transition-shadow">
+        <h3 className="text-base font-bold tracking-tight text-gray-900 dark:text-white/95 sm:text-lg">
           Order per Bulan
         </h3>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 sm:text-sm">
           Jumlah order berdasarkan periode bulanan
         </p>
-        <div className="mt-5 max-w-full overflow-x-auto pb-2 sm:pb-0">
-          <div className="min-w-[280px] sm:min-w-0">
+        <div className="mt-5 w-full overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
+          <div className="min-w-[280px] w-full">
             <Chart
               options={orderCountOptions}
               series={[{ name: "Jumlah Order", data: breakdown.map((b) => b.count) }]}
@@ -165,15 +165,15 @@ export default function OrderChart() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
-        <h3 className="text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
+      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm shadow-gray-200/50 dark:border-gray-800/60 dark:bg-white/[0.02] dark:shadow-none hover:shadow-md transition-shadow">
+        <h3 className="text-base font-bold tracking-tight text-gray-900 dark:text-white/95 sm:text-lg">
           Pendapatan per Bulan
         </h3>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 sm:text-sm">
           Total pendapatan berdasarkan periode bulanan
         </p>
-        <div className="mt-5 max-w-full overflow-x-auto pb-2 sm:pb-0">
-          <div className="min-w-[280px] sm:min-w-0">
+        <div className="mt-5 w-full overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
+          <div className="min-w-[280px] w-full">
             <Chart
               options={revenueOptions}
               series={[

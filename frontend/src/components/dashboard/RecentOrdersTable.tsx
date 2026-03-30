@@ -52,7 +52,7 @@ export default function RecentOrdersTable() {
       setLoading(true);
       setError(null);
       try {
-        const res = await orderAPI.getAllOrders({ page: 1, limit: 8 });
+        const res = await orderAPI.getAllOrders({ page: 1, limit: 6 });
         if (cancelled) return;
         if (res.success && res.data?.orders) {
           setOrders(res.data.orders);
@@ -86,15 +86,26 @@ export default function RecentOrdersTable() {
 
   if (loading) {
     return (
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
-        <h3 className="text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
-          Order Terbaru
-        </h3>
-        <div className="mt-3 space-y-2 sm:mt-4 sm:space-y-3">
-          {[1, 2, 3, 4].map((i) => (
+      <div 
+        className="flex flex-col h-full overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800"
+        style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.04)" }}
+      >
+        <div className="px-5 pt-5 pb-4 border-b border-gray-50 dark:border-gray-800/70">
+          <h3 
+            className="text-sm font-semibold text-gray-900 dark:text-white tracking-tight"
+            style={{ fontFamily: "'DM Sans', sans-serif", letterSpacing: "-0.01em" }}
+          >
+            Order Terbaru
+          </h3>
+          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+            Daftar pesanan terakhir yang masuk
+          </p>
+        </div>
+        <div className="p-5 flex-1 space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
-              className="h-12 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800 sm:h-14"
+              className="h-12 animate-pulse rounded-xl bg-gray-50 dark:bg-gray-800/50 sm:h-14"
             />
           ))}
         </div>
@@ -104,66 +115,89 @@ export default function RecentOrdersTable() {
 
   if (error) {
     return (
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
-        <h3 className="text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
-          Order Terbaru
-        </h3>
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+      <div 
+        className="flex flex-col h-full overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800"
+        style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.04)" }}
+      >
+        <div className="px-5 pt-5 pb-4 border-b border-gray-50 dark:border-gray-800/70">
+          <h3 
+            className="text-sm font-semibold text-gray-900 dark:text-white tracking-tight"
+            style={{ fontFamily: "'DM Sans', sans-serif", letterSpacing: "-0.01em" }}
+          >
+            Order Terbaru
+          </h3>
+        </div>
+        <div className="p-5 flex-1">
+          <div className="rounded-xl border border-red-100 bg-red-50 p-3 dark:border-red-900/30 dark:bg-red-900/10">
+            <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
-          Order Terbaru
-        </h3>
+    <div 
+      className="flex flex-col h-full overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 transition-all hover:shadow-md"
+      style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.04)" }}
+    >
+      <div className="px-5 pt-5 pb-3 border-b border-gray-50 dark:border-gray-800/70 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+        <div>
+          <h3 
+            className="text-sm font-semibold text-gray-900 dark:text-white tracking-tight"
+            style={{ fontFamily: "'DM Sans', sans-serif", letterSpacing: "-0.01em" }}
+          >
+            Order Terbaru
+          </h3>
+          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+            Daftar pesanan terakhir yang masuk
+          </p>
+        </div>
         <Link
           to="/orders"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+          className="inline-flex self-start sm:self-auto items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700 dark:text-brand-400 dark:hover:bg-brand-500/10"
         >
           Lihat semua
-          <AngleRightIcon className="size-4" />
+          <AngleRightIcon className="size-3.5 opacity-70" />
         </Link>
       </div>
-      <div className="max-w-full overflow-x-auto -mx-1 px-1 sm:mx-0 sm:px-0">
+      <div className="max-w-full flex-1 overflow-hidden">
         <Table>
           <TableHeader className="border-y border-gray-100 dark:border-gray-800">
             <TableRow>
               <TableCell
                 isHeader
-                className="whitespace-nowrap py-2.5 text-start text-xs font-medium text-gray-500 dark:text-gray-400 sm:py-3"
+                className="font-dm-sans whitespace-nowrap px-2.5 sm:px-3 py-3 text-start text-[11px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400"
               >
                 No. Order
               </TableCell>
               <TableCell
                 isHeader
-                className="whitespace-nowrap py-2.5 text-start text-xs font-medium text-gray-500 dark:text-gray-400 sm:py-3"
+                className="font-dm-sans px-2.5 sm:px-3 py-3 text-start text-[11px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 w-full"
               >
                 Siswa
               </TableCell>
               <TableCell
                 isHeader
-                className="whitespace-nowrap py-2.5 text-start text-xs font-medium text-gray-500 dark:text-gray-400 sm:py-3"
+                className="font-dm-sans whitespace-nowrap px-2.5 sm:px-3 py-3 text-start text-[11px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400"
               >
                 Item
               </TableCell>
               <TableCell
                 isHeader
-                className="whitespace-nowrap py-2.5 text-start text-xs font-medium text-gray-500 dark:text-gray-400 sm:py-3"
+                className="font-dm-sans whitespace-nowrap px-2.5 sm:px-3 py-3 text-start text-[11px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400"
               >
                 Biaya
               </TableCell>
               <TableCell
                 isHeader
-                className="whitespace-nowrap py-2.5 text-start text-xs font-medium text-gray-500 dark:text-gray-400 sm:py-3"
+                className="font-dm-sans whitespace-nowrap px-2.5 sm:px-3 py-3 text-start text-[11px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400"
               >
                 Status
               </TableCell>
               <TableCell
                 isHeader
-                className="whitespace-nowrap py-2.5 text-start text-xs font-medium text-gray-500 dark:text-gray-400 sm:py-3 hidden sm:table-cell"
+                className="font-dm-sans whitespace-nowrap px-2.5 sm:px-3 py-3 text-start text-[11px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 hidden sm:table-cell"
               >
                 Tanggal
               </TableCell>
@@ -172,36 +206,52 @@ export default function RecentOrdersTable() {
           <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
             {orders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-6 text-center text-sm text-gray-500 dark:text-gray-400 sm:py-8">
-                  Belum ada order
+                <TableCell colSpan={6} className="h-40 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div 
+                      className="rounded-2xl p-4"
+                      style={{ background: "rgba(148,163,184,0.08)" }}
+                    >
+                      <svg className="h-6 w-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Keranjang kosong</p>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-600">Belum ada order hari ini</p>
+                    </div>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
               orders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="whitespace-nowrap py-2.5 text-sm sm:py-3">
+                <TableRow key={order.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors group">
+                  <TableCell className="whitespace-nowrap px-2.5 sm:px-3 py-3.5 text-sm">
                     <Link
                       to={`/orders/${order.id}`}
-                      className="font-medium text-brand-600 hover:underline dark:text-brand-400"
+                      className="font-bold text-gray-900 group-hover:text-brand-600 transition-colors dark:text-gray-100 dark:group-hover:text-brand-400"
+                      style={{ letterSpacing: "-0.01em" }}
                     >
                       {order.order_number}
                     </Link>
                   </TableCell>
-                  <TableCell className="min-w-[100px] py-2.5 text-sm text-gray-800 dark:text-white/90 sm:py-3">
-                    <span className="block truncate max-w-[120px] sm:max-w-none">{order.student?.fullname ?? "-"}</span>
-                    {order.student?.unique_code && (
-                      <span className="block text-xs text-gray-500 dark:text-gray-400">
-                        {order.student.unique_code}
-                      </span>
-                    )}
+                  <TableCell className="min-w-[120px] px-2.5 sm:px-3 py-3.5 text-sm text-gray-700 dark:text-gray-200 w-full relative">
+                    <div className="flex flex-col max-w-[160px] lg:max-w-xs overflow-hidden">
+                      <span className="block truncate font-medium max-w-full">{order.student?.fullname ?? "-"}</span>
+                      {order.student?.unique_code && (
+                        <span className="block text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 uppercase tracking-wide truncate max-w-full">
+                          {order.student.unique_code}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
-                  <TableCell className="whitespace-nowrap py-2.5 text-sm text-gray-600 dark:text-gray-300 sm:py-3">
+                  <TableCell className="whitespace-nowrap px-2.5 sm:px-3 py-3.5 text-sm text-gray-600 dark:text-gray-300 font-medium">
                     {order.total_items}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap py-2.5 text-sm text-gray-600 dark:text-gray-300 sm:py-3">
+                  <TableCell className="whitespace-nowrap px-2.5 sm:px-3 py-3.5 text-sm text-gray-600 dark:text-gray-300 font-medium">
                     {formatCurrency(order.additional_fee)}
                   </TableCell>
-                  <TableCell className="py-2.5 sm:py-3">
+                  <TableCell className="px-2.5 sm:px-3 py-3.5">
                     <Badge
                       size="sm"
                       color={STATUS_COLOR[order.current_status] ?? "primary"}
@@ -209,7 +259,7 @@ export default function RecentOrdersTable() {
                       {STATUS_LABEL[order.current_status] ?? order.current_status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="whitespace-nowrap py-2.5 text-sm text-gray-500 dark:text-gray-400 sm:py-3 hidden sm:table-cell">
+                  <TableCell className="whitespace-nowrap px-2.5 sm:px-3 py-3.5 text-sm text-gray-500 dark:text-gray-400 hidden sm:table-cell">
                     {formatDate(order.created_at)}
                   </TableCell>
                 </TableRow>
@@ -218,6 +268,11 @@ export default function RecentOrdersTable() {
           </TableBody>
         </Table>
       </div>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+        .font-dm-sans { font-family: 'DM Sans', sans-serif; }
+      `}</style>
     </div>
   );
 }
