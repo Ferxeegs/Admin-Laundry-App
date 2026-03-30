@@ -179,13 +179,13 @@ export default function RecentOrdersTable() {
               </TableCell>
               <TableCell
                 isHeader
-                className="font-dm-sans whitespace-nowrap px-2.5 sm:px-3 py-3 text-start text-[11px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400"
+                className="font-dm-sans whitespace-nowrap px-2.5 sm:px-3 py-3 text-start text-[11px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 hidden sm:table-cell"
               >
                 Item
               </TableCell>
               <TableCell
                 isHeader
-                className="font-dm-sans whitespace-nowrap px-2.5 sm:px-3 py-3 text-start text-[11px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400"
+                className="font-dm-sans whitespace-nowrap px-2.5 sm:px-3 py-3 text-start text-[11px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 hidden sm:table-cell"
               >
                 Biaya
               </TableCell>
@@ -235,20 +235,20 @@ export default function RecentOrdersTable() {
                       {order.order_number}
                     </Link>
                   </TableCell>
-                  <TableCell className="min-w-[120px] px-2.5 sm:px-3 py-3.5 text-sm text-gray-700 dark:text-gray-200 w-full relative">
-                    <div className="flex flex-col max-w-[160px] lg:max-w-xs overflow-hidden">
-                      <span className="block truncate font-medium max-w-full">{order.student?.fullname ?? "-"}</span>
+                  <TableCell className="min-w-0 px-2 sm:px-3 py-3.5 text-sm text-gray-700 dark:text-gray-200 w-full relative">
+                    <div className="flex flex-col max-w-[140px] xs:max-w-[160px] sm:max-w-xs overflow-hidden">
+                      <span className="block truncate font-medium w-full">{order.student?.fullname ?? "-"}</span>
                       {order.student?.unique_code && (
-                        <span className="block text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 uppercase tracking-wide truncate max-w-full">
+                        <span className="block text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 uppercase tracking-wide truncate w-full">
                           {order.student.unique_code}
                         </span>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="whitespace-nowrap px-2.5 sm:px-3 py-3.5 text-sm text-gray-600 dark:text-gray-300 font-medium">
+                  <TableCell className="whitespace-nowrap px-2.5 sm:px-3 py-3.5 text-sm text-gray-600 dark:text-gray-300 font-medium hidden sm:table-cell">
                     {order.total_items}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap px-2.5 sm:px-3 py-3.5 text-sm text-gray-600 dark:text-gray-300 font-medium">
+                  <TableCell className="whitespace-nowrap px-2.5 sm:px-3 py-3.5 text-sm text-gray-600 dark:text-gray-300 font-medium hidden sm:table-cell">
                     {formatCurrency(order.additional_fee)}
                   </TableCell>
                   <TableCell className="px-2.5 sm:px-3 py-3.5">

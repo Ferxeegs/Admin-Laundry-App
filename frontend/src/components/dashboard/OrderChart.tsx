@@ -86,6 +86,11 @@ export default function OrderChart() {
       categories: breakdown.map((b) => b.label),
       axisBorder: { show: false },
       axisTicks: { show: false },
+      labels: {
+        rotate: -45,
+        rotateAlways: true,
+        style: { colors: "#6B7280", fontSize: "11px" }
+      }
     },
     grid: {
       yaxis: { lines: { show: true } },
