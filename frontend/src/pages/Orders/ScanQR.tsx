@@ -962,64 +962,61 @@ export default function ScanQR() {
                   </div>
                 )}
 
-                {/* Aksi desktop/tablet — di mobile dipakai bar tetap bawah */}
-                <div className="hidden flex-col gap-2 border-t border-gray-200 pt-2.5 dark:border-gray-700 md:flex md:flex-row md:items-center md:justify-end md:gap-3 md:pt-4">
-                  <button
-                    type="button"
-                    onClick={handleScanAgain}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 touch-manipulation"
-                  >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Scan lagi
-                  </button>
-                  {!activeOrder && (
+                {/* --- EMPTY STATE NO ACTIVE ORDER --- */}
+                {!activeOrder && scannedStudent.is_active && (
+                  <div className="flex flex-col items-center justify-center p-5 mt-2 rounded-xl border border-dashed border-brand-200 bg-brand-50/50 dark:border-brand-800/50 dark:bg-brand-900/10">
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-100/80 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400">
+                      <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      </svg>
+                    </div>
+                    <p className="text-[13px] font-bold text-gray-900 dark:text-gray-100 sm:text-sm">Tidak Ada Order Aktif</p>
+                    <p className="mt-1 mb-4 text-center text-xs text-gray-500 dark:text-gray-400 sm:text-[13px]">
+                      Siswa ini belum memiliki cucian yang sedang diproses. Silakan buat pesanan baru.
+                    </p>
                     <button
                       type="button"
                       onClick={handleCreateOrder}
-                      disabled={!scannedStudent.is_active}
-                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation"
+                      className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-brand-700 active:bg-brand-800 transition-colors touch-manipulation"
                     >
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
-                      Buat order
+                      Buat Pesanan Laundry
                     </button>
+                  </div>
+                )}
+
+                {/* Aksi General (Selalu Tampil) */}
+                <div className="flex flex-col-reverse gap-2 border-t border-gray-200 pt-3 dark:border-gray-700 md:flex-row md:items-center md:justify-end md:gap-3 md:pt-4">
+                  <button
+                    type="button"
+                    onClick={handleScanAgain}
+                    className="inline-flex w-full md:w-auto items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 touch-manipulation"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Scan Siswa Lain
+                  </button>
+                  {activeOrder && (
+                     <button
+                        type="button"
+                        onClick={handleCreateOrder}
+                        disabled={!scannedStudent.is_active}
+                        className="inline-flex w-full md:w-auto items-center justify-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation"
+                      >
+                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                       </svg>
+                       Buat Order Lain
+                     </button>
                   )}
                 </div>
               </div>
             </ComponentCard>
 
-            {/* Bar aksi mobile — tetap di bawah layar, minim scroll */}
-            <div
-              className="fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t border-gray-200 bg-white/95 px-3 py-2 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/95 md:hidden"
-              style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
-            >
-              <button
-                type="button"
-                onClick={handleScanAgain}
-                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white py-2.5 text-sm font-medium text-gray-800 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 touch-manipulation"
-              >
-                <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Scan lagi
-              </button>
-              {!activeOrder && (
-                <button
-                  type="button"
-                  onClick={handleCreateOrder}
-                  disabled={!scannedStudent.is_active}
-                  className="inline-flex flex-[1.2] items-center justify-center gap-1.5 rounded-lg bg-brand-500 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation"
-                >
-                  <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Buat order
-                </button>
-              )}
-            </div>
+
           </div>
         )}
       </div>
