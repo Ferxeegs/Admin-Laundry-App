@@ -5,11 +5,28 @@ import html2canvas from "html2canvas";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
-import { studentAPI } from "../../utils/api";
+import { studentAPI, orderAPI } from "../../utils/api";
 import { AngleLeftIcon, PencilIcon } from "../../icons";
 import Badge from "../../components/ui/badge/Badge";
 import TableSkeleton from "../../components/common/TableSkeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from "../../components/ui/table";
 import StudentSidebar from "./StudentSidebar";
+
+interface MonthlyOrderStat {
+  monthYear: string;
+  sortKey: string;
+  orderCount: number;
+  totalItems: number;
+  freeItems: number;
+  paidItems: number;
+  additionalFee: number;
+}
 
 interface Student {
   id: string;
@@ -44,12 +61,63 @@ export default function ViewStudent() {
   const [student, setStudent] = useState<Student | null>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const qrCodeRef = useRef<HTMLDivElement>(null);
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyOrderStat[]>([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
   useEffect(() => {
     if (id) {
       fetchStudentData();
+      fetchStudentOrders();
     }
   }, [id]);
+
+  const fetchStudentOrders = async () => {
+    if (!id) return;
+    setIsLoadingOrders(true);
+    try {
+      const response = await orderAPI.getAllOrders({ student_id: id, limit: 1000 });
+      if (response.success && response.data && response.data.orders) {
+        const stats: Record<string, MonthlyOrderStat> = {};
+        
+        response.data.orders.forEach((order) => {
+          if (!order.created_at) return;
+          const date = new Date(order.created_at);
+          
+          const monthYear = date.toLocaleDateString("id-ID", {
+            month: "long",
+            year: "numeric",
+          });
+          
+          const sortKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+          
+          if (!stats[sortKey]) {
+            stats[sortKey] = {
+              monthYear,
+              sortKey,
+              orderCount: 0,
+              totalItems: 0,
+              freeItems: 0,
+              paidItems: 0,
+              additionalFee: 0,
+            };
+          }
+          
+          stats[sortKey].orderCount += 1;
+          stats[sortKey].totalItems += order.total_items || 0;
+          stats[sortKey].freeItems += order.free_items_used || 0;
+          stats[sortKey].paidItems += order.paid_items_count || 0;
+          stats[sortKey].additionalFee += order.additional_fee || 0;
+        });
+        
+        const sortedStats = Object.values(stats).sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+        setMonthlyStats(sortedStats);
+      }
+    } catch (err) {
+      console.error("Fetch orders error:", err);
+    } finally {
+      setIsLoadingOrders(false);
+    }
+  };
 
   const fetchStudentData = async () => {
     if (!id) return;
@@ -351,6 +419,85 @@ export default function ViewStudent() {
                 </p>
               </div>
             </div>
+          </ComponentCard>
+
+          {/* Riwayat Pesanan Bulanan */}
+          <ComponentCard title="Riwayat Pesanan (Kumulatif per Bulan)">
+            {isLoadingOrders ? (
+              <TableSkeleton rows={3} columns={5} />
+            ) : monthlyStats.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Belum ada data pesanan</p>
+              </div>
+            ) : (
+              <>
+                {/* Mobile View */}
+                <div className="block md:hidden space-y-3">
+                  {monthlyStats.map((stat) => (
+                    <div key={stat.sortKey} className="p-4 bg-white border border-gray-100 rounded-xl dark:bg-gray-800 dark:border-gray-700 shadow-sm">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="font-semibold text-gray-800 dark:text-white">{stat.monthYear}</span>
+                        <Badge size="sm" color="success">
+                          {stat.orderCount} Pesanan
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-center items-center divide-x divide-gray-100 dark:divide-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
+                        <div>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Total Kelebihan</p>
+                          <p className="font-medium text-gray-800 dark:text-gray-200">{stat.paidItems} <span className="text-xs font-normal">pcs</span></p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Tambahan Biaya</p>
+                          <p className="font-medium text-brand-600 dark:text-brand-400">Rp {stat.additionalFee.toLocaleString("id-ID")}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+                  <div className="max-w-full overflow-x-auto custom-scrollbar">
+                    <Table>
+                      <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                        <TableRow>
+                          <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Bulan</TableCell>
+                          <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Jumlah Pesanan</TableCell>
+                          <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Total Kelebihan</TableCell>
+                          <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Tambahan Biaya</TableCell>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                        {monthlyStats.map((stat) => (
+                          <TableRow key={stat.sortKey} className="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
+                            <TableCell className="px-5 py-4 text-theme-sm font-medium text-gray-800 dark:text-white/90">
+                              {stat.monthYear}
+                            </TableCell>
+                            <TableCell className="px-5 py-4 text-theme-sm text-gray-500 dark:text-gray-400">
+                              {stat.orderCount} pesanan
+                            </TableCell>
+                            <TableCell className="px-5 py-4 text-theme-sm text-gray-500 dark:text-gray-400">
+                              {stat.paidItems > 0 ? (
+                                 <span className="text-gray-800 dark:text-white font-medium">{stat.paidItems} pcs</span>
+                              ) : (
+                                 "0 pcs"
+                              )}
+                            </TableCell>
+                            <TableCell className="px-5 py-4 text-theme-sm text-gray-500 dark:text-gray-400">
+                              {stat.additionalFee > 0 ? (
+                                 <span className="text-brand-500 dark:text-brand-400 font-medium">Rp {stat.additionalFee.toLocaleString("id-ID")}</span>
+                              ) : (
+                                 "Rp 0"
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </>
+            )}
           </ComponentCard>
         </div>
       </div>

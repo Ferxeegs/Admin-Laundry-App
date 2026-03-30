@@ -87,7 +87,7 @@ def get_order_settings(db: Session) -> tuple[int, float]:
 @router.get("/", response_model=WebResponse[dict])
 def get_all_orders(
     page: int = Query(1, ge=1),
-    limit: int = Query(10, ge=1, le=100),
+    limit: int = Query(10, ge=1, le=1000),
     search: Optional[str] = Query(None),
     status_filter: Optional[OrderStatus] = Query(None, alias="status"),
     student_id: Optional[str] = Query(None),

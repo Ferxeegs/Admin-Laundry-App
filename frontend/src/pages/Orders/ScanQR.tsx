@@ -792,7 +792,7 @@ export default function ScanQR() {
                   </div>
                 )}
 
-                {/* Kode unik + NIK — satu baris, ringkas di mobile */}
+                {/* Kode unik + NIS — satu baris, ringkas di mobile */}
                 <div className="grid grid-cols-2 gap-0 overflow-hidden rounded-lg border border-gray-200/80 bg-white shadow-sm dark:border-gray-700/80 dark:bg-gray-900/50 sm:rounded-xl">
                   {scannedStudent.unique_code ? (
                     <>
@@ -816,7 +816,7 @@ export default function ScanQR() {
                   ) : (
                     <div className="col-span-2 min-w-0 p-2 sm:p-3">
                       <p className="text-[9px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 sm:text-[10px]">
-                        NIK
+                        NIS
                       </p>
                       <p className="mt-0.5 break-all text-[11px] font-semibold leading-tight text-gray-900 dark:text-white sm:text-xs md:text-sm">
                         {scannedStudent.national_id_number}
