@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
+import { VitePWA } from "vite-plugin-pwa";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -12,6 +13,109 @@ export default defineConfig({
         // This will transform your SVG to a React component
         exportType: "named",
         namedExport: "ReactComponent",
+      },
+    }),
+    VitePWA({
+      registerType: "autoUpdate",
+      injectRegister: "auto",
+
+      // ── Workbox Caching Strategies ──
+      workbox: {
+        // Precache all built assets (JS, CSS, HTML, fonts, images)
+        globPatterns: [
+          "**/*.{js,css,html,ico,png,svg,woff,woff2,ttf,eot}",
+        ],
+        // Max precache payload — skip huge files
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
+
+        // Runtime caching for API calls & external resources
+        runtimeCaching: [
+          // Google Fonts stylesheets — cache first (rarely changes)
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-cache",
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          // Google Fonts webfont files — cache first
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "gstatic-fonts-cache",
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          // API calls — network first with cache fallback
+          {
+            urlPattern: /\/api\/v1\/.*/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "api-cache",
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 }, // 1 hour
+              cacheableResponse: { statuses: [0, 200] },
+              networkTimeoutSeconds: 10,
+            },
+          },
+          // Images from backend uploads — stale while revalidate
+          {
+            urlPattern: /\/uploads\/.*/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "upload-images-cache",
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 }, // 30 days
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
+
+        // Clean outdated caches on new SW activation
+        cleanupOutdatedCaches: true,
+        // Skip waiting — new SW activates immediately
+        skipWaiting: true,
+        clientsClaim: true,
+      },
+
+      // ── Web App Manifest ──
+      manifest: {
+        name: "Admin Laundry Pondok",
+        short_name: "Laundry",
+        description:
+          "Sistem manajemen laundry pesantren — kelola order, pantau status cucian, dan lacak pendapatan.",
+        theme_color: "#3B82F6",
+        background_color: "#0F172A",
+        display: "standalone",
+        orientation: "portrait",
+        scope: "/",
+        start_url: "/",
+        categories: ["business", "productivity"],
+        icons: [
+          {
+            src: "pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+          {
+            src: "pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
+      },
+
+      // Dev options — enable SW in development for testing
+      devOptions: {
+        enabled: false, // Set to true temporarily if you need to test SW in dev
       },
     }),
   ],
