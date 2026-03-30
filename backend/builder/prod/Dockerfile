@@ -49,8 +49,8 @@
     # Ini jauh lebih efisien daripada RUN chown -R
     COPY --chown=appuser:appuser . .
     
-    # 6. Pastikan appuser memiliki hak akses ke /app
-    RUN chown appuser:appuser /app
+    # 6. Pastikan appuser memiliki hak akses ke /app dan direktori uploads
+    RUN mkdir -p /app/uploads && chown -R appuser:appuser /app
     
     # 7. BARU PINDAH KE USER NON-ROOT
     USER appuser

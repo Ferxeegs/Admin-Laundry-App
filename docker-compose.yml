@@ -61,7 +61,7 @@ services:
     container_name: laundry_api_prod
     restart: always
     volumes:
-      - backend_uploads:/app/uploads
+      - backend_media_data:/app/uploads
     env_file: .env
     environment:
       - REDIS_URL=redis://redis:6379/0
@@ -158,4 +158,4 @@ networks:
 
 volumes:
   postgres_data:
-  backend_uploads:
+  backend_media_data:
