@@ -43,6 +43,7 @@ export default function StatusLogModal({
 }: StatusLogModalProps) {
   const [rowImageUrls, setRowImageUrls] = useState<Record<string, string>>({});
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen || !getRowImageUrl) return;
@@ -92,7 +93,7 @@ export default function StatusLogModal({
 
   const handleViewImage = (cacheKey: string | null) => {
     if (!cacheKey || !rowImageUrls[cacheKey]) return;
-    window.open(rowImageUrls[cacheKey], "_blank");
+    setPreviewImage(rowImageUrls[cacheKey]);
   };
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl">
@@ -212,6 +213,33 @@ export default function StatusLogModal({
           </table>
         </div>
       </div>
+
+      {/* Image Preview Modal (Lightbox) */}
+      <Modal
+        isOpen={!!previewImage}
+        onClose={() => setPreviewImage(null)}
+        className="max-w-4xl !bg-transparent !shadow-none"
+        showCloseButton={true}
+      >
+        <div className="flex flex-col items-center justify-center p-2 sm:p-4">
+          <div className="relative group">
+            <img
+              src={previewImage || ""}
+              alt="Bukti Foto Status"
+              className="max-h-[85vh] w-auto rounded-2xl shadow-2xl ring-4 ring-white/10 dark:ring-black/20 object-contain animate-in fade-in zoom-in duration-300"
+            />
+            {/* Download/Full view link as fallback */}
+            <a
+              href={previewImage || "#"}
+              target="_blank"
+              rel="noreferrer"
+              className="absolute bottom-4 right-4 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md transition-all hover:bg-white/20 opacity-0 group-hover:opacity-100"
+            >
+              Buka File Asli
+            </a>
+          </div>
+        </div>
+      </Modal>
     </Modal>
   );
 }
