@@ -156,11 +156,11 @@ export default function OrderStatusPieChart() {
             className="shrink-0 mt-0.5 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium"
             style={{ background: "rgba(99,102,241,0.08)", color: "#6366f1" }}
           >
-            <span
+            {/* <span
               className="inline-block w-1.5 h-1.5 rounded-full"
               style={{ background: "#6366f1", animation: "pulse 2s infinite" }}
             />
-            Live
+            Live */}
           </span>
         )}
       </div>

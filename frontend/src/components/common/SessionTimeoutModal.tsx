@@ -59,7 +59,6 @@ export default function SessionTimeoutModal({
     >
       <div 
         className="relative w-full p-6 bg-white rounded-3xl dark:bg-gray-900 lg:p-8"
-        style={{ zIndex: 1000000 }}
       >
         <div className="flex flex-col items-center text-center">
           {/* Icon */}

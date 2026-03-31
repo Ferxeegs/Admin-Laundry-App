@@ -243,7 +243,7 @@ const AppHeader: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-99999 flex w-full flex-col bg-white dark:bg-gray-900 lg:border-b lg:border-gray-200 dark:lg:border-gray-800">
+    <header className="sticky top-0 z-[1000] flex w-full flex-col bg-white dark:bg-gray-900 lg:border-b lg:border-gray-200 dark:lg:border-gray-800">
       {isImpersonating && impersonatedBy && (
         <div
           className="w-full border-b border-amber-200 bg-amber-50 dark:border-amber-800/80 dark:bg-amber-950/50"
@@ -295,7 +295,7 @@ const AppHeader: React.FC = () => {
         <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
           {/* Sidebar toggle */}
           <button
-            className="items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-99999 dark:border-gray-800 lg:flex dark:text-gray-400 lg:h-11 lg:w-11 lg:border touch-manipulation"
+            className="items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-[1001] dark:border-gray-800 lg:flex dark:text-gray-400 lg:h-11 lg:w-11 lg:border touch-manipulation"
             onClick={handleToggle}
             aria-label="Toggle Sidebar"
           >
@@ -367,7 +367,7 @@ const AppHeader: React.FC = () => {
           {/* App menu (mobile) */}
           <button
             onClick={toggleApplicationMenu}
-            className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg z-99999 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden touch-manipulation"
+            className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg z-[1001] hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden touch-manipulation"
           >
             <svg
               width="24"
