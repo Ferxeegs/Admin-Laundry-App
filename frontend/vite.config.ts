@@ -61,17 +61,15 @@ export default defineConfig({
               networkTimeoutSeconds: 10,
             },
           },
-          // Images from backend uploads — stale while revalidate
-          {
-            urlPattern: /\/uploads\/.*/i,
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "upload-images-cache",
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 }, // 30 days
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
+          // NOTE: /uploads/ images are NOT cached by Service Worker.
+          // They are served by the backend via reverse proxy and
+          // should pass through directly without SW interception.
         ],
+
+        // Prevent SW from intercepting backend-served routes
+        // (uploads, API). Without this, SW returns index.html for
+        // these paths causing "no-response" errors.
+        navigateFallbackDenylist: [/^\/uploads\//, /^\/api\//],
 
         // Clean outdated caches on new SW activation
         cleanupOutdatedCaches: true,
@@ -105,7 +103,7 @@ export default defineConfig({
             type: "image/png",
           },
           {
-            src: "pwa-512x512.png",
+            src: "pwa-maskable-512x512.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable",
