@@ -10,6 +10,7 @@ from sqlalchemy import func
 from app.api.deps import get_db, get_current_active_user
 from app.models.order import Order
 from app.models.auth import User
+from app.utils.helpers import get_now_local, get_start_of_day_local
 from app.schemas.common import WebResponse
 
 router = APIRouter()
@@ -38,32 +39,33 @@ def get_operational_report(
         
         if start_date:
             try:
-                start_dt = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                # Use local start of day helper
+                dt = datetime.strptime(start_date, "%Y-%m-%d")
+                start_dt = get_start_of_day_local(dt)
             except ValueError:
                 pass
         
         if end_date:
             try:
-                # Set to end of day
-                end_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(
-                    hour=23, minute=59, second=59, tzinfo=timezone.utc
+                # Use local end of day logic (based on start of day + 23:59:59)
+                dt = datetime.strptime(end_date, "%Y-%m-%d")
+                end_dt = get_start_of_day_local(dt).replace(
+                    hour=23, minute=59, second=59
                 )
             except ValueError:
                 pass
         
         # If no dates provided, use default based on period
         if not start_dt or not end_dt:
-            end_dt = datetime.now(timezone.utc)
+            end_dt = get_now_local()
             if period == "daily":
-                start_dt = end_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+                start_dt = get_start_of_day_local(end_dt)
             elif period == "weekly":
-                # Start of week (Monday)
+                # Start of week (Monday) in local time
                 days_since_monday = end_dt.weekday()
-                start_dt = (end_dt - timedelta(days=days_since_monday)).replace(
-                    hour=0, minute=0, second=0, microsecond=0
-                )
+                start_dt = get_start_of_day_local(end_dt - timedelta(days=days_since_monday))
             else:  # monthly
-                start_dt = end_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                start_dt = get_start_of_day_local(end_dt.replace(day=1))
         
         # Base query with date filter
         base_query = db.query(Order).filter(

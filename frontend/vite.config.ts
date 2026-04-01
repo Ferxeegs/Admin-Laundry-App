@@ -69,7 +69,7 @@ export default defineConfig({
         // Prevent SW from intercepting backend-served routes
         // (uploads, API). Without this, SW returns index.html for
         // these paths causing "no-response" errors.
-        navigateFallbackDenylist: [/^\/uploads\//, /^\/api\//],
+        navigateFallbackDenylist: [/^\/uploads\//, /^\/api\//, /^\/ff\//],
 
         // Clean outdated caches on new SW activation
         cleanupOutdatedCaches: true,

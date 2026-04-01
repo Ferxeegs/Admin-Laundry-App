@@ -8,11 +8,13 @@ from starlette.datastructures import UploadFile as StarletteUploadFile
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
+from datetime import datetime, timezone, timedelta
 from app.api.deps import get_db, get_current_active_user
 from app.core.deps_permission import require_permission
 from app.models.auth import User
 from app.models.order import Order, OrderStatus, OrderTracking, Student
 from app.models.common import Setting
+from app.utils.helpers import get_now_local, get_start_of_day_local
 from app.schemas.common import WebResponse
 from app.schemas.order import (
     OrderRead,
@@ -189,16 +191,15 @@ async def create_order(
     - paid_items_count (items exceeding quota)
     - additional_fee (paid_items_count * 4000)
     """
-    from datetime import datetime, timezone, timedelta
     from sqlalchemy import func
 
     # Generate order number: "ORD-{YYMMDD}-{sequence}"
     # Format: ORD-240113-001 (where 001 is the order number for that day)
-    now = datetime.now(timezone.utc)
+    now = get_now_local()
     date_str = now.strftime("%y%m%d")
     
     # Count how many orders were created today
-    start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    start_of_day = get_start_of_day_local(now)
     orders_today_count = db.query(Order).filter(
         Order.created_at >= start_of_day
     ).count()
@@ -429,12 +430,8 @@ def update_order(
     if "total_items" in update_data:
         QUOTA_LIMIT, PRICE_PER_ITEM = get_order_settings(db)
 
-        oc = order.created_at or datetime.now(timezone.utc)
-        if oc.tzinfo is None:
-            oc = oc.replace(tzinfo=timezone.utc)
-        else:
-            oc = oc.astimezone(timezone.utc)
-        day_start = oc.replace(hour=0, minute=0, second=0, microsecond=0)
+        oc = order.created_at or get_now_local()
+        day_start = get_start_of_day_local(oc)
         day_end = day_start + timedelta(days=1)
 
         free_items_used_today = (
