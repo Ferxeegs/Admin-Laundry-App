@@ -22,28 +22,72 @@ class OrderStatus(PyEnum):
 class Student(Base, TimestampMixin, AuditMixin):
     """
     Model untuk data siswa pondok
-    Format unique_code: Asrama-Kelas-Nama [cite: 87]
     """
     __tablename__ = "students"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    national_id_number = Column(String(255), nullable=False, unique=True, index=True)
+    student_number = Column(String(255), nullable=False, unique=True, index=True)
     fullname = Column(String(255), nullable=False, index=True)
     phone_number = Column(String(255), nullable=True)
-    dormitory = Column(String(255), nullable=True)
-    grade_level = Column(String(255), nullable=True)
-    unique_code = Column(String(255), unique=True, nullable=True, index=True)  # Format: Asrama-Kelas-Nama [cite: 87]
     guardian_name = Column(String(255), nullable=True)
-    qr_code = Column(String(255), unique=True, nullable=True, index=True)
     is_active = Column(Boolean, default=True, nullable=False, index=True)
 
     # Relationships
-    orders = relationship("Order", back_populates="student", cascade="all, delete-orphan")
-    invoices = relationship(Invoice, back_populates="student", cascade="all, delete-orphan")
+    orders = relationship("Order", back_populates="student")
+    invoices = relationship(Invoice, back_populates="student")
+
+    qr_code = relationship("QR", back_populates="student", uselist=False, cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<Student(id={self.id}, fullname={self.fullname}, unique_code={self.unique_code})>"
+        return f"<Student(id={self.id}, fullname={self.fullname})>"
 
+
+# --- Model Dormitory ---
+class Dormitory(Base, TimestampMixin, AuditMixin):
+    """
+    Model untuk asrama.
+    Dipisahkan dari QR codes agar asrama punya metadata (name, description).
+    """
+
+    __tablename__ = "dormitories"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(255), nullable=False, unique=True, index=True)
+    description = Column(Text, nullable=True)
+
+    qrs = relationship("QR", back_populates="dormitory_rel")
+
+    def __repr__(self):
+        return f"<Dormitory(id={self.id}, name={self.name})>"
+
+# --- Model QR ---
+class QR(Base, TimestampMixin, AuditMixin):
+    """
+    Model untuk data QR Code dan informasi asrama siswa
+    """
+    __tablename__ = "qr_codes"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    student_id = Column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=True, unique=True, index=True)
+    token_qr = Column(String(255), unique=True, nullable=False, index=True) # Data unik dari QR
+    dormitory_id = Column(String(36), ForeignKey("dormitories.id", ondelete="SET NULL"), nullable=True, index=True)
+    qr_number = Column(String(50), nullable=True)
+    unique_code = Column(String(50), nullable=True)
+
+    # Relationships
+    student = relationship("Student", back_populates="qr_code")
+    dormitory_rel = relationship("Dormitory", back_populates="qrs")
+
+    @property
+    def dormitory(self) -> str | None:
+        """Backwards-compatible accessor for QRRead.dormitory (asrama name)."""
+        return self.dormitory_rel.name if self.dormitory_rel else None
+
+    def __repr__(self):
+        return (
+            f"<QR(id={self.id}, token_qr={self.token_qr}, dormitory={self.dormitory}, "
+            f"qr_number={self.qr_number}, unique_code={self.unique_code})>"
+        )
 
 # --- Model Order ---
 class Order(Base, TimestampMixin, AuditMixin):
@@ -54,7 +98,7 @@ class Order(Base, TimestampMixin, AuditMixin):
     __tablename__ = "orders"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    student_id = Column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    student_id = Column(String(36), ForeignKey("students.id", ondelete="RESTRICT"), nullable=False, index=True)
     invoice_id = Column(String(36), ForeignKey("invoices.id", ondelete="SET NULL"), nullable=True, index=True)
     order_number = Column(String(255), unique=True, nullable=False, index=True)
 

@@ -1954,14 +1954,10 @@ export const studentAPI = {
     return apiRequest<{
       students: Array<{
         id: string;
-        national_id_number: string;
+        student_number: string;
         fullname: string;
         phone_number: string | null;
-        dormitory: string | null;
-        grade_level: string | null;
-        unique_code: string | null;
         guardian_name: string | null;
-        qr_code: string | null;
         is_active: boolean;
         created_at: string | null;
         updated_at: string | null;
@@ -1986,14 +1982,10 @@ export const studentAPI = {
   getStudentById: async (id: string) => {
     return apiRequest<{
       id: string;
-      national_id_number: string;
+      student_number: string;
       fullname: string;
       phone_number: string | null;
-      dormitory: string | null;
-      grade_level: string | null;
-      unique_code: string | null;
       guardian_name: string | null;
-      qr_code: string | null;
       is_active: boolean;
       created_at: string | null;
       updated_at: string | null;
@@ -2009,26 +2001,18 @@ export const studentAPI = {
    * Create new student
    */
   createStudent: async (data: {
-    national_id_number: string;
+    student_number: string;
     fullname: string;
     phone_number?: string | null;
-    dormitory?: string | null;
-    grade_level?: string | null;
-    unique_code?: string | null;
     guardian_name?: string | null;
-    qr_code?: string | null;
     is_active?: boolean;
   }) => {
     return apiRequest<{
       id: string;
-      national_id_number: string;
+      student_number: string;
       fullname: string;
       phone_number: string | null;
-      dormitory: string | null;
-      grade_level: string | null;
-      unique_code: string | null;
       guardian_name: string | null;
-      qr_code: string | null;
       is_active: boolean;
       created_at: string;
       updated_at: string;
@@ -2042,26 +2026,18 @@ export const studentAPI = {
    * Update student by ID
    */
   updateStudent: async (id: string, data: {
-    national_id_number?: string;
+    student_number?: string;
     fullname?: string;
     phone_number?: string | null;
-    dormitory?: string | null;
-    grade_level?: string | null;
-    unique_code?: string | null;
     guardian_name?: string | null;
-    qr_code?: string | null;
     is_active?: boolean;
   }) => {
     return apiRequest<{
       id: string;
-      national_id_number: string;
+      student_number: string;
       fullname: string;
       phone_number: string | null;
-      dormitory: string | null;
-      grade_level: string | null;
-      unique_code: string | null;
       guardian_name: string | null;
-      qr_code: string | null;
       is_active: boolean;
       created_at: string;
       updated_at: string;
@@ -2085,14 +2061,10 @@ export const studentAPI = {
     return apiRequest<{
       students: Array<{
         id: string;
-        national_id_number: string;
+        student_number: string;
         fullname: string;
         phone_number: string | null;
-        dormitory: string | null;
-        grade_level: string | null;
-        unique_code: string | null;
         guardian_name: string | null;
-        qr_code: string | null;
         is_active: boolean;
         created_at: string | null;
         updated_at: string | null;
@@ -2126,14 +2098,10 @@ export const studentAPI = {
   restoreStudent: async (id: string) => {
     return apiRequest<{
       id: string;
-      national_id_number: string;
+      student_number: string;
       fullname: string;
       phone_number: string | null;
-      dormitory: string | null;
-      grade_level: string | null;
-      unique_code: string | null;
       guardian_name: string | null;
-      qr_code: string | null;
       is_active: boolean;
       created_at: string | null;
       updated_at: string | null;
@@ -2199,7 +2167,7 @@ export const orderAPI = {
         student?: {
           id: string;
           fullname: string;
-          unique_code: string | null;
+          student_number: string;
         };
       }>;
       pagination: {
@@ -2474,7 +2442,7 @@ export const invoiceAPI = {
         student?: {
           id: string;
           fullname: string;
-          unique_code: string | null;
+          student_number: string;
         };
       }>;
       pagination: {
@@ -2572,8 +2540,265 @@ export const invoiceAPI = {
 };
 
 /**
- * Reports API functions
+ * QR Code API functions
  */
+export const qrCodeAPI = {
+  /**
+   * Get all QR codes with pagination and filters
+   */
+  getAllQRCodes: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    assigned?: boolean;
+    dormitory?: string;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.assigned !== undefined) queryParams.append('assigned', params.assigned.toString());
+    if (params?.dormitory) queryParams.append('dormitory', params.dormitory);
+
+    const queryString = queryParams.toString();
+    const endpoint = `/qr-codes/${queryString ? `?${queryString}` : ''}`;
+
+    return apiRequest<{
+      qr_codes: Array<{
+        id: string;
+        token_qr: string;
+        dormitory: string | null;
+        qr_number: string | null;
+        unique_code: string | null;
+        student_id: string | null;
+        created_at: string | null;
+        updated_at: string | null;
+        student: {
+          id: string;
+          fullname: string;
+          student_number: string;
+        } | null;
+      }>;
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
+    }>(endpoint, { method: 'GET' });
+  },
+
+  /**
+   * Lookup QR by token (used by ScanQR)
+   */
+  lookupQR: async (tokenQR: string) => {
+    return apiRequest<{
+      id: string;
+      token_qr: string;
+      dormitory: string | null;
+      qr_number: string | null;
+      unique_code: string | null;
+      student_id: string | null;
+      created_at: string | null;
+      updated_at: string | null;
+      student: {
+        id: string;
+        fullname: string;
+        student_number: string;
+      } | null;
+    }>(`/qr-codes/lookup/${encodeURIComponent(tokenQR)}`, { method: 'GET' });
+  },
+
+  /**
+   * Get QR by ID
+   */
+  getQRById: async (id: string) => {
+    return apiRequest<{
+      id: string;
+      token_qr: string;
+      dormitory: string | null;
+      qr_number: string | null;
+      unique_code: string | null;
+      student_id: string | null;
+      student: {
+        id: string;
+        fullname: string;
+        student_number: string;
+      } | null;
+    }>(`/qr-codes/${id}`, { method: 'GET' });
+  },
+
+  /**
+   * Create new QR code
+   */
+  createQR: async (data: {
+    token_qr: string;
+    dormitory?: string | null;
+    qr_number?: string | null;
+    unique_code?: string | null;
+  }) => {
+    return apiRequest<{
+      id: string;
+      token_qr: string;
+      dormitory: string | null;
+      qr_number: string | null;
+      unique_code: string | null;
+      student_id: string | null;
+    }>('/qr-codes/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Auto-generate QR code with random token
+   */
+  generateQR: async (params?: {
+    dormitory?: string;
+    qr_number?: string;
+    unique_code?: string;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.dormitory) queryParams.append('dormitory', params.dormitory);
+    if (params?.qr_number) queryParams.append('qr_number', params.qr_number);
+    if (params?.unique_code) queryParams.append('unique_code', params.unique_code);
+
+    const queryString = queryParams.toString();
+    const endpoint = `/qr-codes/generate${queryString ? `?${queryString}` : ''}`;
+
+    return apiRequest<{
+      id: string;
+      token_qr: string;
+      dormitory: string | null;
+      qr_number: string | null;
+      unique_code: string | null;
+      student_id: string | null;
+    }>(endpoint, { method: 'POST' });
+  },
+
+  /**
+   * Update QR code metadata
+   */
+  updateQR: async (id: string, data: {
+    dormitory?: string | null;
+    qr_number?: string | null;
+    unique_code?: string | null;
+  }) => {
+    return apiRequest<{
+      id: string;
+      token_qr: string;
+      dormitory: string | null;
+      qr_number: string | null;
+      unique_code: string | null;
+      student_id: string | null;
+    }>(`/qr-codes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Assign QR to student
+   */
+  assignQR: async (qrId: string, studentId: string) => {
+    return apiRequest<{
+      id: string;
+      token_qr: string;
+      student_id: string | null;
+      student: {
+        id: string;
+        fullname: string;
+        student_number: string;
+      } | null;
+    }>(`/qr-codes/${qrId}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({ student_id: studentId }),
+    });
+  },
+
+  /**
+   * Release QR from student
+   */
+  releaseQR: async (qrId: string) => {
+    return apiRequest<{
+      id: string;
+      token_qr: string;
+      student_id: string | null;
+    }>(`/qr-codes/${qrId}/release`, { method: 'POST' });
+  },
+
+  /**
+   * Advance order status by scanning QR bag token (`token_qr`).
+   * Backend picks next status and creates a tracking row.
+   */
+  advanceTrackingByQrToken: async (tokenQR: string, payload?: { notes?: string | null }) => {
+    return apiRequest<{
+      id: string;
+      order_number: string;
+      student_id: string;
+      current_status: string;
+      notes: string | null;
+      trackings?: Array<{
+        id: string;
+        order_id: string;
+        staff_id: string | null;
+        status_to: string;
+        notes: string | null;
+        created_at: string;
+      }>;
+    }>(
+      `/qr-codes/trackings/advance/${encodeURIComponent(tokenQR)}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          notes: payload?.notes ?? null,
+        }),
+      }
+    );
+  },
+
+  /**
+   * Delete QR code
+   */
+  deleteQR: async (id: string) => {
+    return apiRequest<null>(`/qr-codes/${id}`, { method: 'DELETE' });
+  },
+
+  /**
+   * Bulk-generate QR codes for a dormitory.
+   * - token_qr generated automatically
+   * - qr_number sequential per dormitory
+   * - unique_code format: {3-letter dormitory prefix}-{qr_number}
+   */
+  bulkGenerateQRs: async (payload: { dormitory: string; count: number }) => {
+    return apiRequest<{
+      dormitory: string;
+      count: number;
+      start_qr_number: number;
+      end_qr_number: number;
+      unique_code_prefix: string;
+      preview?: Array<{
+        id: string;
+        token_qr: string;
+        dormitory: string | null;
+        qr_number: string | null;
+        unique_code: string | null;
+        student_id: string | null;
+        created_at: string | null;
+        updated_at: string | null;
+        student: {
+          id: string;
+          fullname: string;
+          student_number: string;
+        } | null;
+      }>;
+    }>(`/qr-codes/bulk-generate`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
 export const reportsAPI = {
   /**
    * Get operational report with transaction counts and revenue summary
@@ -2621,6 +2846,78 @@ export const reportsAPI = {
       by_status: Array<{ status: string; count: number }>;
     }>("/reports/orders-by-status", {
       method: "GET",
+    });
+  },
+};
+
+/**
+ * Dormitory API functions
+ */
+export const dormitoryAPI = {
+  getAllDormitories: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.search) queryParams.append("search", params.search);
+
+    const queryString = queryParams.toString();
+    return apiRequest<{
+      dormitories: Array<{
+        id: string;
+        name: string;
+        description: string | null;
+        created_at: string | null;
+        updated_at: string | null;
+      }>;
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
+    }>(`/dormitories/${queryString ? `?${queryString}` : ""}`, {
+      method: "GET",
+    });
+  },
+
+  createDormitory: async (data: {
+    name: string;
+    description?: string | null;
+  }) => {
+    return apiRequest<{
+      id: string;
+      name: string;
+      description: string | null;
+      created_at: string | null;
+      updated_at: string | null;
+    }>(`/dormitories/`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateDormitory: async (id: string, data: { name?: string; description?: string | null }) => {
+    return apiRequest<{
+      id: string;
+      name: string;
+      description: string | null;
+      created_at: string | null;
+      updated_at: string | null;
+    }>(`/dormitories/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteDormitory: async (id: string) => {
+    return apiRequest<{
+      id: string;
+    }>(`/dormitories/${id}`, {
+      method: "DELETE",
     });
   },
 };

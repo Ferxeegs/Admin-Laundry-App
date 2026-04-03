@@ -12,6 +12,8 @@ from app.api.v1.endpoints import (
     orders,
     invoices,
     reports,
+    qr_codes,
+    dormitories,
 )
 
 api_router = APIRouter()
@@ -26,3 +28,5 @@ api_router.include_router(media.router, prefix="/media", tags=["Media"])
 api_router.include_router(orders.router, prefix="/orders", tags=["Orders"])
 api_router.include_router(invoices.router, prefix="/invoices", tags=["Invoices"])
 api_router.include_router(reports.router, prefix="/reports", tags=["Reports"])
+api_router.include_router(qr_codes.router, prefix="/qr-codes", tags=["QR Codes"])
+api_router.include_router(dormitories.router, prefix="/dormitories", tags=["Dormitories"])

@@ -29,7 +29,10 @@ import Orders from "./pages/Orders/Orders";
 import CreateOrder from "./pages/Orders/CreateOrder";
 import EditOrder from "./pages/Orders/EditOrder";
 import ViewOrder from "./pages/Orders/ViewOrder";
-import ScanQR from "./pages/Orders/ScanQR";
+import ScanQR from "./pages/QrCode/ScanQR";
+import QRCodes from "./pages/QrCode/QRCodes";
+import GenerateQRCodes from "./pages/QrCode/GenerateQRCodes";
+import Dormitories from "./pages/Dormitories/Dormitories";
 import Reports from "./pages/Reports/Reports";
 import Invoices from "./pages/Invoices/Invoices";
 import CreateInvoice from "./pages/Invoices/CreateInvoice";
@@ -160,10 +163,42 @@ export default function App() {
               }
             />
             <Route
-              path="/orders/scan"
+              path="/qr-codes/scan"
               element={
                 <ProtectedRoute requiredPermission={["create_order", "update_order"]}>
                   <ScanQR />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/qr-codes"
+              element={
+                <ProtectedRoute>
+                  <QRCodes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/qr-codes/create"
+              element={
+                <ProtectedRoute requiredPermission="create_student">
+                  <GenerateQRCodes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/qr-codes/edit"
+              element={
+                <ProtectedRoute requiredPermission="create_student">
+                  <GenerateQRCodes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dormitories"
+              element={
+                <ProtectedRoute>
+                  <Dormitories />
                 </ProtectedRoute>
               }
             />

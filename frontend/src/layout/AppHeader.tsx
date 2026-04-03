@@ -29,9 +29,21 @@ const searchCommands: SearchCommand[] = [
   },
   {
     name: "Scan QR",
-    path: "/orders/scan",
+    path: "/qr-codes/scan",
     keywords: ["scan", "qr", "scan qr", "scanner"],
     category: "Laundry",
+  },
+  {
+    name: "QR Tas",
+    path: "/qr-codes",
+    keywords: ["qr", "qr tas", "tas qr", "qrcode", "bag qr", "scanqr"],
+    category: "Laundry",
+  },
+  {
+    name: "Asrama",
+    path: "/dormitories",
+    keywords: ["asrama", "asrama siswa", "gedung", "kamar"],
+    category: "Data",
   },
   {
     name: "Siswa",
@@ -111,7 +123,7 @@ const AppHeader: React.FC = () => {
     const permissionMap: Record<string, string | string[]> = {
       "/users": ["view_user", "view_any_user"],
       "/roles": ["view_role", "view_any_role"],
-      "/orders/scan": ["create_order", "update_order"],
+      "/qr-codes/scan": ["create_order", "update_order"],
       // lainnya mengikuti ProtectedRoute (tidak di-restrict di sini)
     };
 

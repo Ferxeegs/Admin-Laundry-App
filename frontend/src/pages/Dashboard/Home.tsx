@@ -3,7 +3,6 @@ import OrderChart from "../../components/dashboard/OrderChart";
 import OrderStatusPieChart from "../../components/dashboard/OrderStatusPieChart";
 import MonthlyTargetCard from "../../components/dashboard/MonthlyTargetCard";
 import RecentOrdersTable from "../../components/dashboard/RecentOrdersTable";
-import DormitoryCard from "../../components/dashboard/DormitoryCard";
 import PageMeta from "../../components/common/PageMeta";
 
 export default function Home() {
@@ -50,11 +49,6 @@ export default function Home() {
           <div className="xl:col-span-7">
             <RecentOrdersTable />
           </div>
-        </section>
-
-        {/* Siswa per asrama */}
-        <section aria-label="Siswa per asrama">
-          <DormitoryCard />
         </section>
       </div>
     </>

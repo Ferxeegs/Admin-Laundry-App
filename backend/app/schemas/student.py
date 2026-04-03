@@ -8,21 +8,17 @@ from datetime import datetime
 
 class StudentBase(BaseModel):
     """Base schema for Student with common fields."""
-    national_id_number: str
+    student_number: str
     fullname: str
     phone_number: Optional[str] = None
-    dormitory: Optional[str] = None
-    grade_level: Optional[str] = None
-    unique_code: Optional[str] = None  # Auto-generated from Asrama-Kelas-Nama [cite: 87]
     guardian_name: Optional[str] = None
-    qr_code: Optional[str] = None  # Auto-generated secure token
     is_active: bool = True
 
-    @field_validator('national_id_number')
+    @field_validator('student_number')
     @classmethod
-    def validate_national_id_number(cls, v: str) -> str:
+    def validate_student_number(cls, v: str) -> str:
         if not v or len(v.strip()) == 0:
-            raise ValueError('National ID number is required')
+            raise ValueError('Student number is required')
         return v.strip()
 
     @field_validator('fullname')
@@ -40,21 +36,17 @@ class StudentCreate(StudentBase):
 
 class StudentUpdate(BaseModel):
     """Schema for updating a student."""
-    national_id_number: Optional[str] = None
+    student_number: Optional[str] = None
     fullname: Optional[str] = None
     phone_number: Optional[str] = None
-    dormitory: Optional[str] = None
-    grade_level: Optional[str] = None
-    unique_code: Optional[str] = None
     guardian_name: Optional[str] = None
-    qr_code: Optional[str] = None
     is_active: Optional[bool] = None
 
-    @field_validator('national_id_number')
+    @field_validator('student_number')
     @classmethod
-    def validate_national_id_number(cls, v: Optional[str]) -> Optional[str]:
+    def validate_student_number(cls, v: Optional[str]) -> Optional[str]:
         if v is not None and len(v.strip()) == 0:
-            raise ValueError('National ID number cannot be empty')
+            raise ValueError('Student number cannot be empty')
         return v.strip() if v else v
 
     @field_validator('fullname')
@@ -75,4 +67,3 @@ class StudentRead(StudentBase):
     deleted_by: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
-

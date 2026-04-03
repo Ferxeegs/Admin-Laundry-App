@@ -18,11 +18,9 @@ export default function EditStudent() {
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    national_id_number: "",
+    student_number: "",
     fullname: "",
     phone_number: "",
-    dormitory: "",
-    grade_level: "",
     guardian_name: "",
     is_active: true,
   });
@@ -50,11 +48,9 @@ export default function EditStudent() {
       if (response.success && response.data) {
         const student = response.data;
         setFormData({
-          national_id_number: student.national_id_number || "",
+          student_number: student.student_number || "",
           fullname: student.fullname || "",
           phone_number: student.phone_number || "",
-          dormitory: student.dormitory || "",
-          grade_level: student.grade_level || "",
           guardian_name: student.guardian_name || "",
           is_active: student.is_active ?? true,
         });
@@ -122,8 +118,8 @@ export default function EditStudent() {
     setError(null);
 
     // Client-side validation
-    if (formData.national_id_number.trim().length === 0) {
-      setError("NIK wajib diisi");
+    if (formData.student_number.trim().length === 0) {
+      setError("NIS wajib diisi");
       return;
     }
 
@@ -161,13 +157,11 @@ export default function EditStudent() {
         }
       }
 
-      // Update student (unique_code will be auto-regenerated if dormitory/grade_level/fullname changed)
+      // Update student
       const updateResponse = await studentAPI.updateStudent(id, {
-        national_id_number: formData.national_id_number.trim(),
+        student_number: formData.student_number.trim(),
         fullname: formData.fullname.trim(),
         phone_number: formattedPhoneNumber || null,
-        dormitory: formData.dormitory.trim() || null,
-        grade_level: formData.grade_level.trim() || null,
         guardian_name: formData.guardian_name.trim() || null,
         is_active: formData.is_active,
       });
@@ -339,8 +333,8 @@ export default function EditStudent() {
                   </Label>
                   <Input
                     type="text"
-                    name="national_id_number"
-                    value={formData.national_id_number}
+                    name="student_number"
+                    value={formData.student_number}
                     onChange={(e) => handleFormChange(e.target.name, e.target.value)}
                     placeholder="Masukkan NIS"
                     disabled={isLoading || isCompressingProfile}
@@ -361,29 +355,6 @@ export default function EditStudent() {
                   />
                 </div>
 
-                <div className="sm:col-span-1">
-                  <Label>Asrama</Label>
-                  <Input
-                    type="text"
-                    name="dormitory"
-                    value={formData.dormitory}
-                    onChange={(e) => handleFormChange(e.target.name, e.target.value)}
-                    placeholder="Masukkan asrama"
-                    disabled={isLoading || isCompressingProfile}
-                  />
-                </div>
-
-                <div className="sm:col-span-1">
-                  <Label>Kelas</Label>
-                  <Input
-                    type="text"
-                    name="grade_level"
-                    value={formData.grade_level}
-                    onChange={(e) => handleFormChange(e.target.name, e.target.value)}
-                    placeholder="Masukkan kelas"
-                    disabled={isLoading || isCompressingProfile}
-                  />
-                </div>
 
 
                 <div className="sm:col-span-1">

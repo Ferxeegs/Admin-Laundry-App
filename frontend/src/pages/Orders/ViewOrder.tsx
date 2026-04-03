@@ -41,9 +41,19 @@ interface Order {
 
 interface Student {
   id: string;
+  student_number: string;
   fullname: string;
-  unique_code: string | null;
-  national_id_number: string;
+  phone_number?: string | null;
+  guardian_name?: string | null;
+  is_active?: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
+  deleted_at?: string | null;
+  created_by?: string | null;
+  deleted_by?: string | null;
+  /** jika ada di API */
+  unique_code?: string | null;
+  national_id_number?: string | null;
 }
 
 interface Staff {
@@ -200,7 +210,7 @@ export default function ViewOrder() {
           try {
             const studentResponse = await studentAPI.getStudentById(orderData.student_id);
             if (studentResponse.success && studentResponse.data) {
-              setStudent(studentResponse.data as Student);
+              setStudent(studentResponse.data);
             }
           } catch (err) {
             console.error("Fetch student error:", err);

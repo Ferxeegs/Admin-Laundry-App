@@ -12,7 +12,7 @@ from datetime import datetime, timezone, timedelta
 from app.api.deps import get_db, get_current_active_user
 from app.core.deps_permission import require_permission
 from app.models.auth import User
-from app.models.order import Order, OrderStatus, OrderTracking, Student
+from app.models.order import Order, OrderStatus, OrderTracking, Student, QR
 from app.models.common import Setting
 from app.utils.helpers import get_now_local, get_start_of_day_local
 from app.schemas.common import WebResponse
@@ -137,7 +137,7 @@ def get_all_orders(
             order_dict["student"] = {
                 "id": order.student.id,
                 "fullname": order.student.fullname,
-                "unique_code": order.student.unique_code,
+                "student_number": order.student.student_number,
             }
         orders_data.append(order_dict)
 
@@ -290,6 +290,15 @@ async def create_order(
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
         raise NotFoundException(f"Student with ID {student_id} not found")
+
+    # QR tas harus sudah di-assign ke student lewat QR flow:
+    # - scan QR -> pilih santri -> POST /qr-codes/{qr_id}/assign
+    # Saat order dibuat, kita hanya validasi bahwa QR yang terhubung memang sudah ada.
+    qr = db.query(QR).filter(QR.student_id == student_id).first()
+    if qr is None:
+        raise BadRequestException(
+            "QR tas belum terhubung ke siswa ini. Silakan scan QR tas dan kaitkan ke santri terlebih dahulu."
+        )
 
     # Daily quota usage (UTC calendar day, same window as start_of_day above)
     QUOTA_LIMIT, PRICE_PER_ITEM = get_order_settings(db)
@@ -580,11 +589,30 @@ def create_order_tracking(
     tracking = OrderTracking(**tracking_dict)
     db.add(tracking)
 
-    # Audit fields
-    from datetime import datetime, timezone
+    # Auto-release QR when order is PICKED_UP
+    if new_status == OrderStatus.PICKED_UP:
+        # If there are other non-picked-up orders for the same student,
+        # keep the QR tied to the student to avoid breaking other ongoing processes.
+        other_active_order = (
+            db.query(Order)
+            .filter(
+                Order.student_id == order.student_id,
+                Order.id != order_id,
+                Order.current_status != OrderStatus.PICKED_UP,
+            )
+            .first()
+        )
 
+        if not other_active_order:
+            qr = db.query(QR).filter(QR.student_id == order.student_id).first()
+            if qr:
+                qr.student_id = None
+                qr.updated_by = current_user.id
+                qr.updated_at = get_now_local()
+
+    # Audit fields
     order.updated_by = current_user.id
-    order.updated_at = datetime.now(timezone.utc)
+    order.updated_at = get_now_local()
 
     db.commit()
     db.refresh(order)

@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent } from "react";
 import { useNavigate, Link, useLocation } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
-import { orderAPI, studentAPI } from "../../utils/api";
+import { orderAPI, studentAPI, qrCodeAPI } from "../../utils/api";
 import { compressOrderImage } from "../../utils/compressOrderImage";
 import { AngleLeftIcon } from "../../icons";
 import { useToast } from "../../context/ToastContext";
@@ -13,8 +13,10 @@ import TableSkeleton from "../../components/common/TableSkeleton";
 interface Student {
   id: string;
   fullname: string;
-  national_id_number: string;
-  unique_code: string | null;
+  student_number: string;
+  unique_code?: string | null;
+  // Backward compat: beberapa versi frontend/backend memakai nama field berbeda
+  national_id_number?: string | null;
 }
 
 export default function CreateOrder() {
@@ -23,6 +25,7 @@ export default function CreateOrder() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingStudents, setIsFetchingStudents] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [qrIdToAssign, setQrIdToAssign] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const { success, error: showError } = useToast();
   const [formData, setFormData] = useState<{
@@ -40,12 +43,15 @@ export default function CreateOrder() {
 
   useEffect(() => {
     // Check if student_id is passed from navigation state (e.g., from ScanQR)
-    const state = location.state as { student_id?: string } | null;
+    const state = location.state as { student_id?: string; qr_id?: string } | null;
     if (state?.student_id && typeof state.student_id === 'string') {
       setFormData((prev) => ({
         ...prev,
         student_id: state.student_id as string,
       }));
+    }
+    if (state?.qr_id && typeof state.qr_id === "string") {
+      setQrIdToAssign(state.qr_id);
     }
     fetchStudents();
   }, [location.state]);
@@ -231,6 +237,18 @@ export default function CreateOrder() {
     setIsLoading(true);
 
     try {
+      // If arriving from ScanQR, ensure QR is assigned to selected student
+      if (qrIdToAssign) {
+        const assignRes = await qrCodeAPI.assignQR(qrIdToAssign, formData.student_id);
+        if (!assignRes.success) {
+          const msg = assignRes.message || assignRes.error || "Gagal mengaitkan QR ke siswa";
+          setError(msg);
+          showError(msg);
+          setIsLoading(false);
+          return;
+        }
+      }
+
       // Create FormData for file upload
       const formDataToSend = new FormData();
       formDataToSend.append('student_id', formData.student_id);
@@ -399,7 +417,8 @@ export default function CreateOrder() {
                     </option>
                     {students.map((student) => (
                       <option key={student.id} value={student.id}>
-                        {student.fullname || "Nama tidak tersedia"} {student.unique_code ? `(${student.unique_code})` : ""} - {student.national_id_number || "NIK tidak tersedia"}
+                        {student.fullname || "Nama tidak tersedia"} {student.unique_code ? `(${student.unique_code})` : ""} -{" "}
+                        {student.student_number || student.national_id_number || "NIK tidak tersedia"}
                       </option>
                     ))}
                   </select>

@@ -18,14 +18,10 @@ import { useAuth } from "../../context/AuthContext";
 
 interface Student {
   id: string;
-  national_id_number: string;
+  student_number: string;
   fullname: string;
   phone_number: string | null;
-  dormitory: string | null;
-  grade_level: string | null;
-  unique_code: string | null;
   guardian_name: string | null;
-  qr_code: string | null;
   is_active: boolean;
   created_at: string | null;
   updated_at: string | null;
@@ -392,41 +388,19 @@ export default function StudentsList() {
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-gray-500 text-xs dark:text-gray-400 break-all">
-                      {student.national_id_number}
+                      {student.student_number}
                     </span>
-                    {student.unique_code && (
-                      <>
-                        <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">•</span>
-                        <span className="text-gray-500 text-xs dark:text-gray-400 font-mono break-all">
-                          {student.unique_code}
-                        </span>
-                      </>
-                    )}
                   </div>
                 </div>
               </div>
 
               {/* Secondary Info - Compact Grid with Fixed Label Width */}
-              {(student.dormitory || student.grade_level || student.phone_number) && (
+              {student.phone_number && (
                 <div className="space-y-1.5 mb-2 text-xs">
-                  {student.dormitory && (
-                    <div className="flex items-start gap-2">
-                      <span className="text-gray-500 dark:text-gray-400 min-w-[60px]">Asrama:</span>
-                      <span className="text-gray-800 dark:text-white font-medium flex-1">{student.dormitory}</span>
-                    </div>
-                  )}
-                  {student.grade_level && (
-                    <div className="flex items-start gap-2">
-                      <span className="text-gray-500 dark:text-gray-400 min-w-[60px]">Kelas:</span>
-                      <span className="text-gray-800 dark:text-white font-medium flex-1">{student.grade_level}</span>
-                    </div>
-                  )}
-                  {student.phone_number && (
-                    <div className="flex items-start gap-2">
-                      <span className="text-gray-500 dark:text-gray-400 min-w-[60px]">Telp:</span>
-                      <span className="text-gray-800 dark:text-white font-medium flex-1 break-all">{student.phone_number}</span>
-                    </div>
-                  )}
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-500 dark:text-gray-400 min-w-[60px]">Telp:</span>
+                    <span className="text-gray-800 dark:text-white font-medium flex-1 break-all">{student.phone_number}</span>
+                  </div>
                 </div>
               )}
 
@@ -548,18 +522,6 @@ export default function StudentsList() {
                     isHeader
                     className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                   >
-                    Asrama
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Kelas
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
                     Status
                   </TableCell>
                   <TableCell
@@ -620,27 +582,7 @@ export default function StudentsList() {
                           if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
                         }}
                       >
-                        {student.national_id_number}
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
-                      <div 
-                        className={!showDeleted && canViewStudent ? "cursor-pointer" : ""}
-                        onClick={() => {
-                          if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
-                        }}
-                      >
-                        {student.dormitory || "-"}
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
-                      <div 
-                        className={!showDeleted && canViewStudent ? "cursor-pointer" : ""}
-                        onClick={() => {
-                          if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
-                        }}
-                      >
-                        {student.grade_level || "-"}
+                        {student.student_number}
                       </div>
                     </TableCell>
                     <TableCell className="px-5 py-4">

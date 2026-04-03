@@ -30,7 +30,7 @@ interface Order {
   student?: {
     id: string;
     fullname: string;
-    unique_code: string | null;
+    student_number: string;
   };
 }
 

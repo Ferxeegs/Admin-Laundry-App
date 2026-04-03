@@ -4,7 +4,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
-import { studentAPI, mediaAPI, orderAPI, settingAPI, getBaseUrl } from "../../utils/api";
+import { studentAPI, mediaAPI, orderAPI, settingAPI, qrCodeAPI, getBaseUrl } from "../../utils/api";
 import { compressOrderImage } from "../../utils/compressOrderImage";
 import { Modal } from "../../components/ui/modal";
 import { useToast } from "../../context/ToastContext";
@@ -53,6 +53,8 @@ export default function ScanQR() {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isStartingRef = useRef(false);
   const isMountedRef = useRef(true);
+  const lastBagTokenRef = useRef<string | null>(null);
+  const canAutoAdvanceRef = useRef(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -250,90 +252,193 @@ export default function ScanQR() {
   };
 
   const handleQRCodeScanned = async (qrCodeValue: string) => {
-    // Stop scanning immediately
     await stopScanning();
 
-    // Validate QR code value
-    if (!qrCodeValue || qrCodeValue.trim() === "") {
+    const token = qrCodeValue?.trim();
+    if (!token) {
       setError("QR code tidak valid");
       return;
     }
 
     setIsLoading(true);
     setError(null);
+    setScanError(null);
 
     try {
-      // Search student by qr_code using getAllStudents with search parameter
-      // The backend search includes qr_code in the search filter
-      const qrCode = qrCodeValue.trim();
-      const response = await studentAPI.getAllStudents({
-        page: 1,
-        limit: 100,
-        search: qrCode,
-      });
-      
-      if (response.success && response.data) {
-        // Find exact match for qr_code (search uses ilike with %, so we need exact match)
-        const students = response.data.students || [];
-        const studentData = students.find(
-          (student: Student) => student.qr_code === qrCode
-        ) as Student | undefined;
-        
-        if (studentData) {
-          setScannedStudent(studentData);
+      // Auto-advance when scanning the same bag token after an active order exists.
+      const shouldAutoAdvance =
+        canAutoAdvanceRef.current && lastBagTokenRef.current === token;
 
-          // Fetch profile picture
-          try {
-            const mediaResponse = await mediaAPI.getMediaByModel('Student', studentData.id, 'profile-pictures');
-            
+      const qrRes = await qrCodeAPI.lookupQR(token);
+      if (!qrRes.success || !qrRes.data) {
+        setError(qrRes.message || "QR tas tidak ditemukan.");
+        return;
+      }
+
+      const qrData = qrRes.data;
+
+      // QR tas belum terhubung ke santri: langsung ke CreateOrder supaya petugas pilih santri.
+      if (!qrData.student_id) {
+        navigate("/orders/create", { state: { qr_id: qrData.id } });
+        return;
+      }
+
+      // Jika ini scan ulang untuk update status
+      if (shouldAutoAdvance) {
+        const advRes = await qrCodeAPI.advanceTrackingByQrToken(token, { notes: null });
+        if (!advRes.success) {
+          setError(advRes.message || "Gagal memperbarui status (scan).");
+          canAutoAdvanceRef.current = false;
+          lastBagTokenRef.current = null;
+          return;
+        }
+
+        success("Status order berhasil diperbarui (scan).");
+
+        // Reload student + active order
+        const studentRes = await studentAPI.getStudentById(qrData.student_id);
+        if (studentRes.success && studentRes.data) {
+          const s = studentRes.data as any;
+          setScannedStudent({
+            id: s.id,
+            national_id_number: s.national_id_number ?? s.student_number ?? "",
+            fullname: s.fullname,
+            phone_number: s.phone_number ?? null,
+            dormitory: null,
+            grade_level: null,
+            unique_code: null,
+            guardian_name: s.guardian_name ?? null,
+            qr_code: null,
+            is_active: typeof s.is_active === "boolean" ? s.is_active : true,
+            created_at: s.created_at ?? null,
+            updated_at: s.updated_at ?? null,
+          });
+        }
+
+        // Fetch profile picture (agar saat scan ulang tetap terlihat jelas)
+        try {
+          const sId = qrData.student_id;
+          if (sId) {
+            const mediaResponse = await mediaAPI.getMediaByModel(
+              "Student",
+              sId,
+              "profile-pictures"
+            );
+
             let mediaArray: any[] = [];
             if (mediaResponse.success && mediaResponse.data) {
               if (Array.isArray(mediaResponse.data)) {
                 mediaArray = mediaResponse.data;
-              } else if (mediaResponse.data.media && Array.isArray(mediaResponse.data.media)) {
-                mediaArray = mediaResponse.data.media;
+              } else if (
+                (mediaResponse.data as any).media &&
+                Array.isArray((mediaResponse.data as any).media)
+              ) {
+                mediaArray = (mediaResponse.data as any).media;
               }
             }
 
             if (mediaArray.length > 0) {
               const media = mediaArray[0];
               let mediaUrl = media.url;
-              
-              // Remove /api/v1 or /api prefix if accidentally included
-              mediaUrl = mediaUrl.replace(/^\/api\/v1/, '').replace(/^\/api/, '');
-              
-              // Ensure it starts with /
-              if (!mediaUrl.startsWith('/')) {
-                mediaUrl = `/${mediaUrl}`;
-              }
-              
+              mediaUrl = mediaUrl.replace(/^\/api\/v1/, "").replace(/^\/api/, "");
+              if (!mediaUrl.startsWith("/")) mediaUrl = `/${mediaUrl}`;
               setProfileImage(`${getBaseUrl()}${mediaUrl}`);
             } else {
               setProfileImage(null);
             }
-          } catch (err) {
-            console.error("Error fetching profile picture:", err);
-            setProfileImage(null);
           }
-
-          // Order aktif dulu: kuota hanya relevan jika belum ada order (buat order baru)
-          const hasActiveOrder = await fetchActiveOrder(studentData.id);
-          if (!hasActiveOrder) {
-            await fetchRemainingDailyQuota(studentData.id);
-          } else {
-            setRemainingQuota(null);
-            setQuotaLimit(null);
-            setIsLoadingQuota(false);
-          }
-        } else {
-          setError("Siswa tidak ditemukan. Pastikan QR code valid dan siswa terdaftar.");
+        } catch {
+          setProfileImage(null);
         }
+        setProfileImageFailed(false);
+        setOrderImageUrls([]);
+        setOrderNotesExpanded(false);
+        setOrderImageLightbox(null);
+
+        const hasActiveOrder = await fetchActiveOrder(qrData.student_id);
+        if (!hasActiveOrder) {
+          canAutoAdvanceRef.current = false;
+          lastBagTokenRef.current = null;
+          await fetchRemainingDailyQuota(qrData.student_id);
+        } else {
+          canAutoAdvanceRef.current = true;
+          lastBagTokenRef.current = token;
+        }
+        return;
+      }
+
+      // Normal load setelah scan pertama
+      lastBagTokenRef.current = token;
+
+      const studentRes = await studentAPI.getStudentById(qrData.student_id);
+      if (!studentRes.success || !studentRes.data) {
+        setError(studentRes.message || "Gagal mengambil data santri.");
+        return;
+      }
+
+      const s = studentRes.data as any;
+      setScannedStudent({
+        id: s.id,
+        national_id_number: s.national_id_number ?? s.student_number ?? "",
+        fullname: s.fullname,
+        phone_number: s.phone_number ?? null,
+        dormitory: null,
+        grade_level: null,
+        unique_code: null,
+        guardian_name: s.guardian_name ?? null,
+        qr_code: null,
+        is_active: typeof s.is_active === "boolean" ? s.is_active : true,
+        created_at: s.created_at ?? null,
+        updated_at: s.updated_at ?? null,
+      });
+
+      // Fetch profile picture
+      try {
+        const mediaResponse = await mediaAPI.getMediaByModel(
+          "Student",
+          s.id,
+          "profile-pictures"
+        );
+
+        let mediaArray: any[] = [];
+        if (mediaResponse.success && mediaResponse.data) {
+          if (Array.isArray(mediaResponse.data)) {
+            mediaArray = mediaResponse.data;
+          } else if (
+            (mediaResponse.data as any).media &&
+            Array.isArray((mediaResponse.data as any).media)
+          ) {
+            mediaArray = (mediaResponse.data as any).media;
+          }
+        }
+
+        if (mediaArray.length > 0) {
+          const media = mediaArray[0];
+          let mediaUrl = media.url;
+          mediaUrl = mediaUrl.replace(/^\/api\/v1/, "").replace(/^\/api/, "");
+          if (!mediaUrl.startsWith("/")) mediaUrl = `/${mediaUrl}`;
+          setProfileImage(`${getBaseUrl()}${mediaUrl}`);
+        } else {
+          setProfileImage(null);
+        }
+      } catch (err) {
+        console.error("Error fetching profile picture:", err);
+        setProfileImage(null);
+      }
+
+      const hasActiveOrder = await fetchActiveOrder(qrData.student_id);
+      canAutoAdvanceRef.current = hasActiveOrder;
+
+      if (!hasActiveOrder) {
+        await fetchRemainingDailyQuota(qrData.student_id);
       } else {
-        setError(response.message || "Siswa tidak ditemukan. Pastikan QR code valid.");
+        setRemainingQuota(null);
+        setQuotaLimit(null);
+        setIsLoadingQuota(false);
       }
     } catch (err: any) {
-      console.error("Error fetching student:", err);
-      setError("Terjadi kesalahan saat mengambil data siswa. Pastikan QR code valid.");
+      console.error("Error handling QR scan:", err);
+      setError("Terjadi kesalahan saat memproses QR. Silakan coba lagi.");
     } finally {
       setIsLoading(false);
     }

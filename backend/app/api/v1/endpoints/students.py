@@ -18,9 +18,7 @@ from app.schemas.common import WebResponse, MediaRead
 from app.core.exceptions import (
     NotFoundException, BadRequestException, ConflictException
 )
-from app.utils.helpers import (
-    generate_unique_code, generate_qr_code_token, ensure_unique_code_uniqueness
-)
+from app.utils.helpers import get_now_local
 
 router = APIRouter()
 
@@ -46,13 +44,9 @@ def get_all_students(
     if search:
         search_filter = or_(
             Student.fullname.ilike(f"%{search}%"),
-            Student.national_id_number.ilike(f"%{search}%"),
-            Student.unique_code.ilike(f"%{search}%"),
+            Student.student_number.ilike(f"%{search}%"),
             Student.phone_number.ilike(f"%{search}%"),
-            Student.dormitory.ilike(f"%{search}%"),
-            Student.grade_level.ilike(f"%{search}%"),
             Student.guardian_name.ilike(f"%{search}%"),
-            Student.qr_code.ilike(f"%{search}%")
         )
         query = query.filter(search_filter)
     
@@ -114,11 +108,8 @@ def get_deleted_students(
     if search:
         search_filter = or_(
             Student.fullname.ilike(f"%{search}%"),
-            Student.national_id_number.ilike(f"%{search}%"),
-            Student.unique_code.ilike(f"%{search}%"),
+            Student.student_number.ilike(f"%{search}%"),
             Student.phone_number.ilike(f"%{search}%"),
-            Student.dormitory.ilike(f"%{search}%"),
-            Student.grade_level.ilike(f"%{search}%")
         )
         query = query.filter(search_filter)
     
@@ -185,59 +176,13 @@ def create_student(
     """
     Create a new student.
     """
-    # Check if national_id_number already exists
+    # Check if student_number already exists
     existing_student = db.query(Student).filter(
-        Student.national_id_number == student_data.national_id_number,
+        Student.student_number == student_data.student_number,
         Student.deleted_at.is_(None)
     ).first()
     if existing_student:
-        raise ConflictException(f"Student with National ID '{student_data.national_id_number}' already exists")
-    
-    # Auto-generate unique_code if not provided
-    if not student_data.unique_code:
-        base_unique_code = generate_unique_code(
-            student_data.dormitory,
-            student_data.grade_level,
-            student_data.fullname
-        )
-        student_data.unique_code = ensure_unique_code_uniqueness(
-            base_unique_code, db, Student
-        )
-    else:
-        # Check if manually provided unique_code already exists
-        existing_code = db.query(Student).filter(
-            Student.unique_code == student_data.unique_code,
-            Student.deleted_at.is_(None)
-        ).first()
-        if existing_code:
-            raise ConflictException(f"Student with Unique Code '{student_data.unique_code}' already exists")
-    
-    # Auto-generate qr_code if not provided
-    if not student_data.qr_code:
-        # Generate until we find a unique one
-        max_attempts = 10
-        for _ in range(max_attempts):
-            qr_token = generate_qr_code_token()
-            existing_qr = db.query(Student).filter(
-                Student.qr_code == qr_token,
-                Student.deleted_at.is_(None)
-            ).first()
-            if not existing_qr:
-                student_data.qr_code = qr_token
-                break
-        else:
-            # Fallback: add timestamp to make it unique
-            import time
-            qr_token = generate_qr_code_token()
-            student_data.qr_code = f"{qr_token}-{int(time.time())}"
-    else:
-        # Check if manually provided qr_code already exists
-        existing_qr = db.query(Student).filter(
-            Student.qr_code == student_data.qr_code,
-            Student.deleted_at.is_(None)
-        ).first()
-        if existing_qr:
-            raise ConflictException(f"Student with QR Code '{student_data.qr_code}' already exists")
+        raise ConflictException(f"Siswa dengan NIS '{student_data.student_number}' sudah ada")
     
     # Create student
     student_dict = student_data.model_dump()
@@ -250,7 +195,7 @@ def create_student(
     
     return WebResponse(
         status="success",
-        message="Student created successfully",
+        message="Siswa berhasil ditambahkan",
         data=StudentRead.model_validate(student)
     )
 
@@ -273,71 +218,32 @@ def update_student(
     if not student:
         raise NotFoundException(f"Student with ID {student_id} not found")
     
-    # Check if national_id_number already exists (if being updated)
-    if student_update.national_id_number and student_update.national_id_number != student.national_id_number:
+    update_data = student_update.model_dump(exclude_unset=True)
+    
+    # Check if student_number already exists (if being updated)
+    if 'student_number' in update_data and update_data['student_number'] != student.student_number:
         existing_student = db.query(Student).filter(
-            Student.national_id_number == student_update.national_id_number,
+            Student.student_number == update_data['student_number'],
             Student.deleted_at.is_(None),
             Student.id != student_id
         ).first()
         if existing_student:
-            raise ConflictException(f"Student with National ID '{student_update.national_id_number}' already exists")
-    
-    # Auto-regenerate unique_code if dormitory, grade_level, or fullname changed
-    update_data = student_update.model_dump(exclude_unset=True)
-    
-    # Check if fields that affect unique_code are being updated
-    should_regenerate_unique_code = False
-    if any(field in update_data for field in ['dormitory', 'grade_level', 'fullname']):
-        # Get new values or use existing ones
-        new_dormitory = update_data.get('dormitory', student.dormitory)
-        new_grade_level = update_data.get('grade_level', student.grade_level)
-        new_fullname = update_data.get('fullname', student.fullname)
-        
-        # Generate new unique_code
-        base_unique_code = generate_unique_code(
-            new_dormitory,
-            new_grade_level,
-            new_fullname
-        )
-        update_data['unique_code'] = ensure_unique_code_uniqueness(
-            base_unique_code, db, Student, exclude_id=student_id
-        )
-        should_regenerate_unique_code = True
-    
-    # Check if unique_code is manually being updated
-    if 'unique_code' in update_data and not should_regenerate_unique_code:
-        if update_data['unique_code'] != student.unique_code:
-            existing_code = db.query(Student).filter(
-                Student.unique_code == update_data['unique_code'],
-                Student.deleted_at.is_(None),
-                Student.id != student_id
-            ).first()
-            if existing_code:
-                raise ConflictException(f"Student with Unique Code '{update_data['unique_code']}' already exists")
-    
-    # QR code should not be manually updated (it's auto-generated)
-    # Remove qr_code from update_data if it's being manually changed
-    if 'qr_code' in update_data:
-        if update_data['qr_code'] != student.qr_code:
-            # Don't allow manual QR code changes - it's auto-generated
-            del update_data['qr_code']
+            raise ConflictException(f"Siswa dengan NIS '{update_data['student_number']}' sudah ada")
     
     # Update student fields
     for field, value in update_data.items():
         setattr(student, field, value)
     
     # Set audit fields
-    from datetime import datetime, timezone
     student.updated_by = current_user.id
-    student.updated_at = datetime.now(timezone.utc)
+    student.updated_at = get_now_local()
     
     db.commit()
     db.refresh(student)
     
     return WebResponse(
         status="success",
-        message="Student updated successfully",
+        message="Siswa berhasil diperbarui",
         data=StudentRead.model_validate(student)
     )
 
@@ -351,8 +257,6 @@ def restore_student(
     """
     Restore a soft-deleted student (clear deleted_at / deleted_by).
     """
-    from datetime import datetime, timezone
-
     student = db.query(Student).filter(
         Student.id == student_id,
         Student.deleted_at.isnot(None)
@@ -364,14 +268,14 @@ def restore_student(
     student.deleted_at = None
     student.deleted_by = None
     student.updated_by = current_user.id
-    student.updated_at = datetime.now(timezone.utc)
+    student.updated_at = get_now_local()
 
     db.commit()
     db.refresh(student)
 
     return WebResponse(
         status="success",
-        message="Student restored successfully",
+        message="Siswa berhasil dipulihkan",
         data=StudentRead.model_validate(student)
     )
 
@@ -394,15 +298,14 @@ def delete_student(
         raise NotFoundException(f"Student with ID {student_id} not found")
     
     # Soft delete
-    from datetime import datetime, timezone
-    student.deleted_at = datetime.now(timezone.utc)
+    student.deleted_at = get_now_local()
     student.deleted_by = current_user.id
     
     db.commit()
     
     return WebResponse(
         status="success",
-        message="Student deleted successfully"
+        message="Siswa berhasil dihapus"
     )
 
 
@@ -414,19 +317,17 @@ def force_delete_student(
 ):
     """
     Permanently delete student by ID.
-    WARNING: This will also delete all related orders (cascade).
     """
     student = db.query(Student).filter(Student.id == student_id).first()
     
     if not student:
         raise NotFoundException(f"Student with ID {student_id} not found")
     
-    # Hard delete (cascade will delete related orders)
+    # Hard delete
     db.delete(student)
     db.commit()
     
     return WebResponse(
         status="success",
-        message="Student permanently deleted"
+        message="Siswa berhasil dihapus secara permanen"
     )
-

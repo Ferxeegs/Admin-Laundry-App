@@ -32,7 +32,7 @@ const MobileBottomNav: React.FC = () => {
       {/* Center QR Scan Button */}
       <div className="relative flex flex-col items-center justify-center w-full">
         <Link
-          to="/orders/scan"
+          to="/qr-codes/scan"
           state={{ autoStart: true }}
           className="absolute -top-10 flex items-center justify-center w-[60px] h-[60px] bg-brand-500 hover:bg-brand-600 rounded-full shadow-[0_4px_10px_rgba(70,95,255,0.4)] border-[5px] border-white dark:border-gray-900 text-white transition-transform hover:scale-105 active:scale-95"
         >
@@ -40,7 +40,7 @@ const MobileBottomNav: React.FC = () => {
             <QrCodeIcon />
           </div>
         </Link>
-        <span className={`mt-7 ${getTextClass('/orders/scan')}`}>Scan QR</span>
+        <span className={`mt-7 ${getTextClass('/qr-codes/scan')}`}>Scan QR</span>
       </div>
 
       <Link to="/orders" className="flex flex-col items-center justify-center w-full">

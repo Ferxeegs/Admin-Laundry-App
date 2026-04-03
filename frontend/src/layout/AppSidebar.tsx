@@ -11,6 +11,7 @@ import {
   SettingsIcon,
   UserIcon,
   QrCodeIcon,
+  FolderIcon,
   PieChartIcon,
   FileIcon,
 } from "../icons";
@@ -58,8 +59,18 @@ const navItems: NavItem[] = [
   {
     icon: <QrCodeIcon />,
     name: "Scan QR",
-    path: "/orders/scan",
+    path: "/qr-codes/scan",
     requiredPermission: ["create_order", "update_order"],
+  },
+  {
+    icon: <QrCodeIcon />,
+    name: "QR Tas",
+    path: "/qr-codes",
+  },
+  {
+    icon: <FolderIcon />,
+    name: "Asrama",
+    path: "/dormitories",
   },
   {
     icon: <PieChartIcon />,
