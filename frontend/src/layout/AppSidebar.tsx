@@ -60,8 +60,8 @@ const navItems: NavItem[] = [
     icon: <QrCodeIcon />,
     name: "QR Code",
     subItems: [
-      { name: "Daftar", path: "/qr-codes" },
-      { name: "Unduh label", path: "/qr-codes/download" },
+      { name: "Daftar", path: "/qr-codes", requiredPermission: ["view_qr_code"] },
+      { name: "Unduh label", path: "/qr-codes/download", requiredPermission: ["view_qr_code"] },
       { name: "Scan QR", path: "/qr-codes/scan", requiredPermission: ["create_order", "update_order"] },
     ],
   },
@@ -69,44 +69,34 @@ const navItems: NavItem[] = [
     icon: <FolderIcon />,
     name: "Asrama",
     path: "/dormitories",
+    requiredPermission: ["view_dormitory"],
   },
   {
     icon: <PieChartIcon />,
     name: "Laporan",
     path: "/reports",
+    requiredPermission: ["view_report"],
   },
   {
     icon: <FileIcon />,
     name: "Invoice",
     path: "/invoices",
+    requiredPermission: ["view_invoice"],
   },
   {
     icon: <LockIcon />,
     name: "Akses",
     subItems: [
-      // { 
-      //   name: "User Profile", 
-      //   path: "/profile", 
-      //   pro: false,
-      // },
       { 
         name: "Pengguna", 
         path: "/users", 
-        pro: false,
         requiredPermission: ["view_user"],
       },
       { 
         name: "Peran", 
         path: "/roles", 
-        pro: false,
         requiredPermission: ["view_role"],
       },
-      // { 
-      //   name: "Settings", 
-      //   path: "/settings", 
-      //   pro: false,
-      //   requiredPermission: ["view_setting", "view_any_setting"],
-      // },
     ],
   },
   
@@ -121,20 +111,19 @@ const navItems: NavItem[] = [
 ];
 
 const othersItems: NavItem[] = [
+  { 
+    icon: <UserIcon />,
+    name: "Profil Saya", 
+    path: "/profile",
+    requiredPermission: ["view_myprofile"],
+  },
   {
     icon: <SettingsIcon />,
     name: "Pengaturan",
     path: "/settings",
     requiredPermission: ["view_setting"],
   },
-  // {
-  //   icon: <PlugInIcon />,
-  //   name: "Authentication",
-  //   subItems: [
-  //     { name: "Sign In", path: "/signin", pro: false },
-  //     { name: "Sign Up", path: "/signup", pro: false },
-  //   ],
-  // },
+  
 ];
 
 const AppSidebar: React.FC = () => {

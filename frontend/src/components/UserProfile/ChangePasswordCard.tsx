@@ -6,6 +6,7 @@ import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import { EyeIcon, EyeCloseIcon } from "../../icons";
 import { userAPI } from "../../utils/api";
+import { useAuth } from "../../context/AuthContext";
 
 interface ChangePasswordCardProps {
   onUpdate?: () => void;
@@ -24,6 +25,8 @@ export default function ChangePasswordCard({ onUpdate }: ChangePasswordCardProps
     new_password: "",
     confirm_password: "",
   });
+  const { hasPermission } = useAuth();
+  const canChangePassword = hasPermission("update_myprofile");
 
   const handleChange = (name: string, value: string) => {
     setFormData((prev) => ({
@@ -129,11 +132,12 @@ export default function ChangePasswordCard({ onUpdate }: ChangePasswordCardProps
             </p>
           </div>
 
-          <button
-            onClick={handleOpenModal}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
-          >
-            <svg
+          {canChangePassword && (
+            <button
+              onClick={handleOpenModal}
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
+            >
+              <svg
               className="fill-current"
               width="18"
               height="18"
@@ -150,6 +154,7 @@ export default function ChangePasswordCard({ onUpdate }: ChangePasswordCardProps
             </svg>
             Ubah Password
           </button>
+          )}
         </div>
       </div>
 

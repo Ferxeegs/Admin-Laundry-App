@@ -94,8 +94,49 @@ def init_permissions(db: Session):
         "restore_order",
         "force_delete_order",
     ]
+
+    # Permissions untuk Report model
+    report_permissions = [
+        "view_report",
+    ]
+
+    # Permissions untuk QR Code model
+    qr_code_permissions = [
+        "view_qr_code",
+        "create_qr_code",
+        "update_qr_code",
+        "delete_qr_code",
+        "restore_qr_code",
+        "force_delete_qr_code",
+    ]
+
+    # Permission untuk Dormitory model
+    dormitory_permissions = [
+        "view_dormitory",
+        "create_dormitory",
+        "update_dormitory",
+        "delete_dormitory",
+        "restore_dormitory",
+        "force_delete_dormitory",
+    ]
+
+    # Permission untuk Invoice model
+    invoice_permissions = [
+        "view_invoice",
+        "create_invoice",
+        "update_invoice",
+        "delete_invoice",
+        "restore_invoice",
+        "force_delete_invoice",
+    ]
+
+    # Permission untuk Myprofile
+    myprofile_permissions = [
+        "view_myprofile",
+        "update_myprofile",
+    ]
     # Combine all permissions
-    all_permissions = user_permissions + role_permissions + setting_permissions + student_permissions + order_permissions
+    all_permissions = user_permissions + role_permissions + setting_permissions + student_permissions + order_permissions + report_permissions + qr_code_permissions + dormitory_permissions + invoice_permissions + myprofile_permissions
     
     for perm_name in all_permissions:
         existing_perm = db.query(Permission).filter(Permission.name == perm_name).first()

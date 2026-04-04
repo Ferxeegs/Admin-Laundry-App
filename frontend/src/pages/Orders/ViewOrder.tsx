@@ -564,7 +564,7 @@ export default function ViewOrder() {
           <Badge size="md" color={getStatusColor(order.current_status)}>
             {formatStatus(order.current_status)}
           </Badge>
-          {canEditOrder(order.current_status) && (
+          {canEditOrder(order.current_status) && hasPermission("update_order") && (
             <Link
               to={`/orders/${order.id}/edit`}
               className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation sm:px-4 sm:py-2.5"

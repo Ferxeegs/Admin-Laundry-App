@@ -9,6 +9,8 @@ export default function UserDropdown() {
   const { user, logout, isImpersonating, impersonatedBy, stopImpersonate } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
+  const {hasPermission} = useAuth();
+  const canViewProfile = hasPermission("view_myprofile");
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -172,6 +174,7 @@ export default function UserDropdown() {
             </DropdownItem>
           </li> */}
           <li>
+            {canViewProfile && (
             <DropdownItem
               onItemClick={closeDropdown}
               tag="a"
@@ -195,6 +198,7 @@ export default function UserDropdown() {
               </svg>
               Pengaturan Profil
             </DropdownItem>
+            )}
           </li>
           {/* <li>
             <DropdownItem

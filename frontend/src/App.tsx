@@ -3,14 +3,14 @@ import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
 import UserProfiles from "./pages/UserProfiles";
-import Videos from "./pages/UiElements/Videos";
-import Images from "./pages/UiElements/Images";
-import Alerts from "./pages/UiElements/Alerts";
-import Badges from "./pages/UiElements/Badges";
-import Avatars from "./pages/UiElements/Avatars";
-import Buttons from "./pages/UiElements/Buttons";
-import Calendar from "./pages/Calendar";
-import Blank from "./pages/Blank";
+// import Videos from "./pages/UiElements/Videos";
+// import Images from "./pages/UiElements/Images";
+// import Alerts from "./pages/UiElements/Alerts";
+// import Badges from "./pages/UiElements/Badges";
+// import Avatars from "./pages/UiElements/Avatars";
+// import Buttons from "./pages/UiElements/Buttons";
+// import Calendar from "./pages/Calendar";
+// import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import ProtectedRoute from "./components/common/ProtectedRoute";
@@ -62,7 +62,7 @@ export default function App() {
             <Route
               path="/profile"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="view_myprofile">
                   <UserProfiles />
                 </ProtectedRoute>
               }
@@ -70,7 +70,7 @@ export default function App() {
             <Route
               path="/users"
               element={
-                <ProtectedRoute requiredPermission={["view_user", "view_any_user"]}>
+                <ProtectedRoute requiredPermission="view_user">
                   <Users />
                 </ProtectedRoute>
               }
@@ -86,7 +86,7 @@ export default function App() {
             <Route
               path="/users/:id"
               element={
-                <ProtectedRoute requiredPermission={["view_user", "view_any_user"]}>
+                <ProtectedRoute requiredPermission="view_user">
                   <ViewUser />
                 </ProtectedRoute>
               }
@@ -94,7 +94,7 @@ export default function App() {
             <Route
               path="/users/:id/edit"
               element={
-                <ProtectedRoute requiredPermission={["view_user", "view_any_user"]}>
+                <ProtectedRoute requiredPermission="update_user">
                   <EditUser />
                 </ProtectedRoute>
               }
@@ -102,7 +102,7 @@ export default function App() {
             <Route
               path="/roles"
               element={
-                <ProtectedRoute requiredPermission={["view_role", "view_any_role"]}>
+                <ProtectedRoute requiredPermission="view_role">
                   <Roles />
                 </ProtectedRoute>
               }
@@ -110,7 +110,7 @@ export default function App() {
             <Route
               path="/roles/:id/edit"
               element={
-                <ProtectedRoute requiredPermission={["view_role", "view_any_role"]}>
+                <ProtectedRoute requiredPermission="update_role">
                   <EditRole />
                 </ProtectedRoute>
               }
@@ -118,7 +118,7 @@ export default function App() {
             <Route
               path="/students"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="view_student">
                   <Students />
                 </ProtectedRoute>
               }
@@ -126,7 +126,7 @@ export default function App() {
             <Route
               path="/students/create"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="create_student">
                   <CreateStudent />
                 </ProtectedRoute>
               }
@@ -134,7 +134,7 @@ export default function App() {
             <Route
               path="/students/:id"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="view_student">
                   <ViewStudent />
                 </ProtectedRoute>
               }
@@ -142,7 +142,7 @@ export default function App() {
             <Route
               path="/students/:id/edit"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="update_student">
                   <EditStudent />
                 </ProtectedRoute>
               }
@@ -150,7 +150,7 @@ export default function App() {
             <Route
               path="/orders"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="view_order">
                   <Orders />
                 </ProtectedRoute>
               }
@@ -158,7 +158,7 @@ export default function App() {
             <Route
               path="/orders/create"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="create_order">
                   <CreateOrder />
                 </ProtectedRoute>
               }
@@ -174,7 +174,7 @@ export default function App() {
             <Route
               path="/qr-codes"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="view_qr_codes">
                   <QRCodes />
                 </ProtectedRoute>
               }
@@ -182,7 +182,7 @@ export default function App() {
             <Route
               path="/qr-codes/download"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="view_qr_codes">
                   <DownloadQRCodes />
                 </ProtectedRoute>
               }
@@ -190,7 +190,7 @@ export default function App() {
             <Route
               path="/qr-codes/create"
               element={
-                <ProtectedRoute requiredPermission="create_student">
+                <ProtectedRoute requiredPermission="create_qr_codes">
                   <GenerateQRCodes />
                 </ProtectedRoute>
               }
@@ -198,7 +198,7 @@ export default function App() {
             <Route
               path="/qr-codes/edit"
               element={
-                <ProtectedRoute requiredPermission="create_student">
+                <ProtectedRoute requiredPermission="create_qr_codes">
                   <GenerateQRCodes />
                 </ProtectedRoute>
               }
@@ -206,7 +206,7 @@ export default function App() {
             <Route
               path="/dormitories"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="view_dormitory">
                   <Dormitories />
                 </ProtectedRoute>
               }
@@ -214,7 +214,7 @@ export default function App() {
             <Route
               path="/orders/:id"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="view_order">
                   <ViewOrder />
                 </ProtectedRoute>
               }
@@ -222,7 +222,7 @@ export default function App() {
             <Route
               path="/orders/:id/edit"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="update_order">
                   <EditOrder />
                 </ProtectedRoute>
               }
@@ -230,7 +230,7 @@ export default function App() {
             <Route
               path="/reports"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="view_reports">
                   <Reports />
                 </ProtectedRoute>
               }
@@ -238,7 +238,7 @@ export default function App() {
             <Route
               path="/invoices"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="view_invoices">
                   <Invoices />
                 </ProtectedRoute>
               }
@@ -246,30 +246,30 @@ export default function App() {
             <Route
               path="/invoices/create"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="create_invoice">
                   <CreateInvoice />
                 </ProtectedRoute>
               }
             />
-            <Route
+            {/* <Route
               path="/calendar"
               element={
                 <ProtectedRoute>
                   <Calendar />
                 </ProtectedRoute>
               }
-            />
-            <Route
+            /> */}
+            {/* <Route
               path="/blank"
               element={
                 <ProtectedRoute>
                   <Blank />
                 </ProtectedRoute>
               }
-            />
+            /> */}
 
             {/* Ui Elements */}
-            <Route
+            {/* <Route
               path="/alerts"
               element={
                 <ProtectedRoute>
@@ -316,15 +316,15 @@ export default function App() {
                   <Videos />
                 </ProtectedRoute>
               }
-            />
+            /> */}
             <Route
               path="/settings"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission="view_settings">
                   <Settings />
                 </ProtectedRoute>
               }
-            />            
+            />
           </Route>
 
           {/* Auth Layout */}

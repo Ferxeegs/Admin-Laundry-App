@@ -14,7 +14,7 @@ interface UserMetaCardProps {
 }
 
 export default function UserMetaCard({ user, onUpdate }: UserMetaCardProps) {
-  const { isOpen, openModal, closeModal } = useModal();
+  const { isOpen, closeModal } = useModal();
   const { fetchUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,16 +82,16 @@ export default function UserMetaCard({ user, onUpdate }: UserMetaCardProps) {
     }
   };
 
-  const handleOpenModal = () => {
-    setFormData({
-      firstname: user.firstname || "",
-      lastname: user.lastname || "",
-      email: user.email || "",
-      phone_number: user.phone_number || "",
-    });
-    setError(null);
-    openModal();
-  };
+  // const handleOpenModal = () => {
+  //   setFormData({
+  //     firstname: user.firstname || "",
+  //     lastname: user.lastname || "",
+  //     email: user.email || "",
+  //     phone_number: user.phone_number || "",
+  //   });
+  //   setError(null);
+  //   openModal();
+  // };
   
   return (
     <>
@@ -129,7 +129,7 @@ export default function UserMetaCard({ user, onUpdate }: UserMetaCardProps) {
               )}
             </div>
             <div className="flex items-center order-2 gap-2 grow xl:order-3 xl:justify-end">
-              <button
+              {/* <button
                 onClick={handleOpenModal}
                 className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
               >
@@ -149,7 +149,7 @@ export default function UserMetaCard({ user, onUpdate }: UserMetaCardProps) {
                   />
                 </svg>
                 Edit
-              </button>
+              </button> */}
             </div>
           </div>
         </div>

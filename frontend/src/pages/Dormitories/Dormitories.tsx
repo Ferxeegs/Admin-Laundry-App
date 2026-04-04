@@ -18,6 +18,7 @@ import { useModal } from "../../hooks/useModal";
 import { useToast } from "../../context/ToastContext";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
+import { useAuth } from "../../context/AuthContext";
 
 interface Dormitory {
   id: string;
@@ -30,6 +31,7 @@ interface Dormitory {
 type DormitoryModalMode = "create" | "edit";
 
 export default function Dormitories() {
+  const { hasPermission } = useAuth();
   const { success, error: showError } = useToast();
   // permissions optional: resource is typically admin-only, but backend currently doesn't enforce specific ones
 
@@ -45,6 +47,10 @@ export default function Dormitories() {
     total: 0,
     totalPages: 0,
   });
+
+  const canCreateDormitory = hasPermission("create_dormitory");
+  const canUpdateDormitory = hasPermission("update_dormitory");
+  const canDeleteDormitory = hasPermission("delete_dormitory");
 
   const fetchDormitories = async (forceLoading = false) => {
     if (forceLoading || dormitories.length === 0) setIsLoading(true);
@@ -212,6 +218,7 @@ export default function Dormitories() {
               </svg>
             </div>
 
+            {canCreateDormitory && (
             <button
               type="button"
               onClick={openCreate}
@@ -227,6 +234,7 @@ export default function Dormitories() {
               </svg>
               Tambah Asrama
             </button>
+            )}
           </div>
 
           {/* Desktop Table View */}
@@ -286,6 +294,7 @@ export default function Dormitories() {
 
                         <TableCell className="px-5 py-4 text-center align-middle">
                           <div className="flex items-center justify-center gap-1.5">
+                            {canUpdateDormitory && (
                             <button
                               type="button"
                               onClick={() => openEdit(d)}
@@ -294,6 +303,8 @@ export default function Dormitories() {
                             >
                               <PencilIcon className="w-4 h-4" />
                             </button>
+                            )}
+                            {canDeleteDormitory && (
                             <button
                               type="button"
                               onClick={() => {
@@ -305,6 +316,7 @@ export default function Dormitories() {
                             >
                               <TrashBinIcon className="w-4 h-4" />
                             </button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>

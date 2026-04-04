@@ -22,7 +22,7 @@ def get_operational_report(
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    # current_user: User = Depends(get_current_active_user),
 ):
     """
     Get operational report with transaction counts and revenue summary.
