@@ -65,7 +65,10 @@ const navItems: NavItem[] = [
   {
     icon: <QrCodeIcon />,
     name: "QR Tas",
-    path: "/qr-codes",
+    subItems: [
+      { name: "Daftar", path: "/qr-codes" },
+      { name: "Unduh label", path: "/qr-codes/download" },
+    ],
   },
   {
     icon: <FolderIcon />,

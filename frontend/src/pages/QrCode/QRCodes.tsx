@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+import { QRCodeSVG } from "qrcode.react";
 import { qrCodeAPI, studentAPI } from "../../utils/api";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
@@ -271,7 +272,7 @@ export default function QRCodes() {
         <ComponentCard title="Kelola QR Tas">
           {isLoading && qrCodes.length === 0 ? (
             <div className="p-5">
-              <TableSkeleton rows={8} columns={6} />
+              <TableSkeleton rows={8} columns={7} />
             </div>
           ) : (
             <>
@@ -320,6 +321,28 @@ export default function QRCodes() {
                     <option value="all">Semua</option>
                   </select>
 
+                  <button
+                    type="button"
+                    onClick={() => navigate("/qr-codes/download")}
+                    className="inline-flex items-center justify-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700 touch-manipulation"
+                  >
+                    <svg
+                      className="w-4 h-4 shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      />
+                    </svg>
+                    Unduh label
+                  </button>
+
                   {canCreateQr && (
                     <button
                       type="button"
@@ -327,7 +350,19 @@ export default function QRCodes() {
                       className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={isQrCrudLoading}
                     >
-                      <PlusIcon className="w-4 h-4" />
+                      <svg
+                      className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
                       Tambah QR
                     </button>
                   )}
@@ -339,6 +374,9 @@ export default function QRCodes() {
                 <Table>
                   <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
                     <TableRow>
+                      <TableCell isHeader className="px-3 py-3 text-theme-xs w-[88px]">
+                        QR
+                      </TableCell>
                       <TableCell isHeader className="px-5 py-3 text-theme-xs">
                         QR Token
                       </TableCell>
@@ -362,13 +400,23 @@ export default function QRCodes() {
                   <TableBody>
                     {qrCodes.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="px-5 py-10 text-center text-gray-500">
+                        <TableCell colSpan={7} className="px-5 py-10 text-center text-gray-500">
                           {statusText}: tidak ada data
                         </TableCell>
                       </TableRow>
                     ) : (
                       qrCodes.map((qr) => (
                         <TableRow key={qr.id} className="hover:bg-gray-50 dark:hover:bg-gray-50/5">
+                          <TableCell className="px-3 py-3 align-top">
+                            <div className="flex flex-col items-center gap-1 w-[72px]">
+                              <div className="rounded border border-gray-200 bg-white p-0.5 dark:border-gray-700">
+                                <QRCodeSVG value={qr.token_qr} size={56} level="M" />
+                              </div>
+                              <span className="text-[10px] font-mono text-center text-gray-700 dark:text-gray-300 break-all max-w-[72px] leading-tight">
+                                {qr.unique_code || "—"}
+                              </span>
+                            </div>
+                          </TableCell>
                           <TableCell className="px-5 py-3">
                             <div className="font-mono text-xs break-all">{qr.token_qr}</div>
                           </TableCell>
@@ -462,12 +510,22 @@ export default function QRCodes() {
                       className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800"
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                            QR Token
+                        <div className="flex gap-3 min-w-0 flex-1">
+                          <div className="shrink-0 flex flex-col items-center gap-1">
+                            <div className="rounded border border-gray-200 bg-white p-1 dark:border-gray-700">
+                              <QRCodeSVG value={qr.token_qr} size={72} level="M" />
+                            </div>
+                            <span className="text-[10px] font-mono text-gray-700 dark:text-gray-300 text-center max-w-[80px] break-all">
+                              {qr.unique_code || "—"}
+                            </span>
                           </div>
-                          <div className="mt-1 font-mono text-xs break-all">
-                            {qr.token_qr}
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                              QR Token
+                            </div>
+                            <div className="mt-1 font-mono text-xs break-all">
+                              {qr.token_qr}
+                            </div>
                           </div>
                         </div>
                         {assignedBadge(qr)}

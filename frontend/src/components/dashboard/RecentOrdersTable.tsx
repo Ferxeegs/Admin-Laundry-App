@@ -37,7 +37,7 @@ interface OrderRow {
   total_items: number;
   additional_fee: number;
   created_at: string | null;
-  student?: { id: string; fullname: string; unique_code: string | null };
+  student?: { id: string; fullname: string; unique_code?: string | null };
 }
 
 export default function RecentOrdersTable() {

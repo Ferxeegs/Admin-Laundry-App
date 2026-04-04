@@ -40,6 +40,12 @@ const searchCommands: SearchCommand[] = [
     category: "Laundry",
   },
   {
+    name: "Unduh label QR",
+    path: "/qr-codes/download",
+    keywords: ["unduh", "download", "zip", "label qr", "unique code", "asrama"],
+    category: "Laundry",
+  },
+  {
     name: "Asrama",
     path: "/dormitories",
     keywords: ["asrama", "asrama siswa", "gedung", "kamar"],

@@ -31,6 +31,7 @@ import EditOrder from "./pages/Orders/EditOrder";
 import ViewOrder from "./pages/Orders/ViewOrder";
 import ScanQR from "./pages/QrCode/ScanQR";
 import QRCodes from "./pages/QrCode/QRCodes";
+import DownloadQRCodes from "./pages/QrCode/DownloadQRCodes";
 import GenerateQRCodes from "./pages/QrCode/GenerateQRCodes";
 import Dormitories from "./pages/Dormitories/Dormitories";
 import Reports from "./pages/Reports/Reports";
@@ -175,6 +176,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <QRCodes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/qr-codes/download"
+              element={
+                <ProtectedRoute>
+                  <DownloadQRCodes />
                 </ProtectedRoute>
               }
             />

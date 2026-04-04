@@ -8,6 +8,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel
 
 from app.api.deps import get_db, get_current_active_user
@@ -159,16 +160,27 @@ class QRAdvanceStatus(BaseModel):
 
 def _qr_to_dict(qr: QR) -> dict:
     """Convert QR model to dict with nested student info."""
-    data = QRRead.model_validate(qr).model_dump()
-    if qr.student:
-        data["student"] = {
+    # Do not pass the ORM object directly into QRRead: `student` is typed as dict,
+    # but the relationship loads a Student model instance and Pydantic validation fails (500).
+    student_payload = None
+    if qr.student is not None:
+        student_payload = {
             "id": qr.student.id,
             "fullname": qr.student.fullname,
             "student_number": qr.student.student_number,
         }
-    else:
-        data["student"] = None
-    return data
+    payload = {
+        "id": qr.id,
+        "token_qr": qr.token_qr,
+        "dormitory": qr.dormitory,
+        "qr_number": qr.qr_number,
+        "unique_code": qr.unique_code,
+        "student_id": qr.student_id,
+        "created_at": qr.created_at,
+        "updated_at": qr.updated_at,
+        "student": student_payload,
+    }
+    return QRRead.model_validate(payload).model_dump()
 
 
 @router.get("/", response_model=WebResponse[dict])
@@ -586,12 +598,30 @@ def assign_qr_to_student(
     ).first()
     if not student:
         raise NotFoundException(f"Siswa dengan ID {assign_data.student_id} tidak ditemukan")
+
+    # One student ↔ one QR row (unique student_id on qr_codes)
+    other = (
+        db.query(QR)
+        .filter(QR.student_id == assign_data.student_id, QR.id != qr_id)
+        .first()
+    )
+    if other:
+        raise ConflictException(
+            "Santri ini sudah terkait dengan QR tas lain. Lepas kaitan pada QR tersebut terlebih dahulu, "
+            "atau gunakan QR yang sudah dikaitkan."
+        )
     
     qr.student_id = assign_data.student_id
     qr.updated_by = current_user.id
     qr.updated_at = get_now_local()
     
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise ConflictException(
+            "Tidak bisa mengaitkan QR (bentrok data). Pastikan santri belum terkait QR tas lain."
+        ) from exc
     db.refresh(qr)
     
     # Reload with student relationship
