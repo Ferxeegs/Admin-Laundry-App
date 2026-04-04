@@ -24,13 +24,13 @@ def get_all_dormitories(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None),
+    deleted_only: bool = Query(False),
     db: Session = Depends(get_db),
 ):
-    query = db.query(Dormitory)
-
-    # Optional soft-delete filtering if AuditMixin is used
-    if hasattr(Dormitory, "deleted_at"):
-        query = query.filter(Dormitory.deleted_at.is_(None))
+    if deleted_only:
+        query = db.query(Dormitory).filter(Dormitory.deleted_at.is_not(None))
+    else:
+        query = db.query(Dormitory).filter(Dormitory.deleted_at.is_(None))
 
     if search:
         term = f"%{search}%"
@@ -140,6 +140,38 @@ def update_dormitory(
 @router.delete("/{dormitory_id}", response_model=WebResponse[dict])
 def delete_dormitory(
     dormitory_id: str,
+    force: bool = False,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    dorm = db.query(Dormitory).filter(Dormitory.id == dormitory_id).first()
+    if not dorm:
+        raise NotFoundException(f"Asrama '{dormitory_id}' tidak ditemukan")
+
+    if force:
+        db.delete(dorm)
+        message = "Asrama berhasil dihapus permanen"
+    else:
+        if dorm.deleted_at is not None:
+            raise BadRequestException("Asrama sudah di tong sampah. Gunakan force=true untuk menghapus permanen.")
+        
+        from app.utils.helpers import get_now_local
+        dorm.deleted_at = get_now_local()
+        dorm.deleted_by = current_user.id
+        message = "Asrama berhasil dihapus sementara"
+
+    db.commit()
+
+    return WebResponse(
+        status="success",
+        message=message,
+        data={"id": dormitory_id},
+    )
+
+
+@router.post("/{dormitory_id}/restore", response_model=WebResponse[dict])
+def restore_dormitory(
+    dormitory_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -147,13 +179,14 @@ def delete_dormitory(
     if not dorm:
         raise NotFoundException(f"Dormitory '{dormitory_id}' not found")
 
-    # Hard delete is OK because qr_codes.dormitory_id uses ON DELETE SET NULL
-    db.delete(dorm)
+    dorm.deleted_at = None
+    dorm.deleted_by = None
     db.commit()
+    db.refresh(dorm)
 
     return WebResponse(
         status="success",
-        message="Dormitory deleted successfully",
-        data={"id": dormitory_id},
+        message="Dormitory restored successfully",
+        data=DormitoryRead.model_validate(dorm).model_dump(),
     )
 

@@ -11,7 +11,7 @@ import TableSkeleton from "../../components/common/TableSkeleton";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
-import { dormitoryAPI } from "../../utils/api";
+import { addonAPI } from "../../utils/api";
 import { PencilIcon, TrashBinIcon } from "../../icons";
 import { ConfirmModal, Modal } from "../../components/ui/modal";
 import { useModal } from "../../hooks/useModal";
@@ -20,22 +20,23 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import { useAuth } from "../../context/AuthContext";
 
-interface Dormitory {
+interface Addon {
   id: string;
   name: string;
+  price: number;
   description: string | null;
-  created_at: string | null;
-  updated_at: string | null;
+  is_active: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
-type DormitoryModalMode = "create" | "edit";
+type AddonModalMode = "create" | "edit";
 
-export default function Dormitories() {
+export default function Addons() {
   const { hasPermission } = useAuth();
   const { success, error: showError } = useToast();
-  // permissions optional: resource is typically admin-only, but backend currently doesn't enforce specific ones
 
-  const [dormitories, setDormitories] = useState<Dormitory[]>([]);
+  const [addons, setAddons] = useState<Addon[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,27 +50,37 @@ export default function Dormitories() {
     totalPages: 0,
   });
 
-  const canCreateDormitory = hasPermission("create_dormitory");
-  const canUpdateDormitory = hasPermission("update_dormitory");
-  const canDeleteDormitory = hasPermission("delete_dormitory");
-  const canRestoreDormitory = hasPermission("restore_dormitory");
-  const canForceDeleteDormitory = hasPermission("force_delete_dormitory");
+  const canCreateAddon = hasPermission("create_addon");
+  const canUpdateAddon = hasPermission("update_addon");
+  const canDeleteAddon = hasPermission("delete_addon");
+  const canRestoreAddon = hasPermission("restore_addon");
+  const canForceDeleteAddon = hasPermission("force_delete_addon");
 
-  const fetchDormitories = async (forceLoading = false) => {
-    if (forceLoading || dormitories.length === 0) setIsLoading(true);
+  const fetchAddons = async (forceLoading = false) => {
+    if (forceLoading || addons.length === 0) setIsLoading(true);
     setError(null);
     try {
-      const res = await dormitoryAPI.getAllDormitories({
+      const res = await addonAPI.listAddons({
         page,
         limit: 10,
-        search: search.trim() || undefined,
+        active_only: false,
         deleted_only: showDeleted,
       });
       if (res.success && res.data) {
-        setDormitories(res.data.dormitories as Dormitory[]);
+        let filtered = res.data.addons as Addon[];
+        // Frontend search filter since backend might not support search yet for addons
+        if (search.trim()) {
+          const s = search.toLowerCase();
+          filtered = filtered.filter(
+            (a) =>
+              a.name.toLowerCase().includes(s) ||
+              (a.description && a.description.toLowerCase().includes(s))
+          );
+        }
+        setAddons(filtered);
         setPagination(res.data.pagination);
       } else {
-        setError(res.message || "Gagal mengambil data asrama");
+        setError(res.message || "Gagal mengambil data addon");
       }
     } catch (e: any) {
       setError(e?.message || "Terjadi kesalahan. Silakan coba lagi.");
@@ -79,14 +90,14 @@ export default function Dormitories() {
   };
 
   useEffect(() => {
-    void fetchDormitories(false);
+    void fetchAddons(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, showDeleted]);
 
   useEffect(() => {
     const t = setTimeout(() => {
       setPage(1);
-      void fetchDormitories(true);
+      void fetchAddons(true);
     }, 500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -94,66 +105,79 @@ export default function Dormitories() {
 
   // Create/Edit modal
   const {
-    isOpen: isDormitoryModalOpen,
-    openModal: openDormitoryModal,
-    closeModal: closeDormitoryModal,
+    isOpen: isAddonModalOpen,
+    openModal: openAddonModal,
+    closeModal: closeAddonModal,
   } = useModal();
-  const [modalMode, setModalMode] = useState<DormitoryModalMode>("create");
-  const [editingDormitory, setEditingDormitory] = useState<Dormitory | null>(null);
-  const [formData, setFormData] = useState<{ name: string; description: string }>({
+  const [modalMode, setModalMode] = useState<AddonModalMode>("create");
+  const [editingAddon, setEditingAddon] = useState<Addon | null>(null);
+  const [formData, setFormData] = useState<{
+    name: string;
+    price: string;
+    description: string;
+    is_active: boolean;
+  }>({
     name: "",
+    price: "",
     description: "",
+    is_active: true,
   });
 
   const openCreate = () => {
     setModalMode("create");
-    setEditingDormitory(null);
-    setFormData({ name: "", description: "" });
-    openDormitoryModal();
+    setEditingAddon(null);
+    setFormData({ name: "", price: "", description: "", is_active: true });
+    openAddonModal();
   };
 
-  const openEdit = (d: Dormitory) => {
+  const openEdit = (a: Addon) => {
     setModalMode("edit");
-    setEditingDormitory(d);
+    setEditingAddon(a);
     setFormData({
-      name: d.name,
-      description: d.description || "",
+      name: a.name,
+      price: a.price.toString(),
+      description: a.description || "",
+      is_active: a.is_active,
     });
-    openDormitoryModal();
+    openAddonModal();
   };
 
-  const handleSaveDormitory = async () => {
+  const handleSaveAddon = async () => {
+    const priceNum = parseFloat(formData.price) || 0;
     const payload = {
       name: formData.name.trim(),
+      price: priceNum,
       description: formData.description.trim() || null,
+      is_active: formData.is_active,
     };
+
     if (!payload.name) {
-      showError("Nama asrama wajib diisi.");
+      showError("Nama addon wajib diisi.");
       return;
     }
 
     if (modalMode === "create") {
-      const res = await dormitoryAPI.createDormitory(payload);
+      const res = await addonAPI.createAddon(payload);
       if (!res.success) {
-        showError(res.message || res.error || "Gagal membuat asrama");
+        showError(res.message || res.error || "Gagal membuat addon");
         return;
       }
-      success("Asrama berhasil dibuat.");
+      success("Addon berhasil dibuat.");
     } else {
-      if (!editingDormitory) {
-        showError("Data asrama untuk update tidak tersedia. Silakan coba lagi.");
+      if (!editingAddon) {
+        showError("Data addon untuk update tidak tersedia. Silakan coba lagi.");
         return;
       }
-      const res = await dormitoryAPI.updateDormitory(editingDormitory.id, payload);
+      const res = await addonAPI.updateAddon(editingAddon.id, payload);
       if (!res.success) {
-        showError(res.message || res.error || "Gagal memperbarui asrama");
+        showError(res.message || res.error || "Gagal memperbarui addon");
         return;
       }
-      success("Asrama berhasil diperbarui.");
+      success("Addon berhasil diperbarui.");
     }
 
-    closeDormitoryModal();
-    await fetchDormitories(true);
+    closeAddonModal();
+    await fetchAddons(true);
   };
 
   // Delete confirm
@@ -162,19 +186,19 @@ export default function Dormitories() {
     openModal: openDelete,
     closeModal: closeDelete,
   } = useModal();
-  const [deleteTarget, setDeleteTarget] = useState<Dormitory | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Addon | null>(null);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const res = await dormitoryAPI.deleteDormitory(deleteTarget.id);
+    const res = await addonAPI.deleteAddon(deleteTarget.id);
     if (!res.success) {
-      showError(res.message || res.error || "Gagal menghapus asrama");
+      showError(res.message || res.error || "Gagal menghapus addon");
       return;
     }
-    success("Asrama berhasil dihapus.");
+    success("Addon berhasil dihapus.");
     closeDelete();
     setDeleteTarget(null);
-    await fetchDormitories(true);
+    await fetchAddons(true);
   };
 
   // Restore confirm
@@ -183,19 +207,19 @@ export default function Dormitories() {
     openModal: openRestore,
     closeModal: closeRestore,
   } = useModal();
-  const [restoreTarget, setRestoreTarget] = useState<Dormitory | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<Addon | null>(null);
 
   const handleRestore = async () => {
     if (!restoreTarget) return;
-    const res = await dormitoryAPI.restoreDormitory(restoreTarget.id);
+    const res = await addonAPI.restoreAddon(restoreTarget.id);
     if (!res.success) {
-      showError(res.message || res.error || "Gagal memulihkan asrama");
+      showError(res.message || res.error || "Gagal memulihkan addon");
       return;
     }
-    success("Asrama berhasil dipulihkan.");
+    success("Addon berhasil dipulihkan.");
     closeRestore();
     setRestoreTarget(null);
-    await fetchDormitories(true);
+    await fetchAddons(true);
   };
 
   // Force Delete confirm
@@ -204,33 +228,33 @@ export default function Dormitories() {
     openModal: openForceDelete,
     closeModal: closeForceDelete,
   } = useModal();
-  const [forceDeleteTarget, setForceDeleteTarget] = useState<Dormitory | null>(null);
+  const [forceDeleteTarget, setForceDeleteTarget] = useState<Addon | null>(null);
 
   const handleForceDelete = async () => {
     if (!forceDeleteTarget) return;
-    const res = await dormitoryAPI.deleteDormitory(forceDeleteTarget.id, true);
+    const res = await addonAPI.deleteAddon(forceDeleteTarget.id, true);
     if (!res.success) {
-      showError(res.message || res.error || "Gagal menghapus permanen asrama");
+      showError(res.message || res.error || "Gagal menghapus permanen addon");
       return;
     }
-    success("Asrama berhasil dihapus secara permanen.");
+    success("Addon berhasil dihapus secara permanen.");
     closeForceDelete();
     setForceDeleteTarget(null);
-    await fetchDormitories(true);
+    await fetchAddons(true);
   };
 
   const emptyStateText = useMemo(() => {
     if (isLoading) return "Memuat…";
-    return search ? `Tidak ada asrama ${showDeleted ? "terhapus " : ""}yang ditemukan.` : `Belum ada asrama ${showDeleted ? "terhapus" : ""}.`;
+    return search ? `Tidak ada addon ${showDeleted ? "terhapus " : ""}yang ditemukan.` : `Belum ada addon ${showDeleted ? "terhapus" : ""}.`;
   }, [isLoading, search, showDeleted]);
 
   return (
     <>
-      <PageMeta title="Asrama" description="Kelola data asrama" />
-      <PageBreadcrumb pageTitle="Asrama" />
+      <PageMeta title="Layanan Tambahan (Add-on)" description="Kelola data layanan tambahan order" />
+      <PageBreadcrumb pageTitle="Add-on" />
 
       <div className="space-y-6">
-        <ComponentCard title={showDeleted ? "Tong Sampah Asrama" : "Daftar Asrama"}>
+        <ComponentCard title={showDeleted ? "Tong Sampah Add-on" : "Daftar Add-on"}>
           {error && (
             <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
               {error}
@@ -242,7 +266,7 @@ export default function Dormitories() {
             <div className="relative flex-1 max-w-md">
               <input
                 type="text"
-                placeholder="Cari asrama (nama/desc)..."
+                placeholder="Cari addon (nama/desc)..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full h-10 sm:h-11 rounded-lg border border-gray-200 bg-transparent py-2 pl-10 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
@@ -271,16 +295,15 @@ export default function Dormitories() {
                   setShowDeleted(!showDeleted);
                   setPage(1);
                 }}
-                className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-colors border ${
-                  showDeleted
+                className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-colors border ${showDeleted
                     ? "bg-gray-100 text-gray-900 border-gray-300 dark:bg-gray-800 dark:text-white dark:border-gray-700"
                     : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 dark:bg-transparent dark:text-gray-400 dark:border-gray-800 dark:hover:bg-gray-900"
-                }`}
+                  }`}
               >
-                {showDeleted ? "Tampilkan Aktif" : "Kotak Sampah"}
+                {showDeleted ? "Add-on Aktif" : "Add-on Terhapus"}
               </button>
 
-              {!showDeleted && canCreateDormitory && (
+              {!showDeleted && canCreateAddon && (
                 <button
                   type="button"
                   onClick={openCreate}
@@ -294,7 +317,7 @@ export default function Dormitories() {
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  Tambah Asrama
+                  Tambah Add-on
                 </button>
               )}
             </div>
@@ -302,11 +325,11 @@ export default function Dormitories() {
 
           {/* Desktop Table View */}
           <div className="hidden md:block">
-            {isLoading && dormitories.length === 0 ? (
+            {isLoading && addons.length === 0 ? (
               <div className="p-4">
-                <TableSkeleton rows={10} columns={4} />
+                <TableSkeleton rows={10} columns={5} />
               </div>
-            ) : dormitories.length === 0 ? (
+            ) : addons.length === 0 ? (
               <div className="flex items-center justify-center py-12 text-gray-500">
                 {emptyStateText}
               </div>
@@ -316,7 +339,10 @@ export default function Dormitories() {
                   <TableHeader className="border-b border-gray-100 dark:border-white/[0.05] bg-gray-50/50 dark:bg-white/[0.02]">
                     <TableRow>
                       <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-medium text-gray-500 dark:text-gray-400 w-[200px]">
-                        Nama Asrama
+                        Nama Add-on
+                      </TableCell>
+                      <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-medium text-gray-500 dark:text-gray-400 w-[130px]">
+                        Harga (Rp)
                       </TableCell>
                       <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-medium text-gray-500 dark:text-gray-400">
                         Deskripsi
@@ -324,33 +350,40 @@ export default function Dormitories() {
                       <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-medium text-gray-500 dark:text-gray-400 w-[120px]">
                         Status
                       </TableCell>
+                      {/* Lebar kolom aksi ditambah menjadi 220px agar tombol restore/delete tidak terpotong */}
                       <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-medium text-gray-500 dark:text-gray-400 w-[220px]">
                         Aksi
                       </TableCell>
                     </TableRow>
                   </TableHeader>
                   <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                    {dormitories.map((d) => (
+                    {addons.map((a) => (
                       <TableRow
-                        key={d.id}
+                        key={a.id}
                         className="hover:bg-gray-50 dark:hover:bg-gray-50/5 transition-colors"
                       >
                         <TableCell className="px-5 py-4 text-center align-middle">
                           <div className="font-medium text-gray-800 text-sm dark:text-white/90">
-                            {d.name}
+                            {a.name}
                           </div>
                         </TableCell>
 
                         <TableCell className="px-5 py-4 text-center align-middle">
-                          <div className="text-gray-500 text-sm dark:text-gray-400 italic">
-                            {d.description || "—"}
+                          <div className="text-gray-800 text-sm dark:text-white/90 font-mono">
+                            {a.price.toLocaleString("id-ID")}
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="px-5 py-4 text-center align-middle">
+                          <div className="text-gray-500 text-sm dark:text-gray-400 italic truncate" title={a.description || ""}>
+                            {a.description || "—"}
                           </div>
                         </TableCell>
 
                         <TableCell className="px-5 py-4 text-center align-middle">
                           <div className="flex justify-center">
-                            <Badge size="sm" color={showDeleted ? "error" : "success"}>
-                              {showDeleted ? "Terhapus" : "Aktif"}
+                            <Badge size="sm" color={a.is_active ? "success" : "light"}>
+                              {a.is_active ? "Aktif" : "Non-aktif"}
                             </Badge>
                           </div>
                         </TableCell>
@@ -359,25 +392,25 @@ export default function Dormitories() {
                           <div className="flex items-center justify-center gap-2">
                             {!showDeleted ? (
                               <>
-                                {canUpdateDormitory && (
+                                {canUpdateAddon && (
                                   <button
                                     type="button"
-                                    onClick={() => openEdit(d)}
-                                    className="p-1.5 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-                                    title="Edit Asrama"
+                                    onClick={() => openEdit(a)}
+                                    className="p-2 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                                    title="Edit Add-on"
                                   >
                                     <PencilIcon className="w-4 h-4" />
                                   </button>
                                 )}
-                                {canDeleteDormitory && (
+                                {canDeleteAddon && (
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      setDeleteTarget(d);
+                                      setDeleteTarget(a);
                                       openDelete();
                                     }}
-                                    className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                                    title="Hapus Asrama"
+                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                                    title="Hapus Add-on"
                                   >
                                     <TrashBinIcon className="w-4 h-4" />
                                   </button>
@@ -385,15 +418,15 @@ export default function Dormitories() {
                               </>
                             ) : (
                               <div className="flex items-center justify-center gap-2 w-full">
-                                {canRestoreDormitory && (
+                                {canRestoreAddon && (
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      setRestoreTarget(d);
+                                      setRestoreTarget(a);
                                       openRestore();
                                     }}
                                     className="inline-flex items-center shrink-0 gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors whitespace-nowrap"
-                                    title="Pulihkan Asrama"
+                                    title="Pulihkan Add-on"
                                   >
                                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -401,11 +434,11 @@ export default function Dormitories() {
                                     Pulihkan
                                   </button>
                                 )}
-                                {canForceDeleteDormitory && (
+                                {canForceDeleteAddon && (
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      setForceDeleteTarget(d);
+                                      setForceDeleteTarget(a);
                                       openForceDelete();
                                     }}
                                     className="inline-flex items-center shrink-0 gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
@@ -429,31 +462,34 @@ export default function Dormitories() {
 
           {/* Mobile Cards */}
           <div className="md:hidden space-y-3">
-            {isLoading && dormitories.length === 0 ? (
+            {isLoading && addons.length === 0 ? (
               <div className="p-5">
                 <TableSkeleton rows={6} columns={2} />
               </div>
-            ) : dormitories.length === 0 ? (
+            ) : addons.length === 0 ? (
               <div className="flex items-center justify-center py-12 text-gray-500">
                 {emptyStateText}
               </div>
             ) : (
-              dormitories.map((d) => (
+              addons.map((a) => (
                 <div
-                  key={d.id}
+                  key={a.id}
                   className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                        {d.name}
+                        {a.name}
+                      </div>
+                      <div className="mt-0.5 text-xs font-medium text-brand-600 dark:text-brand-400">
+                        Rp {a.price.toLocaleString("id-ID")}
                       </div>
                       <div className="mt-1 text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
-                        {d.description || "-"}
+                        {a.description || "-"}
                       </div>
                     </div>
-                    <Badge size="sm" color={showDeleted ? "error" : "success"}>
-                      {showDeleted ? "Terhapus" : "Aktif"}
+                    <Badge size="sm" color={a.is_active ? "success" : "light"}>
+                      {a.is_active ? "Aktif" : "Non-aktif"}
                     </Badge>
                   </div>
 
@@ -462,31 +498,31 @@ export default function Dormitories() {
                       <>
                         <button
                           type="button"
-                          onClick={() => openEdit(d)}
+                          onClick={() => openEdit(a)}
                           className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 touch-manipulation"
-                          title="Edit Dormitory"
+                          title="Edit Add-on"
                         >
                           <PencilIcon className="w-4 h-4" />
                         </button>
                         <button
                           type="button"
                           onClick={() => {
-                            setDeleteTarget(d);
+                            setDeleteTarget(a);
                             openDelete();
                           }}
                           className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 touch-manipulation"
-                          title="Delete Dormitory"
+                          title="Delete Add-on"
                         >
                           <TrashBinIcon className="w-4 h-4" />
                         </button>
                       </>
                     ) : (
                       <div className="flex-1 flex gap-2">
-                        {canRestoreDormitory && (
+                        {canRestoreAddon && (
                           <button
                             type="button"
                             onClick={() => {
-                              setRestoreTarget(d);
+                              setRestoreTarget(a);
                               openRestore();
                             }}
                             className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors"
@@ -497,11 +533,11 @@ export default function Dormitories() {
                             Pulihkan
                           </button>
                         )}
-                        {canDeleteDormitory && (
+                        {canDeleteAddon && (
                           <button
                             type="button"
                             onClick={() => {
-                              setForceDeleteTarget(d);
+                              setForceDeleteTarget(a);
                               openForceDelete();
                             }}
                             className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
@@ -548,10 +584,10 @@ export default function Dormitories() {
       </div>
 
       {/* Modal Create/Edit */}
-      <Modal isOpen={isDormitoryModalOpen} onClose={closeDormitoryModal} className="max-w-lg">
+      <Modal isOpen={isAddonModalOpen} onClose={closeAddonModal} className="max-w-lg">
         <div className="p-4 sm:p-5">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {modalMode === "create" ? "Tambah Asrama" : "Edit Asrama"}
+            {modalMode === "create" ? "Tambah Add-on" : "Edit Add-on"}
           </h2>
 
           <div className="mt-4 space-y-4">
@@ -560,8 +596,27 @@ export default function Dormitories() {
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
-                placeholder="Contoh: Asrama A"
+                placeholder="Contoh: Pewangi Premium"
               />
+            </div>
+            <div>
+              <Label>Harga (Rp) <span className="text-error-500">*</span></Label>
+              <Input
+                type="number"
+                value={formData.price}
+                onChange={(e) => setFormData((p) => ({ ...p, price: e.target.value }))}
+                placeholder="2000"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                id="is_active"
+                type="checkbox"
+                checked={formData.is_active}
+                onChange={(e) => setFormData((p) => ({ ...p, is_active: e.target.checked }))}
+                className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-500"
+              />
+              <Label htmlFor="is_active" className="!mb-0 cursor-pointer">Status Aktif</Label>
             </div>
             <div>
               <Label>Deskripsi</Label>
@@ -569,7 +624,7 @@ export default function Dormitories() {
                 value={formData.description}
                 onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))}
                 placeholder="Keterangan opsional..."
-                rows={4}
+                rows={3}
                 className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
               />
             </div>
@@ -578,15 +633,15 @@ export default function Dormitories() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-5 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
-              onClick={closeDormitoryModal}
+              onClick={closeAddonModal}
               className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 touch-manipulation"
             >
               Batal
             </button>
             <button
               type="button"
-              onClick={() => void handleSaveDormitory()}
-              disabled={modalMode === "edit" && !editingDormitory}
+              onClick={() => void handleSaveAddon()}
+              disabled={modalMode === "edit" && !editingAddon}
               className="px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {modalMode === "create" ? "Simpan" : "Update"}
@@ -600,15 +655,15 @@ export default function Dormitories() {
         isOpen={isDeleteOpen}
         onClose={closeDelete}
         onConfirm={() => void handleDelete()}
-        title="Hapus Asrama?"
+        title="Hapus Add-on?"
         message={
           deleteTarget ? (
             <>
-              Asrama <strong className="text-gray-800 dark:text-white">{deleteTarget.name}</strong> akan
-              dihapus sementara.
+              Add-on <strong className="text-gray-800 dark:text-white">{deleteTarget.name}</strong> akan
+              dihapus.
             </>
           ) : (
-            "Asrama akan dihapus sementara."
+            "Add-on akan dihapus."
           )
         }
         confirmText="Hapus"
@@ -622,15 +677,15 @@ export default function Dormitories() {
         isOpen={isRestoreOpen}
         onClose={closeRestore}
         onConfirm={() => void handleRestore()}
-        title="Pulihkan Asrama?"
+        title="Pulihkan Add-on?"
         message={
           restoreTarget ? (
             <>
-              Asrama <strong className="text-gray-800 dark:text-white">{restoreTarget.name}</strong> akan
+              Add-on <strong className="text-gray-800 dark:text-white">{restoreTarget.name}</strong> akan
               dipulihkan ke daftar aktif.
             </>
           ) : (
-            "Asrama akan dipulihkan."
+            "Add-on akan dipulihkan."
           )
         }
         confirmText="Pulihkan"
@@ -648,20 +703,20 @@ export default function Dormitories() {
         isOpen={isForceDeleteOpen}
         onClose={closeForceDelete}
         onConfirm={() => void handleForceDelete()}
-        title="Hapus Permanen Asrama?"
+        title="Hapus Permanen Add-on?"
         message={
           forceDeleteTarget ? (
             <div className="space-y-2">
               <p>
-                Asrama <strong className="text-gray-800 dark:text-white">{forceDeleteTarget.name}</strong> akan
+                Add-on <strong className="text-gray-800 dark:text-white">{forceDeleteTarget.name}</strong> akan
                 dihapus secara <span className="text-red-600 font-bold underline">permanen</span>.
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700/50">
-                Tindakan ini tidak dapat dibatalkan dan data tidak dapat dipulihkan lagi (termasuk kaitan dengan QR Code akan diputus).
+                Tindakan ini tidak dapat dibatalkan dan data tidak dapat dipulihkan lagi.
               </p>
             </div>
           ) : (
-            "Asrama akan dihapus secara permanen."
+            "Add-on akan dihapus secara permanen."
           )
         }
         confirmText="Hapus Permanen"
@@ -672,4 +727,3 @@ export default function Dormitories() {
     </>
   );
 }
-

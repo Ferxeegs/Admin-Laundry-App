@@ -72,6 +72,12 @@ const navItems: NavItem[] = [
     requiredPermission: ["view_dormitory"],
   },
   {
+    icon: <FolderIcon />,
+    name: "Add-on",
+    path: "/addons",
+    requiredPermission: ["view_addon"],
+  },
+  {
     icon: <PieChartIcon />,
     name: "Laporan",
     path: "/reports",

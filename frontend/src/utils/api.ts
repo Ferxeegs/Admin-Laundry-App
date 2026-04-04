@@ -2125,11 +2125,12 @@ export const studentAPI = {
 
 /** Master layanan tambahan (addon) untuk order */
 export const addonAPI = {
-  listAddons: async (params?: { page?: number; limit?: number; active_only?: boolean }) => {
+  listAddons: async (params?: { page?: number; limit?: number; active_only?: boolean; deleted_only?: boolean }) => {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());
     if (params?.active_only === false) queryParams.append("active_only", "false");
+    if (params?.deleted_only) queryParams.append("deleted_only", "true");
     const queryString = queryParams.toString();
     const endpoint = `/addons/${queryString ? `?${queryString}` : ""}`;
     return apiRequest<{
@@ -2149,6 +2150,55 @@ export const addonAPI = {
         totalPages: number;
       };
     }>(endpoint, { method: "GET" });
+  },
+
+  createAddon: async (data: { name: string; price: number; description?: string | null; is_active?: boolean }) => {
+    return apiRequest<{
+      id: string;
+      name: string;
+      price: number;
+      description: string | null;
+      is_active: boolean;
+      created_at: string;
+      updated_at: string;
+    }>('/addons/', {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateAddon: async (id: string, data: { name?: string; price?: number; description?: string | null; is_active?: boolean }) => {
+    return apiRequest<{
+      id: string;
+      name: string;
+      price: number;
+      description: string | null;
+      is_active: boolean;
+      created_at: string;
+      updated_at: string;
+    }>(`/addons/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteAddon: async (id: string, force: boolean = false) => {
+    return apiRequest<null>(`/addons/${id}${force ? '?force=true' : ''}`, {
+      method: "DELETE",
+    });
+  },
+  restoreAddon: async (id: string) => {
+    return apiRequest<{
+      id: string;
+      name: string;
+      price: number;
+      description: string | null;
+      is_active: boolean;
+      created_at: string;
+      updated_at: string;
+    }>(`/addons/${id}/restore`, {
+      method: "POST",
+    });
   },
 };
 
@@ -2924,11 +2974,13 @@ export const dormitoryAPI = {
     page?: number;
     limit?: number;
     search?: string;
+    deleted_only?: boolean;
   }) => {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());
     if (params?.search) queryParams.append("search", params.search);
+    if (params?.deleted_only) queryParams.append("deleted_only", "true");
 
     const queryString = queryParams.toString();
     return apiRequest<{
@@ -2979,11 +3031,22 @@ export const dormitoryAPI = {
     });
   },
 
-  deleteDormitory: async (id: string) => {
+  deleteDormitory: async (id: string, force: boolean = false) => {
     return apiRequest<{
       id: string;
-    }>(`/dormitories/${id}`, {
+    }>(`/dormitories/${id}${force ? '?force=true' : ''}`, {
       method: "DELETE",
+    });
+  },
+  restoreDormitory: async (id: string) => {
+    return apiRequest<{
+      id: string;
+      name: string;
+      description: string | null;
+      created_at: string | null;
+      updated_at: string | null;
+    }>(`/dormitories/${id}/restore`, {
+      method: "POST",
     });
   },
 };

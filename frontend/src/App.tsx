@@ -37,6 +37,7 @@ import Dormitories from "./pages/Dormitories/Dormitories";
 import Reports from "./pages/Reports/Reports";
 import Invoices from "./pages/Invoices/Invoices";
 import CreateInvoice from "./pages/Invoices/CreateInvoice";
+import Addons from "./pages/Addons/Addons";
 
 import Settings from "./pages/Settings/Settings";
 
@@ -208,6 +209,14 @@ export default function App() {
               element={
                 <ProtectedRoute requiredPermission="view_dormitory">
                   <Dormitories />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/addons"
+              element={
+                <ProtectedRoute requiredPermission="view_addon">
+                  <Addons />
                 </ProtectedRoute>
               }
             />

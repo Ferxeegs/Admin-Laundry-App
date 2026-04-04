@@ -135,8 +135,18 @@ def init_permissions(db: Session):
         "view_myprofile",
         "update_myprofile",
     ]
+
+    # Permission untuk Add-on
+    addon_permissions = [
+        "view_addon",
+        "create_addon",
+        "update_addon",
+        "delete_addon",
+        "restore_addon",
+        "force_delete_addon",
+    ]
     # Combine all permissions
-    all_permissions = user_permissions + role_permissions + setting_permissions + student_permissions + order_permissions + report_permissions + qr_code_permissions + dormitory_permissions + invoice_permissions + myprofile_permissions
+    all_permissions = user_permissions + role_permissions + setting_permissions + student_permissions + order_permissions + report_permissions + qr_code_permissions + dormitory_permissions + invoice_permissions + myprofile_permissions + addon_permissions
     
     for perm_name in all_permissions:
         existing_perm = db.query(Permission).filter(Permission.name == perm_name).first()
