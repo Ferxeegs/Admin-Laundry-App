@@ -11,9 +11,10 @@ import {
   SettingsIcon,
   UserIcon,
   QrCodeIcon,
-  FolderIcon,
   PieChartIcon,
   FileIcon,
+  DormitoryIcon,
+  AddonIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
@@ -66,13 +67,13 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    icon: <FolderIcon />,
+    icon: <DormitoryIcon />,
     name: "Asrama",
     path: "/dormitories",
     requiredPermission: ["view_dormitory"],
   },
   {
-    icon: <FolderIcon />,
+    icon: <AddonIcon />,
     name: "Add-on",
     path: "/addons",
     requiredPermission: ["view_addon"],

@@ -56,6 +56,8 @@ import { ReactComponent as MoreDotIcon } from "./moredot.svg?react";
 import { ReactComponent as AlertHexaIcon } from "./alert-hexa.svg?react";
 import { ReactComponent as ErrorHexaIcon } from "./info-hexa.svg?react";
 import { ReactComponent as QrCodeIcon } from "./qr-code.svg?react";
+import { ReactComponent as DormitoryIcon } from "./dormitory.svg?react";
+import { ReactComponent as AddonIcon } from "./addon.svg?react";
 
 export {
   SettingsIcon,
@@ -116,4 +118,6 @@ export {
   AngleLeftIcon,
   AngleRightIcon,
   QrCodeIcon,
+  DormitoryIcon,
+  AddonIcon,
 };
