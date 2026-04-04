@@ -173,7 +173,7 @@ def delete_dormitory(
 def restore_dormitory(
     dormitory_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    # current_user: User = Depends(get_current_active_user),
 ):
     dorm = db.query(Dormitory).filter(Dormitory.id == dormitory_id).first()
     if not dorm:

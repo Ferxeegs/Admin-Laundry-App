@@ -103,7 +103,7 @@ def get_all_orders(
     status_filter: Optional[OrderStatus] = Query(None, alias="status"),
     student_id: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    # current_user: User = Depends(get_current_active_user),
 ):
     """
     Get all orders with pagination and optional filters.
@@ -171,7 +171,7 @@ def get_all_orders(
 def get_order_by_id(
     order_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    # current_user: User = Depends(get_current_active_user),
 ):
     """
     Get order detail by ID including tracking history.

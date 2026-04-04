@@ -167,7 +167,7 @@ def get_media_by_model(
     model_id: str = Query(..., description="Model ID"),
     collection: Optional[str] = Query(None, description="Collection name (e.g., 'profile-pictures')"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Get media by model_type and model_id.
@@ -204,7 +204,7 @@ async def upload_media(
     model_id: str = Form(...),
     collection: str = Form("default"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Upload a media file.
@@ -387,7 +387,7 @@ async def upload_media(
 def get_media_by_id(
     media_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Get media by ID.
@@ -407,7 +407,7 @@ def get_media_by_id(
 def delete_media(
     media_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Delete media by ID.

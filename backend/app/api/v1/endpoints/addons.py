@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user
+from app.api.deps import get_db
 from app.core.deps_permission import require_permission
 from app.core.exceptions import NotFoundException
 from app.models.auth import User
@@ -23,7 +23,7 @@ def list_addons(
     active_only: bool = Query(True, description="Hanya addon aktif"),
     deleted_only: bool = Query(False, description="Hanya addon yang dihapus"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    # current_user: User = Depends(get_current_active_user),
 ):
     if deleted_only:
         q = db.query(Addon).filter(Addon.deleted_at.is_not(None))
@@ -139,7 +139,7 @@ def delete_addon(
 def restore_addon(
     addon_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("update_addon")),
+    # current_user: User = Depends(require_permission("restore_addon")),
 ):
     row = db.query(Addon).filter(Addon.id == addon_id).first()
     if not row:

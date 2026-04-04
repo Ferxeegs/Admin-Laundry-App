@@ -343,7 +343,7 @@ def get_operational_report(
 @router.get("/orders-by-status", response_model=WebResponse[dict])
 def get_orders_by_status(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    # current_user: User = Depends(get_current_active_user),
 ):
     """
     Get order counts grouped by current_status for all orders.

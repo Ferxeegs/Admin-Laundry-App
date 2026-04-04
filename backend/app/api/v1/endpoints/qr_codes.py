@@ -192,7 +192,7 @@ def get_all_qr_codes(
     assigned: Optional[bool] = Query(None, description="Filter by assignment status"),
     dormitory: Optional[str] = Query(None, description="Filter by dormitory"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Get all QR codes with pagination and filters.
@@ -252,7 +252,7 @@ def get_all_qr_codes(
 def lookup_qr_by_token(
     token_qr: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Lookup a QR code by its token value. Used by the ScanQR page.
@@ -678,7 +678,7 @@ def release_qr_from_student(
 def delete_qr_code(
     qr_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("delete_student"))
+    # current_user: User = Depends(require_permission("delete_student"))
 ):
     """
     Permanently delete a QR code.

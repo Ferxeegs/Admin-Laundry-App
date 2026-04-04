@@ -45,7 +45,7 @@ def get_eligible_orders(
     student_id: str = Query(...),
     billing_period: date = Query(...),  # YYYY-MM-01
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    # current_user: User = Depends(get_current_active_user),
 ):
     """
     Get orders for a student and billing month where Order.invoice_id is still NULL,
@@ -92,7 +92,7 @@ def get_all_invoices(
     student_id: Optional[str] = Query(None),
     billing_period: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    # current_user: User = Depends(get_current_active_user),
 ):
     query = db.query(Invoice)
 
@@ -134,7 +134,7 @@ def get_all_invoices(
 def get_invoice_by_id(
     invoice_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    # current_user: User = Depends(get_current_active_user),
 ):
     invoice = (
         db.query(Invoice)
@@ -288,7 +288,7 @@ def update_invoice(
 def delete_invoice(
     invoice_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    # current_user: User = Depends(get_current_active_user),
 ):
     invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if not invoice:

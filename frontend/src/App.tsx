@@ -175,7 +175,7 @@ export default function App() {
             <Route
               path="/qr-codes"
               element={
-                <ProtectedRoute requiredPermission="view_qr_codes">
+                <ProtectedRoute requiredPermission="view_qr_code">
                   <QRCodes />
                 </ProtectedRoute>
               }
@@ -183,7 +183,7 @@ export default function App() {
             <Route
               path="/qr-codes/download"
               element={
-                <ProtectedRoute requiredPermission="view_qr_codes">
+                <ProtectedRoute requiredPermission="view_qr_code">
                   <DownloadQRCodes />
                 </ProtectedRoute>
               }
@@ -191,7 +191,7 @@ export default function App() {
             <Route
               path="/qr-codes/create"
               element={
-                <ProtectedRoute requiredPermission="create_qr_codes">
+                <ProtectedRoute requiredPermission="create_qr_code">
                   <GenerateQRCodes />
                 </ProtectedRoute>
               }
@@ -199,7 +199,7 @@ export default function App() {
             <Route
               path="/qr-codes/edit"
               element={
-                <ProtectedRoute requiredPermission="create_qr_codes">
+                <ProtectedRoute requiredPermission="create_qr_code">
                   <GenerateQRCodes />
                 </ProtectedRoute>
               }

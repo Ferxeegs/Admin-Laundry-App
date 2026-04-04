@@ -30,7 +30,7 @@ def get_all_students(
     search: Optional[str] = Query(None),
     is_active: Optional[bool] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Get all students with pagination and search.
@@ -96,9 +96,9 @@ def get_deleted_students(
     limit: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(
-        require_permission(['delete_student', 'force_delete_student', 'restore_student'])
-    )
+    # current_user: User = Depends(
+    #     require_permission(['delete_student', 'force_delete_student', 'restore_student'])
+    # )
 ):
     """
     Get all deleted students with pagination and search.
@@ -137,7 +137,7 @@ def get_deleted_students(
 def get_student_by_id(
     student_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Get student by ID.

@@ -23,7 +23,7 @@ def get_all_roles(
     limit: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Get all roles with pagination and search.
@@ -69,7 +69,7 @@ def get_all_roles(
 @router.get("/permissions", response_model=WebResponse[dict])
 def get_all_permissions(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Get all permissions.
@@ -89,7 +89,7 @@ def get_all_permissions(
 def get_role_by_id(
     role_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Get role by ID with details.
@@ -144,7 +144,7 @@ def update_role(
     role_id: int,
     role_update: RoleUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Update role details (name and guard_name).
@@ -189,7 +189,7 @@ def update_role_permissions(
     role_id: int,
     permission_update: RolePermissionUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Update role permissions.

@@ -85,7 +85,7 @@ def get_setting(
 def create_setting(
     setting_data: SettingCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Create a new setting (or update if exists - upsert behavior).
@@ -141,7 +141,7 @@ def update_setting(
     setting_name: str,
     setting_update: SettingUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Update a setting by group and name.
@@ -183,7 +183,7 @@ def update_setting(
 def update_multiple_settings(
     settings_data: SettingMultipleUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Update multiple settings at once.
@@ -240,7 +240,7 @@ def delete_setting(
     group_name: str,
     setting_name: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
     """
     Delete a setting by group and name.
