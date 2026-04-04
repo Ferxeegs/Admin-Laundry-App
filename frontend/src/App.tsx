@@ -239,7 +239,7 @@ export default function App() {
             <Route
               path="/reports"
               element={
-                <ProtectedRoute requiredPermission="view_reports">
+                <ProtectedRoute requiredPermission="view_report">
                   <Reports />
                 </ProtectedRoute>
               }
@@ -329,7 +329,7 @@ export default function App() {
             <Route
               path="/settings"
               element={
-                <ProtectedRoute requiredPermission="view_settings">
+                <ProtectedRoute requiredPermission="view_setting">
                   <Settings />
                 </ProtectedRoute>
               }

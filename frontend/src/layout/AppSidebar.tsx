@@ -34,103 +34,115 @@ type NavItem = {
   requiredPermission?: string | string[]; // Permission yang diperlukan untuk menampilkan menu ini
 };
 
-const navItems: NavItem[] = [
-  {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    path: "/",
-  },
-  // {
-  //   icon: <CalenderIcon />,
-  //   name: "Calendar",
-  //   path: "/calendar",
-  // },
-  {
-    icon: <UserIcon />,
-    name: "Siswa",
-    path: "/students",
-    requiredPermission: ["view_student"],
-  },
-  {
-    icon: <ListIcon />,
-    name: "Pesanan",
-    path: "/orders",
-    requiredPermission: ["view_order"],
-  },
-  {
-    icon: <QrCodeIcon />,
-    name: "QR Code",
-    subItems: [
-      { name: "Daftar", path: "/qr-codes", requiredPermission: ["view_qr_code"] },
-      { name: "Unduh label", path: "/qr-codes/download", requiredPermission: ["view_qr_code"] },
-      { name: "Scan QR", path: "/qr-codes/scan", requiredPermission: ["create_order", "update_order"] },
-    ],
-  },
-  {
-    icon: <DormitoryIcon />,
-    name: "Asrama",
-    path: "/dormitories",
-    requiredPermission: ["view_dormitory"],
-  },
-  {
-    icon: <AddonIcon />,
-    name: "Add-on",
-    path: "/addons",
-    requiredPermission: ["view_addon"],
-  },
-  {
-    icon: <PieChartIcon />,
-    name: "Laporan",
-    path: "/reports",
-    requiredPermission: ["view_report"],
-  },
-  {
-    icon: <FileIcon />,
-    name: "Invoice",
-    path: "/invoices",
-    requiredPermission: ["view_invoice"],
-  },
-  {
-    icon: <LockIcon />,
-    name: "Akses",
-    subItems: [
-      { 
-        name: "Pengguna", 
-        path: "/users", 
-        requiredPermission: ["view_user"],
-      },
-      { 
-        name: "Peran", 
-        path: "/roles", 
-        requiredPermission: ["view_role"],
-      },
-    ],
-  },
-  
-  // {
-  //   name: "Pages",
-  //   icon: <PageIcon />,
-  //   subItems: [
-  //     { name: "Blank Page", path: "/blank", pro: false },
-  //     { name: "404 Error", path: "/error-404", pro: false },
-  //   ],
-  // },
-];
+type NavGroup = {
+  title: string;
+  items: NavItem[];
+};
 
-const othersItems: NavItem[] = [
-  { 
-    icon: <UserIcon />,
-    name: "Profil Saya", 
-    path: "/profile",
-    requiredPermission: ["view_myprofile"],
+const sidebarGroups: NavGroup[] = [
+  {
+    title: "Menu Utama",
+    items: [
+      {
+        icon: <GridIcon />,
+        name: "Dashboard",
+        path: "/",
+      },
+    ],
   },
   {
-    icon: <SettingsIcon />,
-    name: "Pengaturan",
-    path: "/settings",
-    requiredPermission: ["view_setting"],
+    title: "Manajemen Master",
+    items: [
+      {
+        icon: <UserIcon />,
+        name: "Siswa",
+        path: "/students",
+        requiredPermission: ["view_student"],
+      },
+      {
+        icon: <DormitoryIcon />,
+        name: "Asrama",
+        path: "/dormitories",
+        requiredPermission: ["view_dormitory"],
+      },
+      {
+        icon: <AddonIcon />,
+        name: "Add-on",
+        path: "/addons",
+        requiredPermission: ["view_addon"],
+      },
+    ],
   },
-  
+  {
+    title: "Operasional",
+    items: [
+      {
+        icon: <ListIcon />,
+        name: "Pesanan",
+        path: "/orders",
+        requiredPermission: ["view_order"],
+      },
+      {
+        icon: <QrCodeIcon />,
+        name: "QR Code",
+        subItems: [
+          { name: "Daftar", path: "/qr-codes", requiredPermission: ["view_qr_code"] },
+          { name: "Unduh label", path: "/qr-codes/download", requiredPermission: ["view_qr_code"] },
+          { name: "Scan QR", path: "/qr-codes/scan", requiredPermission: ["create_order", "update_order"] },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Keuangan & Analitik",
+    items: [
+      {
+        icon: <FileIcon />,
+        name: "Invoice",
+        path: "/invoices",
+        requiredPermission: ["view_invoice"],
+      },
+      {
+        icon: <PieChartIcon />,
+        name: "Laporan",
+        path: "/reports",
+        requiredPermission: ["view_report"],
+      },
+    ],
+  },
+  {
+    title: "Sistem & Keamanan",
+    items: [
+      {
+        icon: <LockIcon />,
+        name: "Akses",
+        subItems: [
+          { 
+            name: "Pengguna", 
+            path: "/users", 
+            requiredPermission: ["view_user"],
+          },
+          { 
+            name: "Peran", 
+            path: "/roles", 
+            requiredPermission: ["view_role"],
+          },
+        ],
+      },
+      {
+        icon: <SettingsIcon />,
+        name: "Pengaturan",
+        path: "/settings",
+        requiredPermission: ["view_setting"],
+      },
+      { 
+        icon: <UserIcon />,
+        name: "Profil Saya", 
+        path: "/profile",
+        requiredPermission: ["view_myprofile"],
+      },
+    ],
+  },
 ];
 
 const AppSidebar: React.FC = () => {
@@ -140,8 +152,8 @@ const AppSidebar: React.FC = () => {
   const { getLogoUrl, getBrandLogoSquareUrl } = useSettings();
 
   const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "others";
-    index: number;
+    groupIndex: number;
+    itemIndex: number;
   } | null>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
     {}
@@ -149,37 +161,34 @@ const AppSidebar: React.FC = () => {
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Filter menu items based on permissions
-  const filteredNavItems = useMemo(() => {
-    return navItems.map((item) => {
-      // Filter subItems based on permissions
-      if (item.subItems) {
-        const filteredSubItems = item.subItems.filter((subItem) => {
-          if (!subItem.requiredPermission) return true; // No permission required
-          return hasPermission(subItem.requiredPermission);
-        });
-        
-        // If parent item has permission check, check it first
-        if (item.requiredPermission && !hasPermission(item.requiredPermission)) {
-          return null;
+  const filteredNavGroups = useMemo(() => {
+    return sidebarGroups.map((group) => {
+      const filteredItems = group.items.map((item) => {
+        // Filter subItems based on permissions
+        if (item.subItems) {
+          const filteredSubItems = item.subItems.filter((subItem) => {
+            if (!subItem.requiredPermission) return true; // No permission required
+            return hasPermission(subItem.requiredPermission);
+          });
+          
+          // If parent item has permission check, check it first
+          if (item.requiredPermission && !hasPermission(item.requiredPermission)) {
+            return null;
+          }
+          
+          // Return item with filtered subItems, or null if no subItems remain
+          return filteredSubItems.length > 0 
+            ? { ...item, subItems: filteredSubItems }
+            : null;
         }
         
-        // Return item with filtered subItems, or null if no subItems remain
-        return filteredSubItems.length > 0 
-          ? { ...item, subItems: filteredSubItems }
-          : null;
-      }
-      
-      // For items without subItems, check parent permission
-      if (!item.requiredPermission) return item;
-      return hasPermission(item.requiredPermission) ? item : null;
-    }).filter((item): item is NavItem => item !== null);
-  }, [hasPermission]);
+        // For items without subItems, check parent permission
+        if (!item.requiredPermission) return item;
+        return hasPermission(item.requiredPermission) ? item : null;
+      }).filter((item): item is NavItem => item !== null);
 
-  const filteredOthersItems = useMemo(() => {
-    return othersItems.filter((item) => {
-      if (!item.requiredPermission) return true; // No permission required
-      return hasPermission(item.requiredPermission);
-    });
+      return filteredItems.length > 0 ? { ...group, items: filteredItems } : null;
+    }).filter((group): group is NavGroup => group !== null);
   }, [hasPermission]);
 
   // const isActive = (path: string) => location.pathname === path;
@@ -190,15 +199,14 @@ const AppSidebar: React.FC = () => {
 
   useEffect(() => {
     let submenuMatched = false;
-    ["main", "others"].forEach((menuType) => {
-      const items = menuType === "main" ? filteredNavItems : filteredOthersItems;
-      items.forEach((nav, index) => {
+    filteredNavGroups.forEach((group, groupIndex) => {
+      group.items.forEach((nav, itemIndex) => {
         if (nav.subItems) {
           nav.subItems.forEach((subItem) => {
             if (isActive(subItem.path)) {
               setOpenSubmenu({
-                type: menuType as "main" | "others",
-                index,
+                groupIndex,
+                itemIndex,
               });
               submenuMatched = true;
             }
@@ -214,11 +222,11 @@ const AppSidebar: React.FC = () => {
     if (!submenuMatched) {
       setOpenSubmenu(null);
     }
-  }, [location, isActive, filteredNavItems, filteredOthersItems]);
+  }, [location, isActive, filteredNavGroups]);
 
   useEffect(() => {
     if (openSubmenu !== null) {
-      const key = `${openSubmenu.type}-${openSubmenu.index}`;
+      const key = `${openSubmenu.groupIndex}-${openSubmenu.itemIndex}`;
       if (subMenuRefs.current[key]) {
         setSubMenuHeight((prevHeights) => ({
           ...prevHeights,
@@ -228,28 +236,28 @@ const AppSidebar: React.FC = () => {
     }
   }, [openSubmenu]);
 
-  const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
+  const handleSubmenuToggle = (groupIndex: number, itemIndex: number) => {
     setOpenSubmenu((prevOpenSubmenu) => {
       if (
         prevOpenSubmenu &&
-        prevOpenSubmenu.type === menuType &&
-        prevOpenSubmenu.index === index
+        prevOpenSubmenu.groupIndex === groupIndex &&
+        prevOpenSubmenu.itemIndex === itemIndex
       ) {
         return null;
       }
-      return { type: menuType, index };
+      return { groupIndex, itemIndex };
     });
   };
 
-  const renderMenuItems = (items: NavItem[], menuType: "main" | "others") => (
+  const renderMenuItems = (items: NavItem[], groupIndex: number) => (
     <ul className="flex flex-col gap-4">
-      {items.map((nav, index) => (
+      {items.map((nav, itemIndex) => (
         <li key={nav.name}>
           {nav.subItems ? (
             <button
-              onClick={() => handleSubmenuToggle(index, menuType)}
+              onClick={() => handleSubmenuToggle(groupIndex, itemIndex)}
               className={`menu-item group ${
-                openSubmenu?.type === menuType && openSubmenu?.index === index
+                openSubmenu?.groupIndex === groupIndex && openSubmenu?.itemIndex === itemIndex
                   ? "menu-item-active"
                   : "menu-item-inactive"
               } cursor-pointer ${
@@ -260,7 +268,7 @@ const AppSidebar: React.FC = () => {
             >
               <span
                 className={`menu-item-icon-size  ${
-                  openSubmenu?.type === menuType && openSubmenu?.index === index
+                  openSubmenu?.groupIndex === groupIndex && openSubmenu?.itemIndex === itemIndex
                     ? "menu-item-icon-active"
                     : "menu-item-icon-inactive"
                 }`}
@@ -273,8 +281,8 @@ const AppSidebar: React.FC = () => {
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
                   className={`ml-auto w-5 h-5 transition-transform duration-200 ${
-                    openSubmenu?.type === menuType &&
-                    openSubmenu?.index === index
+                    openSubmenu?.groupIndex === groupIndex &&
+                    openSubmenu?.itemIndex === itemIndex
                       ? "rotate-180 text-brand-500"
                       : ""
                   }`}
@@ -307,13 +315,13 @@ const AppSidebar: React.FC = () => {
           {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
             <div
               ref={(el) => {
-                subMenuRefs.current[`${menuType}-${index}`] = el;
+                subMenuRefs.current[`${groupIndex}-${itemIndex}`] = el;
               }}
               className="overflow-hidden transition-all duration-300"
               style={{
                 height:
-                  openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? `${subMenuHeight[`${menuType}-${index}`]}px`
+                  openSubmenu?.groupIndex === groupIndex && openSubmenu?.itemIndex === itemIndex
+                    ? `${subMenuHeight[`${groupIndex}-${itemIndex}`]}px`
                     : "0px",
               }}
             >
@@ -442,38 +450,24 @@ const AppSidebar: React.FC = () => {
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
         <nav className="mb-6">
           <div className="flex flex-col gap-4">
-            <div>
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
-                }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Menu"
-                ) : (
-                  <HorizontaLDots className="size-6" />
-                )}
-              </h2>
-              {renderMenuItems(filteredNavItems, "main")}
-            </div>
-            <div className="">
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
-                }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Others"
-                ) : (
-                  <HorizontaLDots />
-                )}
-              </h2>
-              {renderMenuItems(filteredOthersItems, "others")}
-            </div>
+            {filteredNavGroups.map((group, groupIndex) => (
+              <div key={group.title}>
+                <h2
+                  className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
+                    !isExpanded && !isHovered
+                      ? "lg:justify-center"
+                      : "justify-start"
+                  }`}
+                >
+                  {isExpanded || isHovered || isMobileOpen ? (
+                    group.title
+                  ) : (
+                    <HorizontaLDots className="size-6" />
+                  )}
+                </h2>
+                {renderMenuItems(group.items, groupIndex)}
+              </div>
+            ))}
           </div>
         </nav>
       </div>
