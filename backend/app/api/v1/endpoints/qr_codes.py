@@ -14,10 +14,11 @@ from pydantic import BaseModel
 from app.api.deps import get_db, get_current_active_user
 from app.core.deps_permission import require_permission
 from app.models.auth import User
-from app.models.order import Student, QR, Dormitory, Order, OrderStatus, OrderTracking
+from app.models.order import Student, QR, Dormitory, Order, OrderAddon, OrderStatus, OrderTracking
 from app.schemas.qr import QRRead, QRCreate, QRUpdate, QRAssign, QRBulkGenerate
 from app.schemas.common import WebResponse
 from app.schemas.order import OrderWithTrackingRead, OrderTrackingCreate
+from app.services.order_serialization import serialize_order_with_tracking
 from app.core.exceptions import (
     NotFoundException, BadRequestException, ConflictException
 )
@@ -342,12 +343,20 @@ def advance_order_status_by_qr_token(
             qr.updated_at = get_now_local()
 
     db.commit()
-    db.refresh(active_order)
+    order = (
+        db.query(Order)
+        .options(
+            joinedload(Order.addons).joinedload(OrderAddon.addon),
+            joinedload(Order.trackings),
+        )
+        .filter(Order.id == active_order.id)
+        .first()
+    )
 
     return WebResponse(
         status="success",
         message="Status order diperbarui",
-        data=OrderWithTrackingRead.model_validate(active_order),
+        data=serialize_order_with_tracking(order),
     )
 
 

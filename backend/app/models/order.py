@@ -89,12 +89,28 @@ class QR(Base, TimestampMixin, AuditMixin):
             f"qr_number={self.qr_number}, unique_code={self.unique_code})>"
         )
 
+# --- Model Addon (Master Data) ---
+class Addon(Base, TimestampMixin, AuditMixin):
+    """
+    Master data untuk layanan tambahan (misal: Parfum Premium, Setrika Express)
+    """
+    __tablename__ = "addons"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(255), nullable=False, index=True)
+    price = Column(Numeric(10, 2), nullable=False, default=0.00)
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True, index=True)
+
+    # Relationships
+    order_links = relationship("OrderAddon", back_populates="addon")
+
+    def __repr__(self):
+        return f"<Addon(name={self.name}, price={self.price})>"
+
+
 # --- Model Order ---
 class Order(Base, TimestampMixin, AuditMixin):
-    """
-    Model untuk order laundry
-    created_by: ID Petugas Penerima [cite: 137]
-    """
     __tablename__ = "orders"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -102,13 +118,11 @@ class Order(Base, TimestampMixin, AuditMixin):
     invoice_id = Column(String(36), ForeignKey("invoices.id", ondelete="SET NULL"), nullable=True, index=True)
     order_number = Column(String(255), unique=True, nullable=False, index=True)
 
-    # Item & Quota Management [cite: 159, 169]
     total_items = Column(Integer, default=0, nullable=False)
-    free_items_used = Column(Integer, default=0, nullable=False)  # Gratis sesuai kuota harian (setting)
+    free_items_used = Column(Integer, default=0, nullable=False)
     paid_items_count = Column(Integer, default=0, nullable=False)
     additional_fee = Column(Numeric(10, 2), default=0.00, nullable=False)
 
-    # Status & Tracking [cite: 171]
     current_status = Column(Enum(OrderStatus, native_enum=False, length=50), default=OrderStatus.RECEIVED, nullable=False, index=True)
     notes = Column(Text, nullable=True)
 
@@ -116,9 +130,46 @@ class Order(Base, TimestampMixin, AuditMixin):
     student = relationship("Student", back_populates="orders")
     invoice = relationship(Invoice, back_populates="orders")
     trackings = relationship("OrderTracking", back_populates="order", cascade="all, delete-orphan", order_by="OrderTracking.created_at")
+    
+    # Relasi ke tabel pivot addon
+    addons = relationship("OrderAddon", back_populates="order", cascade="all, delete-orphan")
+
+    @property
+    def total_addon_fee(self):
+        """Menghitung total semua biaya addon untuk order ini"""
+        return sum(item.subtotal for item in self.addons)
 
     def __repr__(self):
-        return f"<Order(id={self.id}, order_number={self.order_number}, status={self.current_status.value})>"
+        return f"<Order(order_number={self.order_number}, status={self.current_status.value})>"
+
+
+# --- Model Order Addon (Pivot Table) ---
+class OrderAddon(Base, TimestampMixin):
+    """
+    Tabel pivot antara Order dan Addon.
+    Menyimpan snapshot harga saat transaksi terjadi.
+    """
+    __tablename__ = "order_addon"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    order_id = Column(String(36), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, index=True)
+    addon_id = Column(String(36), ForeignKey("addons.id", ondelete="RESTRICT"), nullable=False, index=True)
+    
+    # Snapshot harga & jumlah
+    price = Column(Numeric(10, 2), nullable=False) 
+    count = Column(Integer, nullable=False, default=1)
+
+    # Relationships
+    order = relationship("Order", back_populates="addons")
+    addon = relationship("Addon", back_populates="order_links")
+
+    @property
+    def subtotal(self):
+        """Menghitung subtotal secara dinamis: price * count"""
+        return self.price * self.count
+
+    def __repr__(self):
+        return f"<OrderAddon(order_id={self.order_id}, price={self.price}, count={self.count})>"
 
 
 # --- Model Order Tracking ---

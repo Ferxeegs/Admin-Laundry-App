@@ -22,6 +22,15 @@ interface OrderTracking {
   created_at: string;
 }
 
+interface OrderAddonLine {
+  id: string;
+  addon_id: string;
+  name: string;
+  price: number;
+  count: number;
+  subtotal: number;
+}
+
 interface Order {
   id: string;
   order_number: string;
@@ -30,12 +39,14 @@ interface Order {
   free_items_used: number;
   paid_items_count: number;
   additional_fee: number;
+  total_addon_fee?: number;
   current_status: string;
   notes: string | null;
   created_at: string | null;
   updated_at: string | null;
   created_by: string | null;
   updated_by: string | null;
+  addons?: OrderAddonLine[];
   trackings: OrderTracking[];
 }
 
@@ -808,15 +819,47 @@ export default function ViewOrder() {
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-                  Total Biaya
+                  Biaya cuci (di luar kuota)
                 </p>
                 <p className="text-sm font-semibold text-gray-800 dark:text-white">
                   Rp {order.additional_fee.toLocaleString("id-ID")}
-                  {/* {order.paid_items_count > 0 && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
-                      ({order.paid_items_count} × Rp {pricePerItem.toLocaleString("id-ID")})
-                    </span>
-                  )} */}
+                </p>
+              </div>
+              {(order.addons?.length ?? 0) > 0 && (
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                    Layanan tambahan
+                  </p>
+                  <ul className="text-sm text-gray-800 dark:text-white space-y-1 rounded-lg border border-gray-100 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800">
+                    {order.addons!.map((row) => (
+                      <li
+                        key={row.id}
+                        className="flex flex-wrap justify-between gap-2 px-3 py-2"
+                      >
+                        <span>
+                          {row.name}{" "}
+                          <span className="text-gray-500 dark:text-gray-400">
+                            ×{row.count} @ Rp {row.price.toLocaleString("id-ID")}
+                          </span>
+                        </span>
+                        <span className="font-medium tabular-nums">
+                          Rp {row.subtotal.toLocaleString("id-ID")}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Subtotal addon: Rp {(order.total_addon_fee ?? 0).toLocaleString("id-ID")}
+                  </p>
+                </div>
+              )}
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                  Total tagihan (cuci + tambahan)
+                </p>
+                <p className="text-sm font-semibold text-brand-600 dark:text-brand-400">
+                  Rp{" "}
+                  {(order.additional_fee + (order.total_addon_fee ?? 0)).toLocaleString("id-ID")}
                 </p>
               </div>
               {order.notes && (

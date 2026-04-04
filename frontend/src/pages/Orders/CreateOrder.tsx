@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent } from "react";
 import { useNavigate, Link, useLocation } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
-import { orderAPI, studentAPI, qrCodeAPI } from "../../utils/api";
+import { orderAPI, studentAPI, qrCodeAPI, addonAPI } from "../../utils/api";
 import { compressOrderImage } from "../../utils/compressOrderImage";
 import { AngleLeftIcon } from "../../icons";
 import { useToast } from "../../context/ToastContext";
@@ -10,6 +10,13 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import TableSkeleton from "../../components/common/TableSkeleton";
 import SearchableSelect from "../../components/form/SearchableSelect";
+
+interface CatalogAddon {
+  id: string;
+  name: string;
+  price: number;
+  description: string | null;
+}
 
 interface Student {
   id: string;
@@ -41,6 +48,8 @@ export default function CreateOrder() {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<Array<{ file: File; preview: string }>>([]);
   const [isCompressingImages, setIsCompressingImages] = useState(false);
+  const [catalogAddons, setCatalogAddons] = useState<CatalogAddon[]>([]);
+  const [addonCounts, setAddonCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     // Check if student_id is passed from navigation state (e.g., from ScanQR)
@@ -55,7 +64,35 @@ export default function CreateOrder() {
       setQrIdToAssign(state.qr_id);
     }
     fetchStudents();
+    void fetchCatalogAddons();
   }, [location.state]);
+
+  const fetchCatalogAddons = async () => {
+    try {
+      const res = await addonAPI.listAddons({ limit: 200, active_only: true });
+      if (res.success && res.data?.addons) {
+        setCatalogAddons(
+          res.data.addons.map((a) => ({
+            id: a.id,
+            name: a.name,
+            price: Number(a.price),
+            description: a.description,
+          })),
+        );
+      }
+    } catch {
+      setCatalogAddons([]);
+    }
+  };
+
+  const setAddonQuantity = (addonId: string, qty: number) => {
+    setAddonCounts((prev) => {
+      const next = { ...prev };
+      if (qty < 1) delete next[addonId];
+      else next[addonId] = qty;
+      return next;
+    });
+  };
 
   const fetchStudents = async () => {
     setIsFetchingStudents(true);
@@ -257,6 +294,12 @@ export default function CreateOrder() {
       if (formData.notes.trim()) {
         formDataToSend.append('notes', formData.notes.trim());
       }
+      const addonLines = Object.entries(addonCounts)
+        .filter(([, c]) => c > 0)
+        .map(([addon_id, count]) => ({ addon_id, count }));
+      if (addonLines.length > 0) {
+        formDataToSend.append("addon_lines", JSON.stringify(addonLines));
+      }
       // Append all images (only if there are images)
       if (selectedImages.length > 0) {
         selectedImages.forEach((image) => {
@@ -447,6 +490,54 @@ export default function CreateOrder() {
                     Sistem akan menghitung otomatis: kuota gratis (sesuai pengaturan, reset per hari), pakaian berbayar, dan total biaya sesuai harga per item di pengaturan
                   </p>
                 </div>
+
+                {catalogAddons.length > 0 && (
+                  <div className="sm:col-span-2">
+                    <Label>Layanan tambahan (opsional)</Label>
+                    <div className="mt-2 space-y-2 rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800">
+                      {catalogAddons.map((a) => (
+                        <div
+                          key={a.id}
+                          className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-800 dark:text-white">{a.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              Rp {a.price.toLocaleString("id-ID")}
+                              {a.description ? ` · ${a.description}` : ""}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAddonQuantity(a.id, Math.max(0, (addonCounts[a.id] ?? 0) - 1))
+                              }
+                              disabled={isLoading || isCompressingImages || !(addonCounts[a.id] ?? 0)}
+                              className="w-9 h-9 rounded-lg border border-gray-300 text-lg leading-none hover:bg-gray-50 disabled:opacity-40 dark:border-gray-600 dark:hover:bg-gray-800"
+                            >
+                              −
+                            </button>
+                            <span className="w-8 text-center text-sm font-medium tabular-nums">
+                              {addonCounts[a.id] ?? 0}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setAddonQuantity(a.id, (addonCounts[a.id] ?? 0) + 1)}
+                              disabled={isLoading || isCompressingImages}
+                              className="w-9 h-9 rounded-lg border border-gray-300 text-lg leading-none hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Harga disimpan sesuai master data saat pesanan dibuat.
+                    </p>
+                  </div>
+                )}
 
                 <div className="sm:col-span-2">
                   <Label>Catatan</Label>

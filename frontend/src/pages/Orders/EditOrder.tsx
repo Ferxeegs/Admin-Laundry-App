@@ -2,13 +2,20 @@ import { useState, useEffect, FormEvent } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
-import { orderAPI, mediaAPI, getBaseUrl } from "../../utils/api";
+import { orderAPI, mediaAPI, addonAPI, getBaseUrl } from "../../utils/api";
 import { compressOrderImage } from "../../utils/compressOrderImage";
 import { AngleLeftIcon } from "../../icons";
 import { useToast } from "../../context/ToastContext";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import TableSkeleton from "../../components/common/TableSkeleton";
+
+interface CatalogAddon {
+  id: string;
+  name: string;
+  price: number;
+  description: string | null;
+}
 
 export default function EditOrder() {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +33,8 @@ export default function EditOrder() {
   const [imagePreviews, setImagePreviews] = useState<Array<{ file: File; preview: string }>>([]);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [isCompressingImages, setIsCompressingImages] = useState(false);
+  const [catalogAddons, setCatalogAddons] = useState<CatalogAddon[]>([]);
+  const [addonCounts, setAddonCounts] = useState<Record<string, number>>({});
   const { error: showErrorToast } = useToast();
 
   const canEditOrder = (status: string): boolean => {
@@ -36,7 +45,35 @@ export default function EditOrder() {
     if (id) {
       fetchOrderData();
     }
+    void fetchCatalogAddons();
   }, [id]);
+
+  const fetchCatalogAddons = async () => {
+    try {
+      const res = await addonAPI.listAddons({ limit: 200, active_only: true });
+      if (res.success && res.data?.addons) {
+        setCatalogAddons(
+          res.data.addons.map((a) => ({
+            id: a.id,
+            name: a.name,
+            price: Number(a.price),
+            description: a.description,
+          })),
+        );
+      }
+    } catch {
+      setCatalogAddons([]);
+    }
+  };
+
+  const setAddonQuantity = (addonId: string, qty: number) => {
+    setAddonCounts((prev) => {
+      const next = { ...prev };
+      if (qty < 1) delete next[addonId];
+      else next[addonId] = qty;
+      return next;
+    });
+  };
 
   const fetchOrderImages = async (orderId: string) => {
     try {
@@ -71,7 +108,12 @@ export default function EditOrder() {
           total_items: order.total_items || 0,
           notes: order.notes || "",
         });
-        
+        const ac: Record<string, number> = {};
+        for (const row of order.addons ?? []) {
+          ac[row.addon_id] = (ac[row.addon_id] ?? 0) + row.count;
+        }
+        setAddonCounts(ac);
+
         // Check if order can be edited
         if (!canEditOrder(order.current_status || "")) {
           setError("Order dengan status ini tidak dapat diubah. Hanya order dengan status 'Diterima' yang dapat diubah.");
@@ -207,10 +249,21 @@ export default function EditOrder() {
     setIsLoading(true);
 
     try {
-      const updateResponse = await orderAPI.updateOrder(id, {
+      const payload: {
+        total_items: number;
+        notes: string | null;
+        addon_lines?: Array<{ addon_id: string; count: number }>;
+      } = {
         total_items: formData.total_items,
         notes: formData.notes.trim() || null,
-      });
+      };
+      if (canEditOrder(orderStatus)) {
+        payload.addon_lines = Object.entries(addonCounts)
+          .filter(([, c]) => c > 0)
+          .map(([addon_id, count]) => ({ addon_id, count }));
+      }
+
+      const updateResponse = await orderAPI.updateOrder(id, payload);
 
       if (!updateResponse.success) {
         setError(updateResponse.message || "Gagal mengupdate order");
@@ -369,6 +422,63 @@ export default function EditOrder() {
                     className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                   />
                 </div>
+
+                {catalogAddons.length > 0 && (
+                  <div className="sm:col-span-2">
+                    <Label>Layanan tambahan</Label>
+                    <div className="mt-2 space-y-2 rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800">
+                      {catalogAddons.map((a) => (
+                        <div
+                          key={a.id}
+                          className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-800 dark:text-white">{a.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              Rp {a.price.toLocaleString("id-ID")}
+                              {a.description ? ` · ${a.description}` : ""}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAddonQuantity(a.id, Math.max(0, (addonCounts[a.id] ?? 0) - 1))
+                              }
+                              disabled={
+                                isLoading ||
+                                isCompressingImages ||
+                                !canEditOrder(orderStatus) ||
+                                !(addonCounts[a.id] ?? 0)
+                              }
+                              className="w-9 h-9 rounded-lg border border-gray-300 text-lg leading-none hover:bg-gray-50 disabled:opacity-40 dark:border-gray-600 dark:hover:bg-gray-800"
+                            >
+                              −
+                            </button>
+                            <span className="w-8 text-center text-sm font-medium tabular-nums">
+                              {addonCounts[a.id] ?? 0}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setAddonQuantity(a.id, (addonCounts[a.id] ?? 0) + 1)}
+                              disabled={
+                                isLoading || isCompressingImages || !canEditOrder(orderStatus)
+                              }
+                              className="w-9 h-9 rounded-lg border border-gray-300 text-lg leading-none hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {!canEditOrder(orderStatus) && (
+                      <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                        Addon hanya dapat diubah saat status DITERIMA.
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div className="sm:col-span-2">
                   <Label>Gambar Pesanan</Label>

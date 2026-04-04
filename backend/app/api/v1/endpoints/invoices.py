@@ -14,7 +14,7 @@ from app.api.deps import get_db, get_current_active_user
 from app.core.exceptions import NotFoundException, BadRequestException, ConflictException
 from app.models.auth import User
 from app.models.invoice import Invoice, InvoiceStatus
-from app.models.order import Order
+from app.models.order import Order, OrderAddon
 from app.schemas.common import WebResponse
 from app.schemas.invoice import (
     InvoiceCreate,
@@ -22,7 +22,7 @@ from app.schemas.invoice import (
     InvoiceRead,
     InvoiceWithOrdersRead,
 )
-from app.schemas.order import OrderRead
+from app.services.order_serialization import serialize_order_read, order_addon_total
 
 router = APIRouter()
 
@@ -56,7 +56,10 @@ def get_eligible_orders(
 
     orders = (
         db.query(Order)
-        .options(joinedload(Order.student))
+        .options(
+            joinedload(Order.student),
+            joinedload(Order.addons).joinedload(OrderAddon.addon),
+        )
         .filter(
             Order.student_id == student_id,
             Order.invoice_id.is_(None),  # Avoid duplicate invoicing
@@ -67,9 +70,11 @@ def get_eligible_orders(
         .all()
     )
 
-    total_amount = float(sum(float(o.additional_fee) for o in orders))
+    total_amount = float(
+        sum(float(o.additional_fee) + order_addon_total(o) for o in orders)
+    )
 
-    orders_data = [OrderRead.model_validate(o).model_dump() for o in orders]
+    orders_data = [serialize_order_read(o).model_dump() for o in orders]
 
     return WebResponse(
         status="success",
@@ -133,7 +138,11 @@ def get_invoice_by_id(
 ):
     invoice = (
         db.query(Invoice)
-        .options(joinedload(Invoice.orders).joinedload(Order.student))
+        .options(
+            joinedload(Invoice.student),
+            joinedload(Invoice.orders).joinedload(Order.student),
+            joinedload(Invoice.orders).joinedload(Order.addons).joinedload(OrderAddon.addon),
+        )
         .filter(Invoice.id == invoice_id)
         .first()
     )
@@ -141,9 +150,14 @@ def get_invoice_by_id(
     if not invoice:
         raise NotFoundException(f"Invoice with ID {invoice_id} not found")
 
+    inv_payload = InvoiceRead.model_validate(invoice).model_dump()
+    inv_payload["orders"] = [
+        serialize_order_read(o).model_dump() for o in (invoice.orders or [])
+    ]
+
     return WebResponse(
         status="success",
-        data=InvoiceWithOrdersRead.model_validate(invoice),
+        data=InvoiceWithOrdersRead.model_validate(inv_payload),
     )
 
 
@@ -174,6 +188,7 @@ def create_invoice(
 
     orders = (
         db.query(Order)
+        .options(joinedload(Order.addons).joinedload(OrderAddon.addon))
         .filter(
             Order.student_id == invoice_create.student_id,
             Order.invoice_id.is_(None),
@@ -187,7 +202,9 @@ def create_invoice(
     if not orders:
         raise BadRequestException("No eligible orders found for creating invoice")
 
-    total_amount = float(sum(float(o.additional_fee) for o in orders))
+    total_amount = float(
+        sum(float(o.additional_fee) + order_addon_total(o) for o in orders)
+    )
 
     if existing_invoice:
         # Reuse the existing invoice record if it was cancelled.

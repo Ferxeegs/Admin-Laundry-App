@@ -23,6 +23,7 @@ interface Order {
   free_items_used: number;
   paid_items_count: number;
   additional_fee: number;
+  total_addon_fee?: number;
   current_status: string;
   notes: string | null;
   created_at: string | null;
@@ -579,7 +580,7 @@ export default function OrdersList() {
                       Total Item
                     </TableCell>
                     <TableCell isHeader className="px-5 py-3 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center w-[150px]">
-                      Tambahan Biaya
+                      Total tagihan
                     </TableCell>
                     <TableCell isHeader className="px-5 py-3 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center w-[130px]">
                       Status
@@ -627,7 +628,10 @@ export default function OrdersList() {
                         </div>
                       </TableCell>
                       <TableCell className="px-5 py-4 text-center align-middle text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Rp {order.additional_fee.toLocaleString("id-ID")}
+                        Rp{" "}
+                        {(
+                          order.additional_fee + (order.total_addon_fee ?? 0)
+                        ).toLocaleString("id-ID")}
                       </TableCell>
                       <TableCell className="px-5 py-4 text-center align-middle">
                         <div className="flex justify-center">

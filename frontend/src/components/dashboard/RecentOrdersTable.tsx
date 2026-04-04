@@ -36,6 +36,7 @@ interface OrderRow {
   current_status: string;
   total_items: number;
   additional_fee: number;
+  total_addon_fee?: number;
   created_at: string | null;
   student?: { id: string; fullname: string; unique_code?: string | null };
 }
@@ -187,7 +188,7 @@ export default function RecentOrdersTable() {
                 isHeader
                 className="font-dm-sans whitespace-nowrap px-2.5 sm:px-3 py-3 text-start text-[11px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 hidden sm:table-cell"
               >
-                Biaya
+                Total
               </TableCell>
               <TableCell
                 isHeader
@@ -249,7 +250,9 @@ export default function RecentOrdersTable() {
                     {order.total_items}
                   </TableCell>
                   <TableCell className="whitespace-nowrap px-2.5 sm:px-3 py-3.5 text-sm text-gray-600 dark:text-gray-300 font-medium hidden sm:table-cell">
-                    {formatCurrency(order.additional_fee)}
+                    {formatCurrency(
+                      order.additional_fee + (order.total_addon_fee ?? 0),
+                    )}
                   </TableCell>
                   <TableCell className="px-2.5 sm:px-3 py-3.5">
                     <Badge

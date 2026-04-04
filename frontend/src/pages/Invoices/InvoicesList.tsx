@@ -25,6 +25,7 @@ type Order = {
   free_items_used: number;
   paid_items_count: number;
   additional_fee: number;
+  total_addon_fee?: number;
   current_status: string;
   notes: string | null;
   created_at: string | null;
@@ -436,7 +437,7 @@ export default function InvoicesList() {
                       Total Item
                     </TableCell>
                     <TableCell isHeader className="px-5 py-3 text-theme-xs text-gray-500">
-                      Tambahan Biaya
+                      Total tagihan
                     </TableCell>
                     <TableCell isHeader className="px-5 py-3 text-theme-xs text-gray-500">
                       Status Order
@@ -456,7 +457,9 @@ export default function InvoicesList() {
                         {order.total_items} (Free {order.free_items_used}, Paid {order.paid_items_count})
                       </TableCell>
                       <TableCell className="px-5 py-4 text-theme-sm text-gray-500">
-                        {formatRupiah(order.additional_fee)}
+                        {formatRupiah(
+                          order.additional_fee + (order.total_addon_fee ?? 0),
+                        )}
                       </TableCell>
                       <TableCell className="px-5 py-4">
                         <Badge size="sm" color="light">

@@ -41,6 +41,41 @@ class OrderBase(BaseModel):
         return v
 
 
+class OrderAddonLineInput(BaseModel):
+    """Satu baris addon saat create/update order (harga di-snapshot dari master)."""
+
+    addon_id: str
+    count: int = 1
+
+    @field_validator("addon_id")
+    @classmethod
+    def addon_id_non_empty(cls, v: str) -> str:
+        t = v.strip()
+        if not t:
+            raise ValueError("addon_id is required")
+        return t
+
+    @field_validator("count")
+    @classmethod
+    def count_positive(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("count must be >= 1")
+        return v
+
+
+class OrderAddonRead(BaseModel):
+    """Baris addon pada order (harga & jumlah sesuai snapshot transaksi)."""
+
+    id: str
+    addon_id: str
+    name: str
+    price: float
+    count: int
+    subtotal: float
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class OrderCreate(BaseModel):
     """Schema for creating a new order. Staff only inputs total_items, system calculates the rest."""
     student_id: str
@@ -59,6 +94,7 @@ class OrderUpdate(BaseModel):
     """Schema for updating an order (not status tracking). Staff only inputs total_items, system calculates the rest."""
     total_items: Optional[int] = None
     notes: Optional[str] = None
+    addon_lines: Optional[List[OrderAddonLineInput]] = None
 
     @field_validator("total_items")
     @classmethod
@@ -77,6 +113,8 @@ class OrderRead(OrderBase):
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
+    addons: List[OrderAddonRead] = []
+    total_addon_fee: float = 0.0
 
     model_config = ConfigDict(from_attributes=True)
 

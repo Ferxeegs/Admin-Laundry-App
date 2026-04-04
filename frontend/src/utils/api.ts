@@ -2123,6 +2123,35 @@ export const studentAPI = {
   },
 };
 
+/** Master layanan tambahan (addon) untuk order */
+export const addonAPI = {
+  listAddons: async (params?: { page?: number; limit?: number; active_only?: boolean }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.active_only === false) queryParams.append("active_only", "false");
+    const queryString = queryParams.toString();
+    const endpoint = `/addons/${queryString ? `?${queryString}` : ""}`;
+    return apiRequest<{
+      addons: Array<{
+        id: string;
+        name: string;
+        price: number;
+        description: string | null;
+        is_active: boolean;
+        created_at?: string | null;
+        updated_at?: string | null;
+      }>;
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
+    }>(endpoint, { method: "GET" });
+  },
+};
+
 /**
  * Order API functions
  */
@@ -2158,12 +2187,21 @@ export const orderAPI = {
         free_items_used: number;
         paid_items_count: number;
         additional_fee: number;
+        total_addon_fee?: number;
         current_status: string;
         notes: string | null;
         created_at: string | null;
         updated_at: string | null;
         created_by: string | null;
         updated_by: string | null;
+        addons?: Array<{
+          id: string;
+          addon_id: string;
+          name: string;
+          price: number;
+          count: number;
+          subtotal: number;
+        }>;
         student?: {
           id: string;
           fullname: string;
@@ -2194,12 +2232,21 @@ export const orderAPI = {
       free_items_used: number;
       paid_items_count: number;
       additional_fee: number;
+      total_addon_fee?: number;
       current_status: string;
       notes: string | null;
       created_at: string | null;
       updated_at: string | null;
       created_by: string | null;
       updated_by: string | null;
+      addons?: Array<{
+        id: string;
+        addon_id: string;
+        name: string;
+        price: number;
+        count: number;
+        subtotal: number;
+      }>;
       trackings: Array<{
         id: string;
         order_id: string;
@@ -2320,6 +2367,7 @@ export const orderAPI = {
     data: {
       total_items?: number;
       notes?: string | null;
+      addon_lines?: Array<{ addon_id: string; count: number }>;
     }
   ) => {
     return apiRequest<{
@@ -2330,10 +2378,19 @@ export const orderAPI = {
       free_items_used: number;
       paid_items_count: number;
       additional_fee: number;
+      total_addon_fee?: number;
       current_status: string;
       notes: string | null;
       created_at: string;
       updated_at: string;
+      addons?: Array<{
+        id: string;
+        addon_id: string;
+        name: string;
+        price: number;
+        count: number;
+        subtotal: number;
+      }>;
     }>(`/orders/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
@@ -2471,12 +2528,21 @@ export const invoiceAPI = {
         free_items_used: number;
         paid_items_count: number;
         additional_fee: number;
+        total_addon_fee?: number;
         current_status: string;
         notes: string | null;
         created_at: string | null;
         updated_at: string | null;
         created_by: string | null;
         updated_by: string | null;
+        addons?: Array<{
+          id: string;
+          addon_id: string;
+          name: string;
+          price: number;
+          count: number;
+          subtotal: number;
+        }>;
       }>;
       total_amount: number;
     }>(`/invoices/eligible-orders?${queryParams.toString()}`, {

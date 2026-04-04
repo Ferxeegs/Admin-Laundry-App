@@ -12,7 +12,7 @@ from datetime import datetime, timezone, timedelta
 from app.api.deps import get_db, get_current_active_user
 from app.core.deps_permission import require_permission
 from app.models.auth import User
-from app.models.order import Order, OrderStatus, OrderTracking, Student, QR
+from app.models.order import Order, OrderAddon, OrderStatus, OrderTracking, Student, QR
 from app.models.common import Setting
 from app.utils.helpers import get_now_local, get_start_of_day_local
 from app.schemas.common import WebResponse
@@ -26,6 +26,15 @@ from app.schemas.order import (
     OrderTrackingCreate,
 )
 from app.services.order_image_background import process_order_images_background
+from app.services.order_serialization import (
+    serialize_order_read,
+    serialize_order_with_tracking,
+)
+from app.services.order_addons import (
+    apply_order_addon_lines,
+    replace_order_addon_lines,
+    parse_addon_lines_from_json,
+)
 from app.core.exceptions import NotFoundException, BadRequestException
 
 router = APIRouter()
@@ -120,7 +129,10 @@ def get_all_orders(
     offset = (page - 1) * limit
     # Eager load student data using joinedload to avoid N+1 queries
     orders = (
-        query.options(joinedload(Order.student))
+        query.options(
+            joinedload(Order.student),
+            joinedload(Order.addons).joinedload(OrderAddon.addon),
+        )
         .order_by(Order.created_at.desc())
         .offset(offset)
         .limit(limit)
@@ -132,7 +144,7 @@ def get_all_orders(
     # Build response with student data
     orders_data = []
     for order in orders:
-        order_dict = OrderRead.model_validate(order).model_dump()
+        order_dict = serialize_order_read(order).model_dump()
         if order.student:
             order_dict["student"] = {
                 "id": order.student.id,
@@ -164,14 +176,23 @@ def get_order_by_id(
     """
     Get order detail by ID including tracking history.
     """
-    order = db.query(Order).filter(Order.id == order_id).first()
+    order = (
+        db.query(Order)
+        .options(
+            joinedload(Order.student),
+            joinedload(Order.addons).joinedload(OrderAddon.addon),
+            joinedload(Order.trackings),
+        )
+        .filter(Order.id == order_id)
+        .first()
+    )
 
     if not order:
         raise NotFoundException(f"Order with ID {order_id} not found")
 
     return WebResponse(
         status="success",
-        data=OrderWithTrackingRead.model_validate(order),
+        data=serialize_order_with_tracking(order),
     )
 
 
@@ -249,6 +270,11 @@ async def create_order(
         
         notes = form.get('notes')
         notes = str(notes) if notes else None
+
+        addon_lines_raw = form.get("addon_lines")
+        addon_lines = parse_addon_lines_from_json(
+            str(addon_lines_raw) if addon_lines_raw else None
+        )
         
         # Extract image files
         # FastAPI uses starlette.datastructures.UploadFile internally
@@ -332,11 +358,13 @@ async def create_order(
         "created_by": current_user.id,
     }
 
-    # Create order and initial tracking in a single transaction
+    # Create order, optional addons, and initial tracking in a single transaction
     try:
         order = Order(**order_dict)
         db.add(order)
         db.flush()  # Flush to get order.id without committing
+
+        apply_order_addon_lines(db, order, addon_lines)
         
         # Create initial tracking entry with RECEIVED status
         initial_tracking = OrderTracking(
@@ -347,10 +375,13 @@ async def create_order(
         )
         db.add(initial_tracking)
         
-        # Commit order and tracking together
+        # Commit order, addons, and tracking together
         db.commit()
         db.refresh(order)
         logger.info(f"Order created successfully: {order.id}, order_number: {order.order_number}")
+    except BadRequestException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         logger.error(f"Error creating order: {e}", exc_info=True)
@@ -371,10 +402,15 @@ async def create_order(
     if image_payloads:
         background_tasks.add_task(process_order_images_background, str(order.id), image_payloads)
 
-    db.refresh(order)
+    order_full = (
+        db.query(Order)
+        .options(joinedload(Order.addons).joinedload(OrderAddon.addon))
+        .filter(Order.id == order.id)
+        .first()
+    )
 
     order_created = OrderCreated(
-        **OrderRead.model_validate(order).model_dump(),
+        **serialize_order_read(order_full or order).model_dump(),
         images_queued=len(image_payloads),
     )
     return WebResponse(
@@ -403,15 +439,26 @@ def update_order(
     from datetime import datetime, timezone, timedelta
     from sqlalchemy import func
 
-    order = db.query(Order).filter(Order.id == order_id).first()
+    order = (
+        db.query(Order)
+        .options(joinedload(Order.addons).joinedload(OrderAddon.addon))
+        .filter(Order.id == order_id)
+        .first()
+    )
 
     if not order:
         raise NotFoundException(f"Order with ID {order_id} not found")
 
+    update_data = order_update.model_dump(exclude_unset=True)
+    addon_lines = update_data.pop("addon_lines", None)
+
     # Check if order status is WASHING_DRYING or later
     # If so, only notes can be updated
     if order.current_status in [OrderStatus.WASHING_DRYING, OrderStatus.IRONING, OrderStatus.COMPLETED, OrderStatus.PICKED_UP]:
-        update_data = order_update.model_dump(exclude_unset=True)
+        if addon_lines is not None:
+            raise BadRequestException(
+                "Layanan tambahan (addon) hanya dapat diubah saat status pesanan masih DITERIMA (RECEIVED)."
+            )
         # Only allow notes update
         if "total_items" in update_data:
             raise BadRequestException(
@@ -424,16 +471,22 @@ def update_order(
             order.updated_by = current_user.id
             order.updated_at = datetime.now(timezone.utc)
             db.commit()
-            db.refresh(order)
+            order = (
+                db.query(Order)
+                .options(joinedload(Order.addons).joinedload(OrderAddon.addon))
+                .filter(Order.id == order_id)
+                .first()
+            )
             return WebResponse(
                 status="success",
                 message="Order notes updated successfully",
-                data=OrderRead.model_validate(order),
+                data=serialize_order_read(order),
             )
         else:
             raise BadRequestException("Tidak ada perubahan yang dilakukan.")
 
-    update_data = order_update.model_dump(exclude_unset=True)
+    if not update_data and addon_lines is None:
+        raise BadRequestException("Tidak ada perubahan yang dilakukan.")
 
     # If total_items is updated, recalculate free_items_used, paid_items_count, and additional_fee
     if "total_items" in update_data:
@@ -473,17 +526,25 @@ def update_order(
     for field, value in update_data.items():
         setattr(order, field, value)
 
+    if addon_lines is not None:
+        replace_order_addon_lines(db, order, addon_lines)
+
     # Audit fields
     order.updated_by = current_user.id
     order.updated_at = datetime.now(timezone.utc)
 
     db.commit()
-    db.refresh(order)
+    order = (
+        db.query(Order)
+        .options(joinedload(Order.addons).joinedload(OrderAddon.addon))
+        .filter(Order.id == order_id)
+        .first()
+    )
 
     return WebResponse(
         status="success",
         message="Order updated successfully",
-        data=OrderRead.model_validate(order),
+        data=serialize_order_read(order),
     )
 
 
@@ -575,7 +636,15 @@ def create_order_tracking(
     Add new tracking entry & update order status.
     Status can only be updated to the next valid status in the flow.
     """
-    order = db.query(Order).filter(Order.id == order_id).first()
+    order = (
+        db.query(Order)
+        .options(
+            joinedload(Order.addons).joinedload(OrderAddon.addon),
+            joinedload(Order.trackings),
+        )
+        .filter(Order.id == order_id)
+        .first()
+    )
     if not order:
         raise NotFoundException(f"Order with ID {order_id} not found")
 
@@ -639,12 +708,20 @@ def create_order_tracking(
     order.updated_at = get_now_local()
 
     db.commit()
-    db.refresh(order)
+    order = (
+        db.query(Order)
+        .options(
+            joinedload(Order.addons).joinedload(OrderAddon.addon),
+            joinedload(Order.trackings),
+        )
+        .filter(Order.id == order_id)
+        .first()
+    )
 
     return WebResponse(
         status="success",
         message="Order status updated successfully",
-        data=OrderWithTrackingRead.model_validate(order),
+        data=serialize_order_with_tracking(order),
     )
 
 
