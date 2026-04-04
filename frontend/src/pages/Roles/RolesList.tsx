@@ -226,9 +226,9 @@ export default function RolesList() {
 
       {/* Desktop Table View */}
       <div className="hidden md:block overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-        <div className="max-w-full overflow-x-auto">
+        <div className="max-w-full overflow-x-auto custom-scrollbar">
           {isLoading && roles.length === 0 ? (
-            <TableSkeleton rows={10} columns={6} showAvatar={true} />
+            <TableSkeleton rows={10} columns={5} showAvatar={true} />
           ) : roles.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-500 dark:text-gray-400">
@@ -237,142 +237,102 @@ export default function RolesList() {
             </div>
           ) : (
             <div style={{ animation: 'fadeIn 0.3s ease-in-out forwards' }}>
-              <Table>
-                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                <TableRow>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Role Name
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Guard Name
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Permissions
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Users
-                  </TableCell>
-                  {/* <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Tanggal Dibuat
-                  </TableCell> */}
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Actions
-                  </TableCell>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                {roles.map((role) => (
-                  <TableRow 
-                    key={role.id} 
-                    className="hover:bg-gray-50 dark:hover:bg-white/[0.02]"
-                  >
-                    <TableCell className="px-5 py-4">
-                      <div 
-                        className="flex items-center gap-3 cursor-pointer"
-                        onClick={() => {
-                          if (hasPermission(['view_role', 'view_any_role'])) {
-                            navigate(`/roles/${String(role.id)}/edit`);
-                          }
-                        }}
-                      >
-                        <div className="h-10 w-10 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-sm">
-                          {role.name.substring(0, 2).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                            {role.name}
-                          </p>
-                        </div>
-                      </div>
+              <Table className="w-full table-fixed border-collapse">
+                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05] bg-gray-50/50 dark:bg-white/[0.02]">
+                  <TableRow>
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400 w-[250px]">
+                      Role Name
                     </TableCell>
-                    <TableCell className="px-5 py-4">
-                      <div 
-                        className="cursor-pointer"
-                        onClick={() => {
-                          if (hasPermission(['view_role', 'view_any_role'])) {
-                            navigate(`/roles/${String(role.id)}/edit`);
-                          }
-                        }}
-                      >
-                        <Badge size="sm" color="info">
-                          {role.guard_name}
-                        </Badge>
-                      </div>
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400 w-[150px]">
+                      Guard Name
                     </TableCell>
-                    <TableCell className="px-5 py-4">
-                      <div 
-                        className="flex items-center gap-2 cursor-pointer"
-                        onClick={() => {
-                          if (hasPermission(['view_role', 'view_any_role'])) {
-                            navigate(`/roles/${String(role.id)}/edit`);
-                          }
-                        }}
-                      >
-                        <Badge size="sm" color="primary">
-                          {role.permissions_count} Permissions
-                        </Badge>
-                        {/* {role.permissions.length > 0 && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {role.permissions.slice(0, 2).map((p) => p.name).join(", ")}
-                            {role.permissions.length > 2 && ` +${role.permissions.length - 2}`}
-                          </div>
-                        )} */}
-                      </div>
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400 w-[180px]">
+                      Permissions
                     </TableCell>
-                    <TableCell className="px-5 py-4">
-                      <div 
-                        className="cursor-pointer"
-                        onClick={() => {
-                          if (hasPermission(['view_role', 'view_any_role'])) {
-                            navigate(`/roles/${String(role.id)}/edit`);
-                          }
-                        }}
-                      >
-                        <Badge size="sm" color="success">
-                          {role.users_count} Users
-                        </Badge>
-                      </div>
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400 w-[150px]">
+                      Users
                     </TableCell>
-                    {/* <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
-                      {formatDate(role.created_at)}
-                    </TableCell> */}
-                    <TableCell className="px-5 py-4">
-                      {hasPermission(['view_role', 'view_any_role']) && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/roles/${String(role.id)}/edit`);
-                          }}
-                          className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-                          title="Edit Role"
-                        >
-                          <PencilIcon className="w-4 h-4" />
-                        </button>
-                      )}
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                      Actions
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                  {roles.map((role) => (
+                    <TableRow
+                      key={role.id}
+                      className="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors group"
+                    >
+                      {/* Kolom Role Name */}
+                      <TableCell className="px-5 py-4 align-middle">
+                        <div
+                          className="flex items-center gap-3 text-left w-full cursor-pointer"
+                          onClick={() => {
+                            if (hasPermission(['view_role', 'view_any_role'])) {
+                              navigate(`/roles/${String(role.id)}/edit`);
+                            }
+                          }}
+                        >
+                          <div className="shrink-0 h-10 w-10 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-xs border border-gray-100 dark:border-gray-700">
+                            {role.name.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <p className="font-medium text-theme-sm text-gray-800 dark:text-white/90 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                              {role.name}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      {/* Kolom Guard Name */}
+                      <TableCell className="px-5 py-4 text-center align-middle">
+                        <div className="flex justify-center">
+                          <Badge size="sm" color="info">
+                            {role.guard_name}
+                          </Badge>
+                        </div>
+                      </TableCell>
+
+                      {/* Kolom Permissions Count */}
+                      <TableCell className="px-5 py-4 text-center align-middle">
+                        <div className="flex justify-center">
+                          <Badge size="sm" color="primary">
+                            {role.permissions_count} Permissions
+                          </Badge>
+                        </div>
+                      </TableCell>
+
+                      {/* Kolom Users Count */}
+                      <TableCell className="px-5 py-4 text-center align-middle">
+                        <div className="flex justify-center">
+                          <Badge size="sm" color="success">
+                            {role.users_count} Users
+                          </Badge>
+                        </div>
+                      </TableCell>
+
+                      {/* Kolom Aksi */}
+                      <TableCell className="px-5 py-4 text-center align-middle">
+                        <div className="flex items-center justify-center">
+                          {hasPermission(['view_role', 'view_any_role']) && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/roles/${String(role.id)}/edit`);
+                              }}
+                              className="p-1.5 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                              title="Edit Role"
+                            >
+                              <PencilIcon className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>

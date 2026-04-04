@@ -82,15 +82,15 @@ export default function StudentsList() {
     try {
       const response = showDeleted
         ? await studentAPI.getDeletedStudents({
-            page,
-            limit: 10,
-            search: search.trim() || undefined,
-          })
+          page,
+          limit: 10,
+          search: search.trim() || undefined,
+        })
         : await studentAPI.getAllStudents({
-            page,
-            limit: 10,
-            search: search.trim() || undefined,
-          });
+          page,
+          limit: 10,
+          search: search.trim() || undefined,
+        });
 
       if (response.success && response.data) {
         setStudents(response.data.students as Student[]);
@@ -283,11 +283,10 @@ export default function StudentsList() {
                 setShowDeleted(!showDeleted);
                 setPage(1);
               }}
-              className={`px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors touch-manipulation ${
-                showDeleted
+              className={`px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors touch-manipulation ${showDeleted
                   ? "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white"
                   : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
-              }`}
+                }`}
             >
               <span className="hidden sm:inline">{showDeleted ? "Tampilkan Siswa Aktif" : "Tampilkan Siswa Terhapus"}</span>
               <span className="sm:hidden">{showDeleted ? "Aktif" : "Terhapus"}</span>
@@ -299,22 +298,22 @@ export default function StudentsList() {
               onClick={() => navigate("/students/create")}
               className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
             >
-            <svg
-              className="w-3.5 h-3.5 sm:w-4 sm:h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            <span className="hidden sm:inline">Tambah Siswa</span>
-            <span className="sm:hidden">Tambah</span>
-          </button>
+              <svg
+                className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              <span className="hidden sm:inline">Tambah Siswa</span>
+              <span className="sm:hidden">Tambah</span>
+            </button>
           )}
         </div>
       </div>
@@ -345,8 +344,8 @@ export default function StudentsList() {
         ) : students.length === 0 ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-gray-500 dark:text-gray-400 text-sm text-center">
-              {search 
-                ? `Tidak ada ${showDeleted ? "deleted " : ""}siswa yang ditemukan` 
+              {search
+                ? `Tidak ada ${showDeleted ? "deleted " : ""}siswa yang ditemukan`
                 : `Belum ada ${showDeleted ? "deleted " : ""}siswa`}
             </div>
           </div>
@@ -492,203 +491,158 @@ export default function StudentsList() {
       <div className="hidden md:block overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
         <div className="max-w-full overflow-x-auto custom-scrollbar">
           {isLoading && students.length === 0 ? (
-            <TableSkeleton rows={10} columns={7} showAvatar={true} />
+            <TableSkeleton rows={10} columns={5} showAvatar={true} />
           ) : students.length === 0 ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-gray-500 dark:text-gray-400">
-            {search 
-              ? `Tidak ada ${showDeleted ? "siswa terhapus" : ""} yang ditemukan` 
-              : `Belum ada ${showDeleted ? "siswa terhapus " : ""}`}
-          </div>
-        </div>
+            <div className="flex items-center justify-center py-12">
+              <div className="text-gray-500 dark:text-gray-400">
+                {search
+                  ? `Tidak ada ${showDeleted ? "siswa terhapus" : ""} yang ditemukan`
+                  : `Belum ada ${showDeleted ? "siswa terhapus " : ""}`}
+              </div>
+            </div>
           ) : (
             <div style={{ animation: 'fadeIn 0.3s ease-in-out forwards' }}>
-              <Table>
-                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                <TableRow>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Siswa
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    NIS
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Status
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Tanggal Daftar
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Aksi
-                  </TableCell>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                {students.map((student) => (
-                  <TableRow 
-                    key={student.id} 
-                    className="hover:bg-gray-50 dark:hover:bg-white/[0.02]"
-                  >
-                    <TableCell className="px-5 py-4">
-                      <div 
-                        className={`flex items-center gap-3 ${!showDeleted && canViewStudent ? "cursor-pointer" : ""}`}
-                        onClick={() => {
-                          if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
-                        }}
-                      >
-                        {student.profile_picture ? (
-                          <img
-                            src={`${getBaseUrl()}${student.profile_picture.url}`}
-                            alt={student.fullname}
-                            className="h-10 w-10 overflow-hidden rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="h-10 w-10 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-sm">
-                            {getInitials(student)}
-                          </div>
-                        )}
-                        <div>
-                          <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                            {student.fullname}
-                          </p>
-                          {student.phone_number && (
-                            <span className="text-gray-500 text-theme-xs dark:text-gray-400">
-                              {student.phone_number}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+              <Table className="w-full table-fixed border-collapse">
+                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05] bg-gray-50/50 dark:bg-white/[0.02]">
+                  <TableRow>
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-semibold text-gray-500 dark:text-gray-400 w-[280px]">
+                      Siswa
                     </TableCell>
-                    <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
-                      <div 
-                        className={!showDeleted && canViewStudent ? "cursor-pointer" : ""}
-                        onClick={() => {
-                          if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
-                        }}
-                      >
-                        {student.student_number}
-                      </div>
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-semibold text-gray-500 dark:text-gray-400 w-[150px]">
+                      NIS
                     </TableCell>
-                    <TableCell className="px-5 py-4">
-                      <div 
-                        className={!showDeleted && canViewStudent ? "cursor-pointer" : ""}
-                        onClick={() => {
-                          if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
-                        }}
-                      >
-                        <Badge size="sm" color={student.is_active ? "success" : "error"}>
-                          {student.is_active ? "Aktif" : "Tidak Aktif"}
-                        </Badge>
-                      </div>
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-semibold text-gray-500 dark:text-gray-400 w-[130px]">
+                      Status
                     </TableCell>
-                    <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
-                      <div 
-                        className={!showDeleted && canViewStudent ? "cursor-pointer" : ""}
-                        onClick={() => {
-                          if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
-                        }}
-                      >
-                        {formatDate(student.created_at)}
-                      </div>
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-semibold text-gray-500 dark:text-gray-400 w-[180px]">
+                      Tanggal Daftar
                     </TableCell>
-                    <TableCell className="px-5 py-4">
-                      <div className="flex items-center flex-wrap gap-2">
-                        {!showDeleted && (
-                          <>
-                            {canViewStudent && (
-                              <button
-                                type="button"
-                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                  e.stopPropagation();
-                                  navigate(`/students/${student.id}`);
-                                }}
-                                className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                                title="Lihat Detail"
-                              >
-                                <EyeIcon className="w-4 h-4 fill-current" />
-                              </button>
-                            )}
-                            {canUpdateStudent && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/students/${student.id}/edit`);
-                                }}
-                                className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-                                title="Edit Siswa"
-                              >
-                                <PencilIcon className="w-4 h-4" />
-                              </button>
-                            )}
-                            {canDeleteStudent && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteClick(student.id, student.fullname);
-                                }}
-                                disabled={deletingStudentId === student.id}
-                                className="inline-flex items-center justify-center w-8 h-8 text-red-500 transition-colors rounded-lg hover:bg-red-100 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-800 dark:hover:text-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Hapus Siswa"
-                              >
-                                <TrashBinIcon className="w-4 h-4" />
-                              </button>
-                            )}
-                          </>
-                        )}
-                        {showDeleted && canRestoreStudent && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRestoreClick(student.id, student.fullname);
-                            }}
-                            disabled={restoringStudentId === student.id || deletingStudentId === student.id}
-                            className="inline-flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Pulihkan siswa"
-                          >
-                            <CheckCircleIcon className="w-4 h-4" />
-                            {restoringStudentId === student.id ? "Memulihkan..." : "Pulihkan"}
-                          </button>
-                        )}
-                        {showDeleted && canForceDeleteStudent && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleForceDeleteClick(student.id, student.fullname);
-                            }}
-                            disabled={deletingStudentId === student.id || restoringStudentId === student.id}
-                            className="inline-flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Hapus Permanen"
-                          >
-                            <TrashBinIcon className="w-4 h-4" />
-                            {deletingStudentId === student.id ? "Menghapus..." : "Hapus Permanen"}
-                          </button>
-                        )}
-                      </div>
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-semibold text-gray-500 dark:text-gray-400">
+                      Aksi
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                  {students.map((student) => (
+                    <TableRow
+                      key={student.id}
+                      className="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors"
+                    >
+                      {/* Kolom Siswa - Centered Block */}
+                      <TableCell className="px-5 py-4 align-middle">
+                        <div
+                          className={`flex items-center justify-center gap-3 text-left w-full ${!showDeleted && canViewStudent ? "cursor-pointer group" : ""}`}
+                          onClick={() => {
+                            if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
+                          }}
+                        >
+                          <div className="shrink-0">
+                            {student.profile_picture ? (
+                              <img
+                                src={`${getBaseUrl()}${student.profile_picture.url}`}
+                                alt={student.fullname}
+                                className="h-10 w-10 overflow-hidden rounded-full object-cover border border-gray-100 dark:border-gray-700"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-xs">
+                                {getInitials(student)}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <p className={`font-medium text-theme-sm truncate ${!showDeleted && canViewStudent ? "text-gray-800 dark:text-white/90" : "text-gray-800 dark:text-white/90"}`}>
+                              {student.fullname}
+                            </p>
+                            {student.phone_number && (
+                              <span className="text-gray-500 text-[11px] dark:text-gray-400 truncate">
+                                {student.phone_number}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="px-5 py-4 text-center align-middle">
+                        <span className="text-sm font-mono text-gray-600 dark:text-gray-400">
+                          {student.student_number || "—"}
+                        </span>
+                      </TableCell>
+
+                      <TableCell className="px-5 py-4 text-center align-middle">
+                        <div className="flex justify-center">
+                          <Badge size="sm" color={student.is_active ? "success" : "error"}>
+                            {student.is_active ? "Aktif" : "Tidak Aktif"}
+                          </Badge>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="px-5 py-4 text-center align-middle text-gray-500 text-sm">
+                        {formatDate(student.created_at)}
+                      </TableCell>
+
+                      <TableCell className="px-5 py-4 text-center align-middle">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {!showDeleted ? (
+                            <>
+                              {canViewStudent && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); navigate(`/students/${student.id}`); }}
+                                  className="p-1.5 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                                  title="Lihat Detail"
+                                >
+                                  <EyeIcon className="w-4 h-4" />
+                                </button>
+                              )}
+                              {canUpdateStudent && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); navigate(`/students/${student.id}/edit`); }}
+                                  className="p-1.5 text-gray-500 hover:text-amber-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                                  title="Edit Siswa"
+                                >
+                                  <PencilIcon className="w-4 h-4" />
+                                </button>
+                              )}
+                              {canDeleteStudent && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteClick(student.id, student.fullname); }}
+                                  disabled={deletingStudentId === student.id}
+                                  className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors disabled:opacity-50"
+                                  title="Hapus Siswa"
+                                >
+                                  <TrashBinIcon className="w-4 h-4" />
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <div className="flex gap-2">
+                              {canRestoreStudent && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleRestoreClick(student.id, student.fullname); }}
+                                  disabled={restoringStudentId === student.id || deletingStudentId === student.id}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                                >
+                                  <CheckCircleIcon className="w-3.5 h-3.5" />
+                                  {restoringStudentId === student.id ? "..." : "Pulihkan"}
+                                </button>
+                              )}
+                              {canForceDeleteStudent && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleForceDeleteClick(student.id, student.fullname); }}
+                                  disabled={deletingStudentId === student.id || restoringStudentId === student.id}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                                >
+                                  <TrashBinIcon className="w-3.5 h-3.5" />
+                                  {deletingStudentId === student.id ? "..." : "Hapus"}
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>

@@ -58,16 +58,11 @@ const navItems: NavItem[] = [
   },
   {
     icon: <QrCodeIcon />,
-    name: "Scan QR",
-    path: "/qr-codes/scan",
-    requiredPermission: ["create_order", "update_order"],
-  },
-  {
-    icon: <QrCodeIcon />,
-    name: "QR Tas",
+    name: "QR Code",
     subItems: [
       { name: "Daftar", path: "/qr-codes" },
       { name: "Unduh label", path: "/qr-codes/download" },
+      { name: "Scan QR", path: "/qr-codes/scan", requiredPermission: ["create_order", "update_order"] },
     ],
   },
   {

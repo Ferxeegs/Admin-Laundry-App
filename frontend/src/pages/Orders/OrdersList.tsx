@@ -59,7 +59,7 @@ export default function OrdersList() {
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
-  
+
   // Modal states
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
   const [selectedOrderForDelete, setSelectedOrderForDelete] = useState<{ id: string; orderNumber: string } | null>(null);
@@ -320,11 +320,10 @@ export default function OrdersList() {
               <button
                 type="button"
                 onClick={handleToggleSelectionMode}
-                className={`md:hidden inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg touch-manipulation transition-colors ${
-                  isSelectionMode
+                className={`md:hidden inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg touch-manipulation transition-colors ${isSelectionMode
                     ? "text-white bg-brand-500 hover:bg-brand-600"
                     : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
-                }`}
+                  }`}
               >
                 <svg
                   className="w-3.5 h-3.5"
@@ -353,11 +352,10 @@ export default function OrdersList() {
               <button
                 type="button"
                 onClick={handleToggleSelectionMode}
-                className={`hidden md:inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  isSelectionMode
+                className={`hidden md:inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isSelectionMode
                     ? "text-white bg-brand-500 hover:bg-brand-600"
                     : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
-                }`}
+                  }`}
               >
                 <svg
                   className="w-4 h-4"
@@ -391,22 +389,22 @@ export default function OrdersList() {
               onClick={() => navigate("/orders/create")}
               className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
             >
-            <svg
-              className="w-3.5 h-3.5 sm:w-4 sm:h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            <span className="hidden sm:inline">Tambah Pesanan</span>
-            <span className="sm:hidden">Tambah</span>
-          </button>
+              <svg
+                className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              <span className="hidden sm:inline">Tambah Pesanan</span>
+              <span className="sm:hidden">Tambah</span>
+            </button>
           )}
         </div>
       </div>
@@ -447,11 +445,10 @@ export default function OrdersList() {
           orders.map((order) => (
             <div
               key={order.id}
-              className={`p-3 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 transition-colors ${
-                !isSelectionMode && canViewOrder
+              className={`p-3 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 transition-colors ${!isSelectionMode && canViewOrder
                   ? "active:bg-gray-50 dark:active:bg-gray-700/50 cursor-pointer"
                   : ""
-              }`}
+                }`}
               onClick={
                 !isSelectionMode && canViewOrder
                   ? () => navigate(`/orders/${order.id}`)
@@ -550,7 +547,7 @@ export default function OrdersList() {
       <div className="hidden md:block overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
         <div className="max-w-full overflow-x-auto custom-scrollbar">
           {isLoading && orders.length === 0 ? (
-            <TableSkeleton rows={10} columns={6} showAvatar={false} />
+            <TableSkeleton rows={10} columns={7} showAvatar={false} />
           ) : orders.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-500 dark:text-gray-400">
@@ -559,147 +556,104 @@ export default function OrdersList() {
             </div>
           ) : (
             <div style={{ animation: "fadeIn 0.3s ease-in-out forwards" }}>
-              <Table>
-                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+              <Table className="w-full table-fixed border-collapse">
+                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05] bg-gray-50/50 dark:bg-white/[0.02]">
                   <TableRow>
                     {canDeleteOrder && isSelectionMode && (
-                      <TableCell
-                        isHeader
-                        className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-12"
-                      >
+                      <TableCell isHeader className="px-5 py-3 w-12 text-center">
                         <input
                           type="checkbox"
                           checked={selectedOrders.size === orders.length && orders.length > 0}
                           onChange={handleSelectAll}
-                          className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-500 focus:ring-2 cursor-pointer"
+                          className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-500 cursor-pointer"
                         />
                       </TableCell>
                     )}
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                    >
+                    <TableCell isHeader className="px-5 py-3 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center w-[140px]">
                       Nomor Pesanan
                     </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                    >
+                    <TableCell isHeader className="px-5 py-3 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center">
                       Nama Siswa
                     </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                    >
+                    <TableCell isHeader className="px-5 py-3 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center w-[160px]">
                       Total Item
                     </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                    >
+                    <TableCell isHeader className="px-5 py-3 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center w-[150px]">
                       Tambahan Biaya
                     </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                    >
+                    <TableCell isHeader className="px-5 py-3 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center w-[130px]">
                       Status
                     </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                    >
+                    <TableCell isHeader className="px-5 py-3 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center w-[120px]">
                       Tanggal
                     </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                    >
+                    <TableCell isHeader className="px-5 py-3 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center w-[140px]">
                       Actions
                     </TableCell>
                   </TableRow>
                 </TableHeader>
-
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {orders.map((order) => (
-                    <TableRow
-                      key={order.id}
-                      className="hover:bg-gray-50 dark:hover:bg-white/[0.02]"
-                    >
+                    <TableRow key={order.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
                       {canDeleteOrder && isSelectionMode && (
-                        <TableCell className="px-5 py-4 w-12">
+                        <TableCell className="px-5 py-4 text-center align-middle">
                           <input
                             type="checkbox"
                             checked={selectedOrders.has(order.id)}
                             onChange={() => handleToggleSelect(order.id)}
-                            className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-500 focus:ring-2 cursor-pointer"
+                            className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-500 cursor-pointer"
                           />
                         </TableCell>
                       )}
-                      <TableCell className="px-5 py-4">
+                      <TableCell className="px-5 py-4 text-center align-middle">
                         <div
-                          className={
-                            canViewOrder
-                              ? "cursor-pointer font-medium text-gray-800 text-theme-sm dark:text-white/90"
-                              : "font-medium text-gray-800 text-theme-sm dark:text-white/90"
-                          }
-                          onClick={() => {
-                            if (canViewOrder) navigate(`/orders/${order.id}`);
-                          }}
+                          className={`inline-block font-mono text-sm font-medium ${canViewOrder ? "cursor-pointer text-brand-600 hover:underline" : "text-gray-800 dark:text-white/90"}`}
+                          onClick={() => canViewOrder && navigate(`/orders/${order.id}`)}
                         >
                           {order.order_number}
                         </div>
                       </TableCell>
-                      <TableCell className="px-5 py-4">
-                        <div className="text-gray-800 text-theme-sm dark:text-white/90">
-                          {order.student ? (
-                            <span className="font-medium">{order.student.fullname}</span>
-                          ) : (
-                            <span className="text-gray-400 dark:text-gray-500">-</span>
-                          )}
+                      <TableCell className="px-5 py-4 text-center align-middle">
+                        <div className="flex flex-col items-center">
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                            {order.student?.fullname || "-"}
+                          </span>
                         </div>
                       </TableCell>
-                      <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
-                        {order.total_items} (Free: {order.free_items_used}, Paid:{" "}
-                        {order.paid_items_count})
+                      <TableCell className="px-5 py-4 text-center align-middle text-gray-500 text-sm">
+                        <div className="flex flex-col items-center">
+                          <span className="font-semibold text-gray-700 dark:text-gray-300">{order.total_items} Item</span>
+                          <span className="text-[10px] opacity-75">(F: {order.free_items_used}, P: {order.paid_items_count})</span>
+                        </div>
                       </TableCell>
-                      <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
+                      <TableCell className="px-5 py-4 text-center align-middle text-sm font-medium text-gray-700 dark:text-gray-300">
                         Rp {order.additional_fee.toLocaleString("id-ID")}
                       </TableCell>
-                      <TableCell className="px-5 py-4">
-                        <Badge
-                          size="sm"
-                          color={getStatusColor(order.current_status)}
-                        >
-                          {formatStatus(order.current_status)}
-                        </Badge>
+                      <TableCell className="px-5 py-4 text-center align-middle">
+                        <div className="flex justify-center">
+                          <Badge size="sm" color={getStatusColor(order.current_status)}>
+                            {formatStatus(order.current_status)}
+                          </Badge>
+                        </div>
                       </TableCell>
-                      <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
+                      <TableCell className="px-5 py-4 text-center align-middle text-xs text-gray-500 dark:text-gray-400">
                         {formatDate(order.created_at)}
                       </TableCell>
-                      <TableCell className="px-5 py-4">
-                        <div className="flex items-center flex-wrap gap-2">
+                      <TableCell className="px-5 py-4 text-center align-middle">
+                        <div className="flex items-center justify-center gap-1">
                           {canViewOrder && (
                             <button
-                              type="button"
-                              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                e.stopPropagation();
-                                navigate(`/orders/${order.id}`);
-                              }}
-                              className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                              onClick={(e) => { e.stopPropagation(); navigate(`/orders/${order.id}`); }}
+                              className="p-1.5 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
                               title="Lihat Detail"
                             >
-                              <EyeIcon className="w-4 h-4 fill-current" />
+                              <EyeIcon className="w-4 h-4" />
                             </button>
                           )}
                           {canUpdateOrder && (
                             <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/orders/${order.id}/edit`);
-                              }}
-                              className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                              onClick={(e) => { e.stopPropagation(); navigate(`/orders/${order.id}/edit`); }}
+                              className="p-1.5 text-gray-500 hover:text-amber-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
                               title="Edit Order"
                             >
                               <PencilIcon className="w-4 h-4" />
@@ -707,13 +661,9 @@ export default function OrdersList() {
                           )}
                           {canDeleteOrder && (
                             <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteClick(order.id, order.order_number);
-                              }}
+                              onClick={(e) => { e.stopPropagation(); handleDeleteClick(order.id, order.order_number); }}
                               disabled={deletingOrderId === order.id}
-                              className="inline-flex items-center justify-center w-8 h-8 text-red-500 transition-colors rounded-lg hover:bg-red-100 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-800 dark:hover:text-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md disabled:opacity-50"
                               title="Delete Order"
                             >
                               <TrashBinIcon className="w-4 h-4" />

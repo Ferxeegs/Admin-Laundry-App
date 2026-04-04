@@ -9,6 +9,7 @@ import { useToast } from "../../context/ToastContext";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import TableSkeleton from "../../components/common/TableSkeleton";
+import SearchableSelect from "../../components/form/SearchableSelect";
 
 interface Student {
   id: string;
@@ -405,23 +406,18 @@ export default function CreateOrder() {
                   <Label>
                     Siswa <span className="text-error-500">*</span>
                   </Label>
-                  <select
-                    name="student_id"
+                  <SearchableSelect
+                    options={students.map((student) => ({
+                      id: student.id,
+                      label: student.fullname || "Nama tidak tersedia",
+                      sublabel: `${student.student_number || student.national_id_number || "NIS tidak tersedia"}${student.unique_code ? ` (${student.unique_code})` : ""}`,
+                    }))}
                     value={formData.student_id}
-                    onChange={(e) => handleFormChange(e.target.name, e.target.value)}
+                    onChange={(value) => handleFormChange("student_id", value)}
+                    placeholder={isFetchingStudents ? "Memuat siswa aktif..." : students.length === 0 ? "Tidak ada siswa aktif tersedia" : "Cari dan Pilih Siswa"}
                     disabled={isLoading || isFetchingStudents || isCompressingImages}
-                    className="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  >
-                    <option value="">
-                      {isFetchingStudents ? "Memuat siswa aktif..." : students.length === 0 ? "Tidak ada siswa aktif tersedia" : "Pilih Siswa Aktif"}
-                    </option>
-                    {students.map((student) => (
-                      <option key={student.id} value={student.id}>
-                        {student.fullname || "Nama tidak tersedia"} {student.unique_code ? `(${student.unique_code})` : ""} -{" "}
-                        {student.student_number || student.national_id_number || "NIK tidak tersedia"}
-                      </option>
-                    ))}
-                  </select>
+                    isLoading={isFetchingStudents}
+                  />
                   {students.length === 0 && !isFetchingStudents && (
                     <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
                       Tidak ada siswa aktif ditemukan. Pastikan ada siswa yang terdaftar dan status aktif.

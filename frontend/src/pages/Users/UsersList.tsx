@@ -64,7 +64,7 @@ export default function UsersList() {
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(null);
   const [userProfilePictures, setUserProfilePictures] = useState<Record<string, string>>({});
-  
+
   // Modal states
   const { isOpen: isImpersonateModalOpen, openModal: openImpersonateModal, closeModal: closeImpersonateModal } = useModal();
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
@@ -76,7 +76,7 @@ export default function UsersList() {
     const picturePromises = usersList.map(async (user) => {
       try {
         const mediaResponse = await mediaAPI.getMediaByModel('User', user.id, 'profile-pictures');
-        
+
         // Handle both array format and object with media property
         let mediaArray: any[] = [];
         if (mediaResponse.success && mediaResponse.data) {
@@ -86,7 +86,7 @@ export default function UsersList() {
             mediaArray = mediaResponse.data.media;
           }
         }
-        
+
         if (mediaArray && mediaArray.length > 0) {
           const media = mediaArray[0];
           let mediaUrl = media.url;
@@ -104,7 +104,7 @@ export default function UsersList() {
       }
       return null;
     });
-    
+
     const results = await Promise.all(picturePromises);
     const picturesMap: Record<string, string> = {};
     results.forEach((result) => {
@@ -125,15 +125,15 @@ export default function UsersList() {
     try {
       const response = showDeleted
         ? await userAPI.getDeletedUsers({
-            page,
-            limit: 10,
-            search: search.trim() || undefined,
-          })
+          page,
+          limit: 10,
+          search: search.trim() || undefined,
+        })
         : await userAPI.getAllUsers({
-            page,
-            limit: 10,
-            search: search.trim() || undefined,
-          });
+          page,
+          limit: 10,
+          search: search.trim() || undefined,
+        });
 
       // Backend mengembalikan { status: "success", data: { users: [...], pagination: {...} } }
       // apiRequest sudah mengkonversi ke { success: true, data: { users: [...], pagination: {...} } }
@@ -143,14 +143,14 @@ export default function UsersList() {
           // Cek apakah user memiliki role "superadmin"
           return !user.roles?.some((role) => role.name === "superadmin");
         });
-        
+
         setUsers(filteredUsers);
         // Update pagination total untuk menghitung superadmin yang difilter
         setPagination({
           ...response.data.pagination,
           total: response.data.pagination.total - ((response.data.users as User[]).length - filteredUsers.length),
         });
-        
+
         // Fetch profile pictures for all users
         fetchUserProfilePictures(filteredUsers);
       } else {
@@ -307,11 +307,10 @@ export default function UsersList() {
               setShowDeleted(!showDeleted);
               setPage(1);
             }}
-            className={`px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors touch-manipulation ${
-              showDeleted
+            className={`px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors touch-manipulation ${showDeleted
                 ? "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white"
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
-            }`}
+              }`}
           >
             <span className="hidden sm:inline">{showDeleted ? "Show Active Users" : "Show Deleted Users"}</span>
             <span className="sm:hidden">{showDeleted ? "Active" : "Deleted"}</span>
@@ -367,8 +366,8 @@ export default function UsersList() {
         ) : users.length === 0 ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-gray-500 dark:text-gray-400 text-sm text-center">
-              {search 
-                ? `Tidak ada ${showDeleted ? "pengguna yang dihapus " : ""}yang ditemukan` 
+              {search
+                ? `Tidak ada ${showDeleted ? "pengguna yang dihapus " : ""}yang ditemukan`
                 : `Belum ada ${showDeleted ? "pengguna yang dihapus " : ""}pengguna`}
             </div>
           </div>
@@ -381,7 +380,7 @@ export default function UsersList() {
             >
               {/* Main Info Row */}
               <div className="flex items-start gap-2.5 mb-2.5">
-                <div 
+                <div
                   className="h-10 w-10 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 mt-0.5"
                 >
                   {userProfilePictures[user.id] ? (
@@ -513,213 +512,187 @@ export default function UsersList() {
       <div className="hidden md:block overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
         <div className="max-w-full overflow-x-auto custom-scrollbar">
           {isLoading && users.length === 0 ? (
-            <TableSkeleton rows={10} columns={7} showAvatar={true} />
+            <TableSkeleton rows={10} columns={6} showAvatar={true} />
           ) : users.length === 0 ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-gray-500 dark:text-gray-400">
-            {search 
-              ? `Tidak ada ${showDeleted ? "deleted " : ""}user yang ditemukan` 
-              : `Belum ada ${showDeleted ? "deleted " : ""}user`}
-          </div>
-        </div>
+            <div className="flex items-center justify-center py-12">
+              <div className="text-gray-500 dark:text-gray-400">
+                {search
+                  ? `Tidak ada ${showDeleted ? "deleted " : ""}user yang ditemukan`
+                  : `Belum ada ${showDeleted ? "deleted " : ""}user`}
+              </div>
+            </div>
           ) : (
             <div style={{ animation: 'fadeIn 0.3s ease-in-out forwards' }}>
-              <Table>
-                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                <TableRow>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    User
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Email
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Username
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Role
-                  </TableCell>
-                  {/* <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Status
-                  </TableCell> */}
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Tanggal Daftar
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Actions
-                  </TableCell>
-                </TableRow>
-              </TableHeader>
+              <Table className="w-full table-fixed border-collapse">
+                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05] bg-gray-50/50 dark:bg-white/[0.02]">
+                  <TableRow>
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-semibold text-gray-500 dark:text-gray-400 w-[260px]">
+                      User
+                    </TableCell>
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-semibold text-gray-500 dark:text-gray-400 w-[200px]">
+                      Email
+                    </TableCell>
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-semibold text-gray-500 dark:text-gray-400 w-[150px]">
+                      Username
+                    </TableCell>
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-semibold text-gray-500 dark:text-gray-400 w-[180px]">
+                      Role
+                    </TableCell>
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-semibold text-gray-500 dark:text-gray-400 w-[160px]">
+                      Tanggal Daftar
+                    </TableCell>
+                    <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-semibold text-gray-500 dark:text-gray-400">
+                      Actions
+                    </TableCell>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                  {users.map((user) => (
+                    <TableRow
+                      key={user.id}
+                      className="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors group"
+                    >
+                      {/* Kolom User */}
+                      <TableCell className="px-5 py-4 align-middle">
+                        <div
+                          className="flex items-center gap-3 text-left w-full cursor-pointer"
+                          onClick={() => navigate(`/users/${user.id}`)}
+                        >
+                          <div className="shrink-0 h-10 w-10 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-xs border border-gray-100 dark:border-gray-700 relative">
+                            {userProfilePictures[user.id] ? (
+                              <img
+                                src={userProfilePictures[user.id]}
+                                alt={user.username}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.currentTarget;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    parent.textContent = getInitials(user);
+                                  }
+                                }}
+                              />
+                            ) : (
+                              getInitials(user)
+                            )}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <p className="font-medium text-theme-sm text-gray-800 dark:text-white/90 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                              {user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username}
+                            </p>
+                            {user.phone_number && (
+                              <span className="text-gray-500 text-[11px] dark:text-gray-400 truncate">
+                                {user.phone_number}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
 
-              <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                {users.map((user) => (
-                  <TableRow 
-                    key={user.id} 
-                    className="hover:bg-gray-50 dark:hover:bg-white/[0.02]"
-                  >
-                    <TableCell className="px-5 py-4">
-                      <div 
-                        className="flex items-center gap-3 cursor-pointer"
-                        onClick={() => navigate(`/users/${user.id}`)}
-                      >
-                        <div className="h-10 w-10 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-sm relative">
-                          {userProfilePictures[user.id] ? (
-                            <img
-                              src={userProfilePictures[user.id]}
-                              alt={user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                // Fallback to initials if image fails to load
-                                const target = e.currentTarget;
-                                target.style.display = 'none';
-                                const parent = target.parentElement;
-                                if (parent) {
-                                  parent.textContent = getInitials(user);
-                                }
-                              }}
-                            />
-                          ) : (
-                            getInitials(user)
-                          )}
+                      {/* Kolom Email */}
+                      <TableCell className="px-5 py-4 text-center align-middle">
+                        <div
+                          className="text-sm text-gray-600 dark:text-gray-400 truncate cursor-pointer hover:underline"
+                          onClick={() => navigate(`/users/${user.id}`)}
+                        >
+                          {user.email}
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                            {user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username}
-                          </p>
-                          {user.phone_number && (
-                            <span className="text-gray-500 text-theme-xs dark:text-gray-400">
-                              {user.phone_number}
-                            </span>
-                          )}
+                      </TableCell>
+
+                      {/* Kolom Username */}
+                      <TableCell className="px-5 py-4 text-center align-middle">
+                        <div
+                          className="text-sm font-mono text-gray-600 dark:text-gray-400 cursor-pointer"
+                          onClick={() => navigate(`/users/${user.id}`)}
+                        >
+                          {user.username}
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
-                      <div 
-                        className="cursor-pointer"
-                        onClick={() => navigate(`/users/${user.id}`)}
-                      >
-                        {user.email}
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
-                      <div 
-                        className="cursor-pointer"
-                        onClick={() => navigate(`/users/${user.id}`)}
-                      >
-                        {user.username}
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-5 py-4">
-                      <div 
-                        className="cursor-pointer"
-                        onClick={() => navigate(`/users/${user.id}`)}
-                      >
-                        {user.roles && user.roles.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {user.roles.map((role) => (
+                      </TableCell>
+
+                      {/* Kolom Role */}
+                      <TableCell className="px-5 py-4 text-center align-middle">
+                        <div className="flex flex-wrap justify-center gap-1.5 cursor-pointer" onClick={() => navigate(`/users/${user.id}`)}>
+                          {user.roles && user.roles.length > 0 ? (
+                            user.roles.map((role) => (
                               <Badge key={role.id} size="sm" color="primary">
                                 {role.name}
                               </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-gray-400 text-theme-xs">-</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
-                      <div 
-                        className="cursor-pointer"
-                        onClick={() => navigate(`/users/${user.id}`)}
-                      >
-                        {formatDate(user.created_at)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        {!showDeleted && (
-                          <>
-                          {hasPermission(['view_user', 'view_any_user']) && (
-                            <button
-                              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                e.stopPropagation();
-                                navigate(`/users/${user.id}`);
-                              }}
-                              className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                              title="Lihat Detail"
-                            >
-                              <EyeIcon className="w-4 h-4 fill-current" />
-                            </button>
+                            ))
+                          ) : (
+                            <span className="text-gray-400 text-xs">-</span>
                           )}
-                            {hasPermission(['update_user']) && (
+                        </div>
+                      </TableCell>
+
+                      {/* Kolom Tanggal */}
+                      <TableCell className="px-5 py-4 text-center align-middle text-sm text-gray-500 dark:text-gray-400">
+                        {formatDate(user.created_at)}
+                      </TableCell>
+
+                      {/* Kolom Aksi */}
+                      <TableCell className="px-5 py-4 text-center align-middle">
+                        <div className="flex items-center justify-center gap-1">
+                          {!showDeleted ? (
+                            <>
+                              {hasPermission(['view_user', 'view_any_user']) && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); navigate(`/users/${user.id}`); }}
+                                  className="p-1.5 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                                  title="Lihat Detail"
+                                >
+                                  <EyeIcon className="w-4 h-4" />
+                                </button>
+                              )}
+                              {hasPermission(['update_user']) && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); navigate(`/users/${user.id}/edit`); }}
+                                  className="p-1.5 text-gray-500 hover:text-amber-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                                  title="Edit User"
+                                >
+                                  <PencilIcon className="w-4 h-4" />
+                                </button>
+                              )}
+                              {hasSuperAdminRole && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleImpersonateClick(user.id, user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username);
+                                  }}
+                                  disabled={impersonatingUserId === user.id}
+                                  className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors disabled:opacity-50"
+                                  title="Impersonate User"
+                                >
+                                  <UserCircleIcon className="w-4 h-4" />
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            hasPermission(['force_delete_user', 'force_delete_any_user']) && (
                               <button
+                                type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  navigate(`/users/${user.id}/edit`);
+                                  handleForceDeleteClick(user.id, user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username);
                                 }}
-                                className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-                                title="Edit User"
+                                disabled={deletingUserId === user.id}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                                title="Hapus Permanen"
                               >
-                                <PencilIcon className="w-4 h-4" />
+                                <TrashBinIcon className="w-3.5 h-3.5" />
+                                {deletingUserId === user.id ? "Deleting..." : "Force Delete"}
                               </button>
-                            )}
-                            {hasSuperAdminRole && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleImpersonateClick(user.id, user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username);
-                                }}
-                                disabled={impersonatingUserId === user.id}
-                                className="inline-flex items-center justify-center w-8 h-8 text-blue-500 transition-colors rounded-lg hover:bg-blue-100 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-800 dark:hover:text-blue-200"
-                                title="Impersonate User"
-                              >
-                                <UserCircleIcon className="w-4 h-4" />
-                              </button>
-                            )}
-                          </>
-                        )}
-                        {showDeleted && hasPermission(['force_delete_user', 'force_delete_any_user']) && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleForceDeleteClick(user.id, user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username);
-                            }}
-                            disabled={deletingUserId === user.id}
-                            className="inline-flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Force Delete (Permanent)"
-                          >
-                            <TrashBinIcon className="w-4 h-4" />
-                            {deletingUserId === user.id ? "Deleting..." : "Force Delete"}
-                          </button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                            )
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>

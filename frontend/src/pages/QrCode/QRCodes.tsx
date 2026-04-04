@@ -55,7 +55,7 @@ export default function QRCodes() {
 
   const [search, setSearch] = useState("");
   const [assignedFilter, setAssignedFilter] = useState<"all" | "assigned" | "unassigned">(
-    "unassigned",
+    "all",
   );
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
@@ -316,9 +316,9 @@ export default function QRCodes() {
                     aria-label="Filter status QR tas"
                     className="h-10 sm:h-11 px-3 text-xs sm:text-sm rounded-lg border border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-800 dark:text-white/90"
                   >
+                    <option value="all">Semua</option>
                     <option value="unassigned">Belum terhubung</option>
                     <option value="assigned">Terhubung</option>
-                    <option value="all">Semua</option>
                   </select>
 
                   <button
@@ -351,18 +351,18 @@ export default function QRCodes() {
                       disabled={isQrCrudLoading}
                     >
                       <svg
-                      className="w-3.5 h-3.5 sm:w-4 sm:h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
+                        className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
                       Tambah QR
                     </button>
                   )}
@@ -371,28 +371,26 @@ export default function QRCodes() {
 
               {/* Desktop Table */}
               <div className="hidden md:block overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-                <Table>
-                  <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                {/* Hapus semua spasi antar tag Table, TableHeader, dan TableBody untuk menghindari hydration error */}
+                <Table className="w-full table-fixed border-collapse">
+                  <TableHeader className="border-b border-gray-100 dark:border-white/[0.05] bg-gray-50/50 dark:bg-white/[0.02]">
                     <TableRow>
-                      <TableCell isHeader className="px-3 py-3 text-theme-xs w-[88px]">
+                      <TableCell isHeader className="px-4 py-4 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 w-[100px] text-center">
                         QR
                       </TableCell>
-                      <TableCell isHeader className="px-5 py-3 text-theme-xs">
-                        QR Token
-                      </TableCell>
-                      <TableCell isHeader className="px-5 py-3 text-theme-xs">
+                      <TableCell isHeader className="px-4 py-4 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center">
                         Dormitory
                       </TableCell>
-                      <TableCell isHeader className="px-5 py-3 text-theme-xs">
+                      <TableCell isHeader className="px-4 py-4 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center">
                         Nomor / Kode
                       </TableCell>
-                      <TableCell isHeader className="px-5 py-3 text-theme-xs">
+                      <TableCell isHeader className="px-4 py-4 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center">
                         Santri
                       </TableCell>
-                      <TableCell isHeader className="px-5 py-3 text-theme-xs">
+                      <TableCell isHeader className="px-4 py-4 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center">
                         Status
                       </TableCell>
-                      <TableCell isHeader className="px-5 py-3 text-theme-xs">
+                      <TableCell isHeader className="px-4 py-4 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center w-[140px]">
                         Aksi
                       </TableCell>
                     </TableRow>
@@ -400,94 +398,74 @@ export default function QRCodes() {
                   <TableBody>
                     {qrCodes.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="px-5 py-10 text-center text-gray-500">
+                        <TableCell colSpan={6} className="px-5 py-10 text-center text-gray-500">
                           {statusText}: tidak ada data
                         </TableCell>
                       </TableRow>
                     ) : (
                       qrCodes.map((qr) => (
-                        <TableRow key={qr.id} className="hover:bg-gray-50 dark:hover:bg-gray-50/5">
-                          <TableCell className="px-3 py-3 align-top">
-                            <div className="flex flex-col items-center gap-1 w-[72px]">
-                              <div className="rounded border border-gray-200 bg-white p-0.5 dark:border-gray-700">
-                                <QRCodeSVG value={qr.token_qr} size={56} level="M" />
+                        <TableRow key={qr.id} className="hover:bg-gray-50 dark:hover:bg-gray-50/5 transition-colors">
+                          {/* Semua cell menggunakan text-center agar lurus dengan header */}
+                          <TableCell className="px-4 py-4 align-middle text-center">
+                            <div className="flex flex-col items-center justify-center gap-1.5">
+                              <div className="rounded border border-gray-200 bg-white p-1 dark:border-gray-700 shadow-sm inline-block">
+                                <QRCodeSVG value={qr.token_qr} size={48} level="M" />
                               </div>
-                              <span className="text-[10px] font-mono text-center text-gray-700 dark:text-gray-300 break-all max-w-[72px] leading-tight">
-                                {qr.unique_code || "—"}
-                              </span>
+                              <span className="text-[10px] font-mono text-gray-500">{qr.unique_code || "—"}</span>
                             </div>
                           </TableCell>
-                          <TableCell className="px-5 py-3">
-                            <div className="font-mono text-xs break-all">{qr.token_qr}</div>
+
+                          <TableCell className="px-4 py-4 align-middle text-center">
+                            <span className="text-sm dark:text-white/90">{qr.dormitory || "-"}</span>
                           </TableCell>
-                          <TableCell className="px-5 py-3">
-                            <span className="text-sm">{qr.dormitory || "-"}</span>
+
+                          <TableCell className="px-4 py-4 align-middle text-center">
+                            <span className="text-sm font-mono dark:text-white/90">{qr.unique_code || "—"}</span>
                           </TableCell>
-                          <TableCell className="px-5 py-3">
-                            <div className="text-sm">
-                              {qr.qr_number ? `#${qr.qr_number}` : "—"}
-                              {qr.unique_code ? ` • ${qr.unique_code}` : ""}
+
+                          <TableCell className="px-4 py-4 align-middle text-center">
+                            <div className="flex flex-col items-center">
+                              <span className="text-sm font-medium dark:text-white/90">{qr.student ? qr.student.fullname : "-"}</span>
+                              <span className="text-xs text-gray-400 dark:text-gray-500">{qr.student?.student_number || ""}</span>
                             </div>
                           </TableCell>
-                          <TableCell className="px-5 py-3">
-                            <div className="text-sm font-medium">
-                              {qr.student ? qr.student.fullname : "-"}
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {qr.student ? qr.student.student_number : ""}
+
+                          <TableCell className="px-4 py-4 align-middle text-center">
+                            <div className="flex justify-center">
+                              {assignedBadge(qr)}
                             </div>
                           </TableCell>
-                          <TableCell className="px-5 py-3">{assignedBadge(qr)}</TableCell>
-                          <TableCell className="px-5 py-3">
-                            <div className="flex items-center gap-2">
+
+                          <TableCell className="px-4 py-4 align-middle text-center">
+                            <div className="flex items-center justify-center gap-2">
                               {!qr.student_id ? (
                                 <button
-                                  type="button"
                                   onClick={() => openAssignFlow(qr)}
-                                  className="inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
+                                  className="px-3 py-1.5 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600"
                                 >
                                   Assign
                                 </button>
                               ) : (
                                 <button
-                                  type="button"
-                                  onClick={() => {
-                                    setReleaseQrCode(qr);
-                                    openRelease();
-                                  }}
-                                  className="inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 touch-manipulation"
+                                  onClick={() => { setReleaseQrCode(qr); openRelease(); }}
+                                  className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
                                 >
                                   Release
                                 </button>
                               )}
 
-                              {canCreateQr && qr.dormitory && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    navigate("/qr-codes/edit", {
-                                      state: { dormitory: qr.dormitory },
-                                    })
-                                  }
-                                  disabled={isQrCrudLoading}
-                                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
-                                  title="Tambah QR untuk asrama ini"
-                                >
-                                  <PlusIcon className="w-4 h-4" />
-                                </button>
-                              )}
-
-                              {canDeleteQr && !qr.student_id && (
-                                <button
-                                  type="button"
-                                  onClick={() => openDeleteQrFlow(qr)}
-                                  disabled={isQrCrudLoading}
-                                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
-                                  title="Hapus QR"
-                                >
-                                  <TrashBinIcon className="w-4 h-4" />
-                                </button>
-                              )}
+                              <div className="flex items-center gap-1 ml-1">
+                                {canCreateQr && qr.dormitory && (
+                                  <button onClick={() => navigate("/qr-codes/edit", { state: { dormitory: qr.dormitory } })} className="p-1 text-gray-500 hover:text-brand-500">
+                                    <PlusIcon className="w-4 h-4" />
+                                  </button>
+                                )}
+                                {canDeleteQr && !qr.student_id && (
+                                  <button onClick={() => openDeleteQrFlow(qr)} className="p-1 text-red-500 hover:text-red-700">
+                                    <TrashBinIcon className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -697,11 +675,10 @@ export default function QRCodes() {
                     key={s.id}
                     type="button"
                     onClick={() => setSelectedStudentId(s.id)}
-                    className={`w-full text-left px-3 py-2.5 transition-colors touch-manipulation ${
-                      selectedStudentId === s.id
-                        ? "bg-brand-50 dark:bg-brand-900/20"
-                        : "hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                    }`}
+                    className={`w-full text-left px-3 py-2.5 transition-colors touch-manipulation ${selectedStudentId === s.id
+                      ? "bg-brand-50 dark:bg-brand-900/20"
+                      : "hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      }`}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">

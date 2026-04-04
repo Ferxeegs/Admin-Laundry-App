@@ -229,7 +229,7 @@ export default function Dormitories() {
             </button>
           </div>
 
-          {/* Desktop Table */}
+          {/* Desktop Table View */}
           <div className="hidden md:block">
             {isLoading && dormitories.length === 0 ? (
               <div className="p-4">
@@ -241,19 +241,19 @@ export default function Dormitories() {
               </div>
             ) : (
               <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-                <Table>
-                  <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                <Table className="w-full table-fixed border-collapse">
+                  <TableHeader className="border-b border-gray-100 dark:border-white/[0.05] bg-gray-50/50 dark:bg-white/[0.02]">
                     <TableRow>
-                      <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                        Nama
+                      <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-medium text-gray-500 dark:text-gray-400 w-[200px]">
+                        Nama Asrama
                       </TableCell>
-                      <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                      <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-medium text-gray-500 dark:text-gray-400">
                         Deskripsi
                       </TableCell>
-                      <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                      <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-medium text-gray-500 dark:text-gray-400 w-[120px]">
                         Status
                       </TableCell>
-                      <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                      <TableCell isHeader className="px-5 py-4 text-center text-theme-sm font-medium text-gray-500 dark:text-gray-400 w-[140px]">
                         Aksi
                       </TableCell>
                     </TableRow>
@@ -262,28 +262,35 @@ export default function Dormitories() {
                     {dormitories.map((d) => (
                       <TableRow
                         key={d.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-50/5"
+                        className="hover:bg-gray-50 dark:hover:bg-gray-50/5 transition-colors"
                       >
-                        <TableCell className="px-5 py-4">
-                          <div className="font-medium text-gray-800 text-theme-sm dark:text-white/90">{d.name}</div>
-                        </TableCell>
-                        <TableCell className="px-5 py-4">
-                          <div className="font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                            {d.description || "-"}
+                        <TableCell className="px-5 py-4 text-center align-middle">
+                          <div className="font-medium text-gray-800 text-sm dark:text-white/90">
+                            {d.name}
                           </div>
                         </TableCell>
-                        <TableCell className="px-5 py-4">
-                          <Badge size="sm" color="info">
-                            Aktif
-                          </Badge>
+
+                        <TableCell className="px-5 py-4 text-center align-middle">
+                          <div className="text-gray-500 text-sm dark:text-gray-400 italic">
+                            {d.description || "—"}
+                          </div>
                         </TableCell>
-                        <TableCell className="px-5 py-4">
-                          <div className="flex items-center gap-2">
+
+                        <TableCell className="px-5 py-4 text-center align-middle">
+                          <div className="flex justify-center">
+                            <Badge size="sm" color="info">
+                              Aktif
+                            </Badge>
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="px-5 py-4 text-center align-middle">
+                          <div className="flex items-center justify-center gap-1.5">
                             <button
                               type="button"
                               onClick={() => openEdit(d)}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 touch-manipulation"
-                              title="Edit Dormitory"
+                              className="p-1.5 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                              title="Edit Asrama"
                             >
                               <PencilIcon className="w-4 h-4" />
                             </button>
@@ -293,8 +300,8 @@ export default function Dormitories() {
                                 setDeleteTarget(d);
                                 openDelete();
                               }}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 touch-manipulation"
-                              title="Delete Dormitory"
+                              className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                              title="Hapus Asrama"
                             >
                               <TrashBinIcon className="w-4 h-4" />
                             </button>

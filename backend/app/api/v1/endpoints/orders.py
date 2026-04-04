@@ -193,8 +193,8 @@ async def create_order(
     """
     from sqlalchemy import func
 
-    # Generate order number: "ORD-{YYMMDD}-{sequence}"
-    # Format: ORD-240113-001 (where 001 is the order number for that day)
+    # Generate order number: "{YYMMDD}{sequence}"
+    # Format: 240113001 (where 001 is the order number for that day)
     now = get_now_local()
     date_str = now.strftime("%y%m%d")
     
@@ -206,17 +206,17 @@ async def create_order(
     
     # Generate sequence number (1-based, padded to 3 digits)
     sequence = orders_today_count + 1
-    order_number = f"ORD-{date_str}-{sequence:03d}"
+    order_number = f"{date_str}-{sequence:03d}"
     
     # Ensure uniqueness by checking if order_number already exists
     # If exists, increment sequence until unique
     while db.query(Order).filter(Order.order_number == order_number).first():
         sequence += 1
-        order_number = f"ORD-{date_str}-{sequence:03d}"
+        order_number = f"{date_str}{sequence:03d}"
         if sequence > 999:  # Safety limit (3 digits max)
             # Fallback: add timestamp if too many orders in one day
             timestamp = now.strftime("%y%m%d-%H%M%S")
-            order_number = f"ORD-{timestamp}"
+            order_number = f"{timestamp}"
             break
 
     from app.core.logging_config import root_logger
@@ -495,13 +495,37 @@ def delete_order(
 ):
     """
     Delete order by ID (hard delete).
+    If the deleted order was active (not PICKED_UP), release the QR if no other active orders exist.
     """
     order = db.query(Order).filter(Order.id == order_id).first()
 
     if not order:
         raise NotFoundException(f"Order with ID {order_id} not found")
 
+    student_id = order.student_id
+    was_active = order.current_status != OrderStatus.PICKED_UP
+
     db.delete(order)
+    db.flush()
+
+    if was_active:
+        # Check if student has any OTHER active orders
+        other_active_order = (
+            db.query(Order)
+            .filter(
+                Order.student_id == student_id,
+                Order.current_status != OrderStatus.PICKED_UP,
+            )
+            .first()
+        )
+
+        if not other_active_order:
+            qr = db.query(QR).filter(QR.student_id == student_id).first()
+            if qr:
+                qr.student_id = None
+                qr.updated_by = current_user.id
+                qr.updated_at = get_now_local()
+
     db.commit()
 
     return WebResponse(
