@@ -379,7 +379,7 @@ export default function QRCodes() {
                         QR
                       </TableCell>
                       <TableCell isHeader className="px-4 py-4 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center">
-                        Dormitory
+                        Asrama
                       </TableCell>
                       <TableCell isHeader className="px-4 py-4 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center">
                         Nomor / Kode

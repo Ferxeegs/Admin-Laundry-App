@@ -420,27 +420,33 @@ export default function DownloadQRCodes() {
                 </p>
               )}
 
-              <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-white/[0.05]">
-                <Table>
-                  <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+                <Table className="w-full table-fixed border-collapse">
+                  <TableHeader className="border-b border-gray-100 dark:border-white/[0.05] bg-gray-50/50 dark:bg-white/[0.02]">
                     <TableRow>
-                      <TableCell isHeader className="px-3 py-3 text-theme-xs w-12">
+                      {/* Checkbox Column */}
+                      <TableCell isHeader className="px-3 py-4 text-center w-[50px]">
                         <span className="sr-only">Pilih</span>
                       </TableCell>
-                      <TableCell isHeader className="px-4 py-3 text-theme-xs">
-                        Unique code
+
+                      <TableCell isHeader className="px-4 py-4 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400 w-[160px]">
+                        Unique Code
                       </TableCell>
-                      <TableCell isHeader className="px-4 py-3 text-theme-xs">
+
+                      <TableCell isHeader className="px-4 py-4 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400 w-[120px]">
                         Nomor QR
                       </TableCell>
-                      <TableCell isHeader className="px-4 py-3 text-theme-xs">
-                        Token (awal)
+
+                      <TableCell isHeader className="px-4 py-4 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                        Token
                       </TableCell>
-                      <TableCell isHeader className="px-4 py-3 text-theme-xs text-right">
+
+                      <TableCell isHeader className="px-4 py-4 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400 w-[100px]">
                         Unduh
                       </TableCell>
                     </TableRow>
                   </TableHeader>
+
                   <TableBody>
                     {filteredList.length === 0 ? (
                       <TableRow>
@@ -454,34 +460,66 @@ export default function DownloadQRCodes() {
                       </TableRow>
                     ) : (
                       filteredList.map((qr) => (
-                        <TableRow key={qr.id} className="hover:bg-gray-50 dark:hover:bg-gray-50/5">
-                          <TableCell className="px-3 py-2">
-                            <input
-                              type="checkbox"
-                              checked={selectedIds.has(qr.id)}
-                              onChange={() => toggleOne(qr.id)}
-                              className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
-                              aria-label={`Pilih ${qr.unique_code || qr.id}`}
-                            />
+                        <TableRow
+                          key={qr.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-50/5 transition-colors"
+                        >
+                          {/* Checkbox Cell */}
+                          <TableCell className="px-3 py-3 text-center align-middle">
+                            <div className="flex justify-center">
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.has(qr.id)}
+                                onChange={() => toggleOne(qr.id)}
+                                className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
+                                aria-label={`Pilih ${qr.unique_code || qr.id}`}
+                              />
+                            </div>
                           </TableCell>
-                          <TableCell className="px-4 py-2 font-mono text-sm">
-                            {qr.unique_code || "—"}
+
+                          {/* Unique Code Cell */}
+                          <TableCell className="px-4 py-3 text-center align-middle">
+                            <span className="font-mono text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {qr.unique_code || "—"}
+                            </span>
                           </TableCell>
-                          <TableCell className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300">
-                            {qr.qr_number ?? "—"}
+
+                          {/* Nomor QR Cell */}
+                          <TableCell className="px-4 py-3 text-center align-middle">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {qr.qr_number ?? "—"}
+                            </span>
                           </TableCell>
-                          <TableCell className="px-4 py-2 font-mono text-xs text-gray-500 break-all max-w-[200px]">
-                            {qr.token_qr.length > 24 ? `${qr.token_qr.slice(0, 24)}…` : qr.token_qr}
+
+                          {/* Token Cell */}
+                          <TableCell className="px-4 py-3 text-center align-middle">
+                            <div className="flex justify-center">
+                              <code className="text-[10px] px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-gray-500 dark:text-gray-400 font-mono truncate max-w-[180px]" title={qr.token_qr}>
+                                {qr.token_qr.length > 20 ? `${qr.token_qr.slice(0, 20)}...` : qr.token_qr}
+                              </code>
+                            </div>
                           </TableCell>
-                          <TableCell className="px-4 py-2 text-right">
-                            <button
-                              type="button"
-                              onClick={() => void handleDownloadOne(qr)}
-                              disabled={downloadingId === qr.id}
-                              className="text-sm font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
-                            >
-                              {downloadingId === qr.id ? "…" : "PNG"}
-                            </button>
+
+                          {/* Download Action Cell */}
+                          <TableCell className="px-4 py-3 text-center align-middle">
+                            <div className="flex justify-center">
+                              <button
+                                type="button"
+                                onClick={() => void handleDownloadOne(qr)}
+                                disabled={downloadingId === qr.id}
+                                className="inline-flex items-center justify-center px-3 py-1 text-xs font-semibold text-brand-600 bg-brand-50 dark:bg-brand-500/10 rounded-md hover:bg-brand-100 dark:hover:bg-brand-500/20 transition-colors disabled:opacity-50"
+                              >
+                                {downloadingId === qr.id ? (
+                                  <span className="flex gap-1">
+                                    <span className="animate-pulse">.</span>
+                                    <span className="animate-pulse delay-75">.</span>
+                                    <span className="animate-pulse delay-150">.</span>
+                                  </span>
+                                ) : (
+                                  "PNG"
+                                )}
+                              </button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))

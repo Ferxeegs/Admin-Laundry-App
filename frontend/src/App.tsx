@@ -247,7 +247,7 @@ export default function App() {
             <Route
               path="/invoices"
               element={
-                <ProtectedRoute requiredPermission="view_invoices">
+                <ProtectedRoute requiredPermission="view_invoice">
                   <Invoices />
                 </ProtectedRoute>
               }
