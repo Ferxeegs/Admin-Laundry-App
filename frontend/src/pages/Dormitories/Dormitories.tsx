@@ -277,7 +277,7 @@ export default function Dormitories() {
                     : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 dark:bg-transparent dark:text-gray-400 dark:border-gray-800 dark:hover:bg-gray-900"
                 }`}
               >
-                {showDeleted ? "Tampilkan Aktif" : "Kotak Sampah"}
+                {showDeleted ? "Asrama Aktif" : "Asrama Terhapus"}
               </button>
 
               {!showDeleted && canCreateDormitory && (

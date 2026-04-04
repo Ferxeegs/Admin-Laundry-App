@@ -288,7 +288,7 @@ export default function StudentsList() {
                   : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
                 }`}
             >
-              <span className="hidden sm:inline">{showDeleted ? "Tampilkan Siswa Aktif" : "Tampilkan Siswa Terhapus"}</span>
+              <span className="hidden sm:inline">{showDeleted ? "Siswa Aktif" : "Siswa Terhapus"}</span>
               <span className="sm:hidden">{showDeleted ? "Aktif" : "Terhapus"}</span>
             </button>
           )}
@@ -531,7 +531,7 @@ export default function StudentsList() {
                       {/* Kolom Siswa - Centered Block */}
                       <TableCell className="px-5 py-4 align-middle">
                         <div
-                          className={`flex items-center justify-center gap-3 text-left w-full ${!showDeleted && canViewStudent ? "cursor-pointer group" : ""}`}
+                          className={`flex items-center gap-3 text-left w-full ${!showDeleted && canViewStudent ? "cursor-pointer group" : ""}`}
                           onClick={() => {
                             if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
                           }}
