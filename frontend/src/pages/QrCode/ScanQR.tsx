@@ -933,10 +933,15 @@ export default function ScanQR() {
                     <h3 className="mx-auto mt-3 max-w-lg px-0.5 text-lg font-semibold leading-snug tracking-tight text-gray-900 dark:text-white sm:mt-6 sm:px-1 sm:text-2xl md:text-[1.65rem]">
                       {scannedStudent.fullname}
                     </h3>
-                    <div className="mt-2 flex justify-center sm:mt-3.5">
+                    <div className="mt-2 flex items-center justify-center gap-2 sm:mt-3.5">
                       <Badge size="sm" color={scannedStudent.is_active ? "success" : "error"}>
                         {scannedStudent.is_active ? "Aktif" : "Tidak Aktif"}
                       </Badge>
+                      {activeOrder && (
+                        <Badge size="sm" color="warning">
+                          Sedang Digunakan
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -998,90 +1003,88 @@ export default function ScanQR() {
 
                 {/* Order aktif: foto order + catatan dari tabel orders */}
                 {activeOrder && (
-                  <div className="overflow-hidden rounded-lg border border-blue-200/90 bg-blue-50/50 dark:border-blue-800/70 dark:bg-blue-950/25 sm:rounded-xl">
-                    <div className="flex items-start justify-between gap-2 border-b border-blue-200/60 px-2.5 py-2 dark:border-blue-800/50 sm:px-4 sm:py-3">
+                  <div className="overflow-hidden rounded-2xl border border-blue-200/90 bg-white shadow-lg shadow-blue-500/5 dark:border-blue-800/70 dark:bg-gray-900/50">
+                    <div className="flex items-start justify-between gap-3 border-b border-blue-200/60 bg-blue-50/30 px-4 py-4 dark:border-blue-800/50 dark:bg-blue-900/20 sm:px-6 sm:py-5">
                       <div className="min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
-                          Order aktif
+                        <div className="flex items-center gap-2">
+                          <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
+                            Order Sedang Diproses
+                          </p>
+                        </div>
+                        <p className="mt-1 truncate font-mono text-base font-bold text-gray-900 dark:text-white">
+                          #{activeOrder.order_number}
                         </p>
-                        <p className="truncate font-mono text-sm font-semibold text-blue-950 dark:text-blue-50">
-                          {activeOrder.order_number}
-                        </p>
-                        <p className="text-xs text-blue-700/90 dark:text-blue-300/90">
-                          {activeOrder.total_items} pakaian
+                        <p className="mt-0.5 text-sm font-medium text-gray-500 dark:text-gray-400">
+                          {activeOrder.total_items} Pakaian
                         </p>
                       </div>
-                      <Badge size="sm" color={getStatusColor(activeOrder.current_status)}>
-                        {formatStatus(activeOrder.current_status)}
-                      </Badge>
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge size="md" color={getStatusColor(activeOrder.current_status)}>
+                          {formatStatus(activeOrder.current_status)}
+                        </Badge>
+                        <p className="text-[10px] text-gray-400 font-medium">
+                          Scan {new Date(activeOrder.created_at!).toLocaleDateString('id-ID')}
+                        </p>
+                      </div>
                     </div>
 
-                    {orderImageUrls.length > 0 && (
-                      <div className="border-b border-blue-200/40 px-1.5 py-1.5 dark:border-blue-800/40 sm:px-2 sm:py-2">
-                        <p className="mb-1 px-0.5 text-[9px] font-medium uppercase tracking-wide text-blue-800/80 dark:text-blue-300/80 sm:px-1 sm:text-[10px]">
-                          Foto order
-                        </p>
-                        <div className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2 sm:pb-1">
-                          {orderImageUrls.map((url, idx) => (
-                            <button
-                              key={`${url}-${idx}`}
-                              type="button"
-                              onClick={() => setOrderImageLightbox(url)}
-                              className="h-[4.5rem] w-[4.5rem] shrink-0 snap-start overflow-hidden rounded-md border border-blue-200/80 bg-white shadow-sm ring-offset-2 transition hover:ring-2 hover:ring-blue-400 dark:border-blue-700 dark:bg-gray-900 sm:h-24 sm:w-24 sm:rounded-lg"
-                            >
-                              <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
-                            </button>
-                          ))}
+                    <div className="p-4 sm:p-6 space-y-4">
+                      {orderImageUrls.length > 0 && (
+                        <div>
+                          <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 sm:text-[11px]">
+                            Foto Bukti Order
+                          </p>
+                          <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide">
+                            {orderImageUrls.map((url, idx) => (
+                              <button
+                                key={`${url}-${idx}`}
+                                type="button"
+                                onClick={() => setOrderImageLightbox(url)}
+                                className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-white ring-brand-500/30 transition-all hover:ring-4 dark:border-gray-800 dark:bg-gray-950 sm:h-24 sm:w-24"
+                              >
+                                <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {activeOrder.notes && (
-                      <div className="px-2.5 py-2 sm:px-4 sm:py-3">
-                        <p className="text-[9px] font-semibold uppercase tracking-wide text-blue-800/80 dark:text-blue-300/80 sm:text-[10px]">
-                          Catatan order
-                        </p>
-                        <p
-                          className={`mt-0.5 whitespace-pre-wrap text-xs leading-snug text-blue-950/90 dark:text-blue-50/90 sm:mt-1 sm:text-sm ${
-                            orderNotesExpanded ? "" : "line-clamp-3"
-                          }`}
-                        >
-                          {activeOrder.notes}
-                        </p>
-                        {activeOrder.notes.length > 90 && (
+                      {activeOrder.notes && (
+                        <div className="rounded-xl bg-gray-50/50 p-3 dark:bg-white/[0.02]">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 sm:text-[11px]">
+                            Catatan Khusus
+                          </p>
+                          <p className={`mt-1 whitespace-pre-wrap text-[13px] leading-relaxed text-gray-600 dark:text-gray-300 ${orderNotesExpanded ? "" : "line-clamp-3"}`}>
+                            {activeOrder.notes}
+                          </p>
+                          {activeOrder.notes.length > 90 && (
+                            <button
+                              type="button"
+                              onClick={() => setOrderNotesExpanded((e) => !e)}
+                              className="mt-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                            >
+                              {orderNotesExpanded ? "Tampilkan lebih sedikit" : "Lihat selengkapnya"}
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {getNextStatus(activeOrder.current_status) && (
+                        <div className="pt-2">
                           <button
                             type="button"
-                            onClick={() => setOrderNotesExpanded((e) => !e)}
-                            className="mt-1 text-xs font-medium text-blue-700 underline decoration-blue-400/60 underline-offset-2 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200"
+                            onClick={handleOpenStatusModal}
+                            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-brand-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/25 ring-offset-2 transition-all hover:bg-brand-600 hover:shadow-brand-500/40 active:scale-[0.98] focus:ring-4 focus:ring-brand-500/20"
                           >
-                            {orderNotesExpanded ? "Ringkas" : "Selengkapnya"}
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {!activeOrder.notes && orderImageUrls.length === 0 && (
-                      <p className="px-2.5 py-1.5 text-[11px] text-blue-800/70 dark:text-blue-300/70 sm:px-4 sm:py-2 sm:text-xs">
-                        Belum ada foto atau catatan pada order ini.
-                      </p>
-                    )}
-
-                    {getNextStatus(activeOrder.current_status) && (
-                      <div className="border-t border-blue-200/50 p-1.5 dark:border-blue-800/50 sm:p-3">
-                        <button
-                          type="button"
-                          onClick={handleOpenStatusModal}
-                          className="flex w-full items-center justify-center gap-1.5 rounded-md bg-blue-600 px-2.5 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-blue-700 active:bg-blue-800 touch-manipulation sm:gap-2 sm:rounded-lg sm:px-3 sm:py-2.5 sm:text-sm"
-                        >
-                          <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                          </svg>
-                          <span className="truncate">
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
                             Lanjut ke {formatStatus(getNextStatus(activeOrder.current_status)!)}
-                          </span>
-                        </button>
-                      </div>
-                    )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -1116,30 +1119,31 @@ export default function ScanQR() {
                   </div>
                 )}
 
-                {/* Aksi General (Selalu Tampil) */}
-                <div className="flex flex-col-reverse gap-2 border-t border-gray-200 pt-3 dark:border-gray-700 md:flex-row md:items-center md:justify-end md:gap-3 md:pt-4">
+                <div className="flex flex-col-reverse gap-2 border-t border-gray-200 pt-5 dark:border-gray-700 md:flex-row md:items-center md:justify-end md:gap-3">
                   <button
                     type="button"
                     onClick={handleScanAgain}
-                    className="inline-flex w-full md:w-auto items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 touch-manipulation"
+                    className="inline-flex w-full md:w-auto items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-bold text-gray-600 hover:bg-gray-50 active:scale-95 transition-all dark:border-white/10 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                   >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                     Scan Siswa Lain
                   </button>
-                  {activeOrder && (
-                     <button
-                        type="button"
-                        onClick={handleCreateOrder}
-                        disabled={!scannedStudent.is_active}
-                        className="inline-flex w-full md:w-auto items-center justify-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation"
-                      >
-                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                       </svg>
-                       Buat Order Lain
-                     </button>
+                  
+                  {/* Tampilkan tombol "Buat Order Lain" HANYA jika TIDAK ada activeOrder */}
+                  {!activeOrder && (
+                    <button
+                      type="button"
+                      onClick={handleCreateOrder}
+                      disabled={!scannedStudent.is_active}
+                      className="inline-flex w-full md:w-auto items-center justify-center gap-2 rounded-xl bg-brand-500 px-7 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all"
+                    >
+                      <svg className="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Buat Order Baru
+                    </button>
                   )}
                 </div>
               </div>
