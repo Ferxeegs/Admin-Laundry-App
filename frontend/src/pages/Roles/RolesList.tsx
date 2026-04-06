@@ -36,6 +36,7 @@ export default function RolesList() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const canUpdateRole = hasPermission("update_role");
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -321,6 +322,7 @@ export default function RolesList() {
                         <TableCell className="px-5 py-4 text-center align-middle">
                           <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                             {isClickable && (
+                              canUpdateRole && (
                               <button
                                 type="button"
                                 onClick={() => navigate(`/roles/${String(role.id)}/edit`)}
@@ -329,6 +331,7 @@ export default function RolesList() {
                               >
                                 <PencilIcon className="w-4 h-4" />
                               </button>
+                              )
                             )}
                           </div>
                         </TableCell>

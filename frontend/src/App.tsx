@@ -111,7 +111,7 @@ export default function App() {
             <Route
               path="/roles/:id/edit"
               element={
-                <ProtectedRoute requiredPermission="update_role">
+                <ProtectedRoute requiredPermission={["update_role", "view_role"]}>
                   <EditRole />
                 </ProtectedRoute>
               }

@@ -46,8 +46,9 @@ export default function QRCodes() {
   const { hasPermission } = useAuth();
   const navigate = useNavigate();
 
-  const canCreateQr = hasPermission("create_student");
-  const canDeleteQr = hasPermission("delete_student");
+  const canCreateQr = hasPermission("create_qr_code");
+  const canDeleteQr = hasPermission("delete_qr_code");
+  const canUpdateQr = hasPermission("update_qr_code");
 
   const [qrCodes, setQrCodes] = useState<QrCode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -412,12 +413,14 @@ export default function QRCodes() {
                           <TableCell className="px-4 py-4 align-middle text-center">
                             <div className="flex items-center justify-center gap-2">
                               {!qr.student_id ? (
-                                <button
-                                  onClick={() => openAssignFlow(qr)}
-                                  className="px-3 py-1.5 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600"
-                                >
-                                  Assign
-                                </button>
+                                canUpdateQr && (
+                                  <button
+                                    onClick={() => openAssignFlow(qr)}
+                                    className="px-3 py-1.5 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600"
+                                  >
+                                    Assign
+                                  </button>
+                                )
                               ) : (
                                 <button
                                   onClick={() => { setReleaseQrCode(qr); openRelease(); }}

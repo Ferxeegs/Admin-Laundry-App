@@ -574,7 +574,7 @@ export default function CreateOrder() {
                       </label>
                       {isCompressingImages && (
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          Memampatkan gambar…
+                          Memproses gambar…
                         </span>
                       )}
                       

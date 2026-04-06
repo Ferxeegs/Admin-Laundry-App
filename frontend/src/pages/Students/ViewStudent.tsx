@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "../../components/ui/table";
 import StudentSidebar from "./StudentSidebar";
+import { useAuth } from "../../context/AuthContext";
 
 interface MonthlyOrderStat {
   monthYear: string;
@@ -56,6 +57,8 @@ export default function ViewStudent() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyOrderStat[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const { hasPermission } = useAuth();
+  const canEditStudent = hasPermission("update_student");
 
   useEffect(() => {
     if (id) {
@@ -217,13 +220,15 @@ export default function ViewStudent() {
             Detail informasi siswa
           </p>
         </div>
-        <Link
-          to={`/students/${student.id}/edit`}
-          className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation flex-shrink-0 sm:px-4 sm:py-2.5"
-        >
-          <PencilIcon className="w-4 h-4" />
-          <span className="hidden sm:inline">Edit Siswa</span>
-        </Link>
+        {canEditStudent && (
+          <Link
+            to={`/students/${student.id}/edit`}
+            className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation flex-shrink-0 sm:px-4 sm:py-2.5"
+          >
+            <PencilIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">Edit Siswa</span>
+          </Link>
+        )}
       </div>
 
       {/* Mobile-First Layout */}
