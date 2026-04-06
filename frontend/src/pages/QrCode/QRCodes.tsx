@@ -287,7 +287,7 @@ export default function QRCodes() {
                 <div className="relative flex-1 max-w-md">
                   <input
                     type="text"
-                    placeholder="Cari token QR / nomor / dormitory..."
+                    placeholder="Cari token QR / nomor / asrama..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full h-10 sm:h-11 rounded-lg border border-gray-200 bg-transparent py-2 pl-10 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
@@ -620,7 +620,7 @@ export default function QRCodes() {
         message={
           deleteQrCode ? (
             <>
-              QR <strong className="text-gray-800 dark:text-white">{deleteQrCode.token_qr}</strong>{" "}
+              QR <strong className="text-gray-800 dark:text-white">{deleteQrCode.unique_code || deleteQrCode.token_qr}</strong>{" "}
               akan dihapus permanen.
             </>
           ) : (
@@ -644,10 +644,10 @@ export default function QRCodes() {
           {assignQrCode && (
             <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-900/30">
               <div className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
-                Token
+                Kode QR
               </div>
               <div className="mt-1 font-mono text-sm break-all">
-                {assignQrCode.token_qr}
+                {assignQrCode.unique_code || assignQrCode.token_qr}
               </div>
             </div>
           )}
@@ -729,7 +729,7 @@ export default function QRCodes() {
         title="Release QR Tas?"
         message={
           releaseQrCode
-            ? `QR ini akan dikosongkan (student_id = NULL).\nToken: ${releaseQrCode.token_qr}`
+            ? `QR ini akan dikosongkan (student_id = NULL).\nKode QR: ${releaseQrCode.unique_code || releaseQrCode.token_qr}`
             : "QR akan dilepas."
         }
         confirmText="Release"

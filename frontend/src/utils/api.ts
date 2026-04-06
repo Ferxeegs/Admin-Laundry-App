@@ -2313,9 +2313,9 @@ export const orderAPI = {
   /**
    * Create new order
    * Staff only inputs total_items, system automatically calculates:
-   * - free_items_used (based on daily quota from settings)
-   * - paid_items_count (items exceeding quota)
-   * - additional_fee (paid_items_count * 4000)
+   * - free_items_used (weekly laundry quota per student, Mon WIB reset; setting monthly_quota)
+   * - paid_items_count (items exceeding quota, charged at price_per_item)
+   * - additional_fee for over-quota items; add-ons billed separately (not counted toward quota)
    */
   createOrder: async (data: FormData | {
     student_id: string;
@@ -2408,9 +2408,9 @@ export const orderAPI = {
   /**
    * Update order (not status)
    * Staff only inputs total_items, system automatically recalculates:
-   * - free_items_used (based on daily quota from settings)
+   * - free_items_used (weekly quota for the order's week, Mon WIB)
    * - paid_items_count (items exceeding quota)
-   * - additional_fee (paid_items_count * 4000)
+   * - additional_fee from price_per_item; add-ons separate from quota
    */
   updateOrder: async (
     id: string,

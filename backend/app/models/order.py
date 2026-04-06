@@ -12,8 +12,7 @@ from .invoice import Invoice
 class OrderStatus(PyEnum):
     """Status order laundry"""
     RECEIVED = "RECEIVED"
-    WASHING_DRYING = "WASHING_DRYING"
-    IRONING = "IRONING"
+    WASHING_IRONING = "WASHING_IRONING"  # cuci + setrika (satu tahap)
     COMPLETED = "COMPLETED"
     PICKED_UP = "PICKED_UP"
 
@@ -183,7 +182,7 @@ class OrderTracking(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     order_id = Column(String(36), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, index=True)
     staff_id = Column(String(36), nullable=True, index=True)  # ID Petugas yang memproses [cite: 32]
-    status_to = Column(String(255), nullable=False)  # e.g., 'WASHING_DRYING'
+    status_to = Column(String(255), nullable=False)  # e.g., 'WASHING_IRONING'
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
 

@@ -59,12 +59,11 @@ def _ensure_dormitory_id(
 
 def get_next_statuses(current_status: OrderStatus):
     """
-    Status flow: RECEIVED -> WASHING_DRYING -> IRONING -> COMPLETED -> PICKED_UP
+    Status flow: RECEIVED -> WASHING_IRONING -> COMPLETED -> PICKED_UP
     """
     status_flow = {
-        OrderStatus.RECEIVED: [OrderStatus.WASHING_DRYING],
-        OrderStatus.WASHING_DRYING: [OrderStatus.IRONING],
-        OrderStatus.IRONING: [OrderStatus.COMPLETED],
+        OrderStatus.RECEIVED: [OrderStatus.WASHING_IRONING],
+        OrderStatus.WASHING_IRONING: [OrderStatus.COMPLETED],
         OrderStatus.COMPLETED: [OrderStatus.PICKED_UP],
         OrderStatus.PICKED_UP: [],
     }

@@ -6,12 +6,22 @@ import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import { studentAPI, mediaAPI, orderAPI, settingAPI, qrCodeAPI, getBaseUrl } from "../../utils/api";
 import { compressOrderImage } from "../../utils/compressOrderImage";
+import { getJakartaWeekRangeMs } from "../../utils/jakartaWeek";
 import { Modal } from "../../components/ui/modal";
 import { useToast } from "../../context/ToastContext";
 import Label from "../../components/form/Label";
 // import { AngleLeftIcon } from "../../icons";
 import Badge from "../../components/ui/badge/Badge";
 import TableSkeleton from "../../components/common/TableSkeleton";
+
+type ActiveOrderSnapshot = {
+  id: string;
+  order_number: string;
+  current_status: string;
+  total_items: number;
+  created_at: string | null;
+  notes: string | null;
+};
 
 interface Student {
   id: string;
@@ -283,88 +293,102 @@ export default function ScanQR() {
         return;
       }
 
-      // Jika ini scan ulang untuk update status
+      // Scan ulang token yang sama: lanjutkan alur status (modal untuk Selesai → Diambil)
       if (shouldAutoAdvance) {
-        const advRes = await qrCodeAPI.advanceTrackingByQrToken(token, { notes: null });
-        if (!advRes.success) {
-          setError(advRes.message || "Gagal memperbarui status (scan).");
+        const orderSnap = await fetchActiveOrder(qrData.student_id);
+        if (!orderSnap) {
           canAutoAdvanceRef.current = false;
           lastBagTokenRef.current = null;
-          return;
-        }
+          // Lanjut ke alur scan normal di bawah
+        } else {
+          const nextStatus = getNextStatus(orderSnap.current_status);
+          if (nextStatus === "PICKED_UP") {
+            handleOpenStatusModal();
+            setIsLoading(false);
+            return;
+          }
 
-        success("Status order berhasil diperbarui (scan).");
+          const advRes = await qrCodeAPI.advanceTrackingByQrToken(token, { notes: null });
+          if (!advRes.success) {
+            setError(advRes.message || "Gagal memperbarui status (scan).");
+            canAutoAdvanceRef.current = false;
+            lastBagTokenRef.current = null;
+            setIsLoading(false);
+            return;
+          }
 
-        // Reload student + active order
-        const studentRes = await studentAPI.getStudentById(qrData.student_id);
-        if (studentRes.success && studentRes.data) {
-          const s = studentRes.data as any;
-          setScannedStudent({
-            id: s.id,
-            national_id_number: s.national_id_number ?? s.student_number ?? "",
-            fullname: s.fullname,
-            phone_number: s.phone_number ?? null,
-            dormitory: null,
-            grade_level: null,
-            unique_code: null,
-            guardian_name: s.guardian_name ?? null,
-            qr_code: null,
-            is_active: typeof s.is_active === "boolean" ? s.is_active : true,
-            created_at: s.created_at ?? null,
-            updated_at: s.updated_at ?? null,
-          });
-        }
+          success("Status order berhasil diperbarui (scan).");
 
-        // Fetch profile picture (agar saat scan ulang tetap terlihat jelas)
-        try {
-          const sId = qrData.student_id;
-          if (sId) {
-            const mediaResponse = await mediaAPI.getMediaByModel(
-              "Student",
-              sId,
-              "profile-pictures"
-            );
+          const studentRes = await studentAPI.getStudentById(qrData.student_id);
+          if (studentRes.success && studentRes.data) {
+            const s = studentRes.data as any;
+            setScannedStudent({
+              id: s.id,
+              national_id_number: s.national_id_number ?? s.student_number ?? "",
+              fullname: s.fullname,
+              phone_number: s.phone_number ?? null,
+              dormitory: null,
+              grade_level: null,
+              unique_code: null,
+              guardian_name: s.guardian_name ?? null,
+              qr_code: null,
+              is_active: typeof s.is_active === "boolean" ? s.is_active : true,
+              created_at: s.created_at ?? null,
+              updated_at: s.updated_at ?? null,
+            });
+          }
 
-            let mediaArray: any[] = [];
-            if (mediaResponse.success && mediaResponse.data) {
-              if (Array.isArray(mediaResponse.data)) {
-                mediaArray = mediaResponse.data;
-              } else if (
-                (mediaResponse.data as any).media &&
-                Array.isArray((mediaResponse.data as any).media)
-              ) {
-                mediaArray = (mediaResponse.data as any).media;
+          try {
+            const sId = qrData.student_id;
+            if (sId) {
+              const mediaResponse = await mediaAPI.getMediaByModel(
+                "Student",
+                sId,
+                "profile-pictures"
+              );
+
+              let mediaArray: any[] = [];
+              if (mediaResponse.success && mediaResponse.data) {
+                if (Array.isArray(mediaResponse.data)) {
+                  mediaArray = mediaResponse.data;
+                } else if (
+                  (mediaResponse.data as any).media &&
+                  Array.isArray((mediaResponse.data as any).media)
+                ) {
+                  mediaArray = (mediaResponse.data as any).media;
+                }
+              }
+
+              if (mediaArray.length > 0) {
+                const media = mediaArray[0];
+                let mediaUrl = media.url;
+                mediaUrl = mediaUrl.replace(/^\/api\/v1/, "").replace(/^\/api/, "");
+                if (!mediaUrl.startsWith("/")) mediaUrl = `/${mediaUrl}`;
+                setProfileImage(`${getBaseUrl()}${mediaUrl}`);
+              } else {
+                setProfileImage(null);
               }
             }
-
-            if (mediaArray.length > 0) {
-              const media = mediaArray[0];
-              let mediaUrl = media.url;
-              mediaUrl = mediaUrl.replace(/^\/api\/v1/, "").replace(/^\/api/, "");
-              if (!mediaUrl.startsWith("/")) mediaUrl = `/${mediaUrl}`;
-              setProfileImage(`${getBaseUrl()}${mediaUrl}`);
-            } else {
-              setProfileImage(null);
-            }
+          } catch {
+            setProfileImage(null);
           }
-        } catch {
-          setProfileImage(null);
-        }
-        setProfileImageFailed(false);
-        setOrderImageUrls([]);
-        setOrderNotesExpanded(false);
-        setOrderImageLightbox(null);
+          setProfileImageFailed(false);
+          setOrderImageUrls([]);
+          setOrderNotesExpanded(false);
+          setOrderImageLightbox(null);
 
-        const hasActiveOrder = await fetchActiveOrder(qrData.student_id);
-        if (!hasActiveOrder) {
-          canAutoAdvanceRef.current = false;
-          lastBagTokenRef.current = null;
-          await fetchRemainingDailyQuota(qrData.student_id);
-        } else {
-          canAutoAdvanceRef.current = true;
-          lastBagTokenRef.current = token;
+          const refreshed = await fetchActiveOrder(qrData.student_id);
+          if (!refreshed) {
+            canAutoAdvanceRef.current = false;
+            lastBagTokenRef.current = null;
+            await fetchRemainingWeeklyQuota(qrData.student_id);
+          } else {
+            canAutoAdvanceRef.current = true;
+            lastBagTokenRef.current = token;
+          }
+          setIsLoading(false);
+          return;
         }
-        return;
       }
 
       // Normal load setelah scan pertama
@@ -426,11 +450,11 @@ export default function ScanQR() {
         setProfileImage(null);
       }
 
-      const hasActiveOrder = await fetchActiveOrder(qrData.student_id);
-      canAutoAdvanceRef.current = hasActiveOrder;
+      const activeSnap = await fetchActiveOrder(qrData.student_id);
+      canAutoAdvanceRef.current = !!activeSnap;
 
-      if (!hasActiveOrder) {
-        await fetchRemainingDailyQuota(qrData.student_id);
+      if (!activeSnap) {
+        await fetchRemainingWeeklyQuota(qrData.student_id);
       } else {
         setRemainingQuota(null);
         setQuotaLimit(null);
@@ -451,8 +475,8 @@ export default function ScanQR() {
     }
   };
 
-  /** Mengembalikan true jika ada order aktif (bukan PICKED_UP). */
-  const fetchActiveOrder = async (studentId: string): Promise<boolean> => {
+  /** Order aktif (bukan PICKED_UP); mengembalikan snapshot terbaru dari API dan menyinkronkan state. */
+  const fetchActiveOrder = async (studentId: string): Promise<ActiveOrderSnapshot | null> => {
     try {
       const response = await orderAPI.getAllOrders({
         page: 1,
@@ -467,7 +491,7 @@ export default function ScanQR() {
         ) as any | undefined;
 
         if (active) {
-          setActiveOrder({
+          const snap: ActiveOrderSnapshot = {
             id: active.id,
             order_number: active.order_number,
             current_status: active.current_status,
@@ -477,21 +501,22 @@ export default function ScanQR() {
               typeof active.notes === "string" && active.notes.trim() !== ""
                 ? active.notes.trim()
                 : null,
-          });
-          return true;
+          };
+          setActiveOrder(snap);
+          return snap;
         }
         setActiveOrder(null);
-        return false;
+        return null;
       }
       setActiveOrder(null);
     } catch (err) {
       console.error("Error fetching active order:", err);
       setActiveOrder(null);
     }
-    return false;
+    return null;
   };
 
-  const fetchRemainingDailyQuota = async (studentId: string) => {
+  const fetchRemainingWeeklyQuota = async (studentId: string) => {
     setIsLoadingQuota(true);
     try {
       const settingsRes = await settingAPI.getByGroup("order");
@@ -500,15 +525,11 @@ export default function ScanQR() {
         typeof orderSettings?.monthly_quota === "number"
           ? orderSettings.monthly_quota
           : typeof orderSettings?.monthly_quota === "string"
-            ? parseInt(orderSettings.monthly_quota, 10) || 4
-            : 4;
+            ? parseInt(orderSettings.monthly_quota, 10) || 28
+            : 28;
       setQuotaLimit(limit);
 
-      const now = new Date();
-      const dayStart = new Date(
-        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)
-      );
-      const dayEndExclusive = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+      const { startMs, endExclusiveMs } = getJakartaWeekRangeMs(new Date());
 
       let allOrders: any[] = [];
       let page = 1;
@@ -525,13 +546,13 @@ export default function ScanQR() {
         if (response.success && response.data) {
           const orders = response.data.orders || [];
 
-          const todaysOrders = orders.filter((order: any) => {
+          const thisWeekOrders = orders.filter((order: any) => {
             if (!order.created_at) return false;
-            const orderDate = new Date(order.created_at);
-            return orderDate >= dayStart && orderDate < dayEndExclusive;
+            const t = new Date(order.created_at).getTime();
+            return t >= startMs && t < endExclusiveMs;
           });
 
-          allOrders = [...allOrders, ...todaysOrders];
+          allOrders = [...allOrders, ...thisWeekOrders];
 
           const pagination = response.data.pagination;
           if (pagination && pagination.totalPages && page < pagination.totalPages) {
@@ -550,7 +571,7 @@ export default function ScanQR() {
 
       setRemainingQuota(Math.max(0, limit - totalFreeItemsUsed));
     } catch (err) {
-      console.error("Error fetching daily quota:", err);
+      console.error("Error fetching weekly quota:", err);
       setRemainingQuota(null);
       setQuotaLimit(null);
     } finally {
@@ -577,10 +598,10 @@ export default function ScanQR() {
     switch (status) {
       case "RECEIVED":
         return "Diterima";
+      case "WASHING_IRONING":
       case "WASHING_DRYING":
-        return "Cuci / Kering";
       case "IRONING":
-        return "Setrika";
+        return "Cuci-setrika";
       case "COMPLETED":
         return "Selesai";
       case "PICKED_UP":
@@ -592,19 +613,22 @@ export default function ScanQR() {
 
   const getNextStatus = (currentStatus: string): string | null => {
     const statusFlow: Record<string, string> = {
-      RECEIVED: "WASHING_DRYING",
-      WASHING_DRYING: "IRONING",
-      IRONING: "COMPLETED",
+      RECEIVED: "WASHING_IRONING",
+      WASHING_IRONING: "COMPLETED",
       COMPLETED: "PICKED_UP",
-      PICKED_UP: "", // Final status
+      PICKED_UP: "",
+      WASHING_DRYING: "WASHING_IRONING",
+      IRONING: "COMPLETED",
     };
-    return statusFlow[currentStatus] || null;
+    const next = statusFlow[currentStatus];
+    return next === "" || next === undefined ? null : next;
   };
 
   const getStatusColor = (status: string): "primary" | "success" | "warning" | "info" => {
     switch (status) {
       case "RECEIVED":
         return "info";
+      case "WASHING_IRONING":
       case "WASHING_DRYING":
       case "IRONING":
         return "warning";
@@ -757,9 +781,9 @@ export default function ScanQR() {
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
             Halaman ini digunakan untuk memindai QR code siswa saat penyerahan atau pengambilan laundry.
-            Setelah QR code terdeteksi, sistem akan menampilkan data siswa, sisa kuota gratis hari ini,
+            Setelah QR code terdeteksi, sistem akan menampilkan data siswa, sisa kuota gratis cuci minggu ini,
             dan order aktif (jika ada). Anda dapat membuat order baru atau mengubah status order
-            (Diterima → Cuci & Kering → Setrika → Selesai → Diambil).
+            (Diterima → Cuci-setrika → Selesai → Diambil).
           </p>
           <ul className="mt-3 space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
             <li className="flex items-start gap-2">
@@ -917,11 +941,11 @@ export default function ScanQR() {
                   </div>
                 </div>
 
-                {/* Kuota hanya jika belum ada order aktif (alur buat order baru) */}
+                {/* Kuota cuci pakaian mingguan; addon tidak memakai kuota ini */}
                 {!activeOrder && (
                   <div className="flex items-center justify-between gap-2 rounded-lg border border-brand-200/70 bg-gradient-to-r from-brand-50/95 to-brand-100/60 px-3 py-2 shadow-sm dark:border-brand-800/50 dark:from-brand-900/30 dark:to-brand-800/20 sm:rounded-xl sm:px-5 sm:py-3.5">
                     <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300 sm:text-sm">
-                      Kuota hari ini
+                      Kuota minggu ini
                     </span>
                     {isLoadingQuota ? (
                       <span className="text-sm text-gray-500">Memuat…</span>

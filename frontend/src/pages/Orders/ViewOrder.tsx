@@ -9,6 +9,7 @@ import Label from "../../components/form/Label";
 import { Modal } from "../../components/ui/modal";
 import StatusLogModal from "../../components/Orders/StatusLogModal";
 import { orderAPI, studentAPI, userAPI, mediaAPI, settingAPI, getBaseUrl } from "../../utils/api";
+import { compressOrderImage } from "../../utils/compressOrderImage";
 import { AngleLeftIcon, PencilIcon } from "../../icons";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
@@ -83,6 +84,17 @@ interface Media {
   size: number;
 }
 
+/** Status proses cuci/setrika (termasuk nilai lawas sebelum migrasi DB). */
+const PROCESS_TRACKING_STATUSES = new Set(["WASHING_IRONING", "WASHING_DRYING", "IRONING"]);
+
+function findEarliestProcessTracking(trackings: OrderTracking[]): OrderTracking | undefined {
+  const candidates = trackings.filter((t) => PROCESS_TRACKING_STATUSES.has(t.status_to));
+  if (candidates.length === 0) return undefined;
+  return [...candidates].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  )[0];
+}
+
 export default function ViewOrder() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -95,15 +107,55 @@ export default function ViewOrder() {
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [statusNotes, setStatusNotes] = useState<string>("");
+  const [statusImage, setStatusImage] = useState<File | null>(null);
+  const [statusImagePreview, setStatusImagePreview] = useState<string | null>(null);
+  const [isCompressingStatusImage, setIsCompressingStatusImage] = useState(false);
   const [images, setImages] = useState<Media[]>([]);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
-  const [dailyQuotaLimit, setDailyQuotaLimit] = useState(4);
+  const [weeklyQuotaLimit, setWeeklyQuotaLimit] = useState(28);
   // const [ , setPricePerItem] = useState<number>(4000); // Default value
   const { success, error: showError } = useToast();
   const { hasPermission } = useAuth();
   const canUpdateOrder = hasPermission("update_order");
 
+  const handleStatusImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showError("Hanya file gambar yang diizinkan.");
+      e.target.value = "";
+      return;
+    }
+
+    setIsCompressingStatusImage(true);
+    try {
+      const compressed = await compressOrderImage(file);
+      setStatusImage(compressed);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setStatusImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(compressed);
+    } catch {
+      showError("Gagal memproses gambar. Coba lagi atau pilih gambar lain.");
+      setStatusImage(null);
+      setStatusImagePreview(null);
+    } finally {
+      setIsCompressingStatusImage(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleRemoveStatusImage = () => {
+    setStatusImage(null);
+    setStatusImagePreview(null);
+    const fileInput = document.getElementById("view-order-status-image-input") as HTMLInputElement;
+    const cameraInput = document.getElementById("view-order-status-camera") as HTMLInputElement;
+    if (fileInput) fileInput.value = "";
+    if (cameraInput) cameraInput.value = "";
+  };
 
   useEffect(() => {
     if (id) {
@@ -208,8 +260,8 @@ export default function ViewOrder() {
       if (settingsResponse.success && settingsResponse.data) {
         const mq = settingsResponse.data.monthly_quota;
         const q =
-          typeof mq === "number" ? mq : typeof mq === "string" ? parseInt(mq, 10) || 4 : 4;
-        setDailyQuotaLimit(q);
+          typeof mq === "number" ? mq : typeof mq === "string" ? parseInt(mq, 10) || 28 : 28;
+        setWeeklyQuotaLimit(q);
       }
 
       if (response.success && response.data) {
@@ -337,10 +389,10 @@ export default function ViewOrder() {
     switch (status) {
       case "RECEIVED":
         return "Diterima";
+      case "WASHING_IRONING":
       case "WASHING_DRYING":
-        return "Cuci / Kering";
       case "IRONING":
-        return "Setrika";
+        return "Cuci-setrika";
       case "COMPLETED":
         return "Selesai";
       case "PICKED_UP":
@@ -354,6 +406,7 @@ export default function ViewOrder() {
     switch (status) {
       case "RECEIVED":
         return "info";
+      case "WASHING_IRONING":
       case "WASHING_DRYING":
       case "IRONING":
         return "warning";
@@ -368,21 +421,26 @@ export default function ViewOrder() {
 
   const getNextStatus = (currentStatus: string): string | null => {
     const statusFlow: Record<string, string> = {
-      RECEIVED: "WASHING_DRYING",
-      WASHING_DRYING: "IRONING",
-      IRONING: "COMPLETED",
+      RECEIVED: "WASHING_IRONING",
+      WASHING_IRONING: "COMPLETED",
       COMPLETED: "PICKED_UP",
-      PICKED_UP: "", // Final status
+      PICKED_UP: "",
+      // Data lawas sebelum migrasi (jarang):
+      WASHING_DRYING: "WASHING_IRONING",
+      IRONING: "COMPLETED",
     };
-    return statusFlow[currentStatus] || null;
+    const next = statusFlow[currentStatus];
+    return next === "" || next === undefined ? null : next;
   };
 
   const getAllStatuses = (): string[] => {
-    return ["RECEIVED", "WASHING_DRYING", "IRONING", "COMPLETED", "PICKED_UP"];
+    return ["RECEIVED", "WASHING_IRONING", "COMPLETED", "PICKED_UP"];
   };
 
   const getStatusIndex = (status: string): number => {
-    return getAllStatuses().indexOf(status);
+    const normalized =
+      status === "WASHING_DRYING" || status === "IRONING" ? "WASHING_IRONING" : status;
+    return getAllStatuses().indexOf(normalized);
   };
 
   const canEditOrder = (status: string): boolean => {
@@ -452,12 +510,18 @@ export default function ViewOrder() {
 
   const handleOpenStatusModal = () => {
     setStatusNotes("");
+    setStatusImage(null);
+    setStatusImagePreview(null);
+    setIsCompressingStatusImage(false);
     setIsStatusModalOpen(true);
   };
 
   const handleCloseStatusModal = () => {
     setIsStatusModalOpen(false);
     setStatusNotes("");
+    setStatusImage(null);
+    setStatusImagePreview(null);
+    setIsCompressingStatusImage(false);
   };
 
   const handleOpenImageModal = (index: number) => {
@@ -497,7 +561,21 @@ export default function ViewOrder() {
       });
 
       if (response.success) {
-        // Refresh order data
+        if (statusImage && response.data?.trackings && response.data.trackings.length > 0) {
+          const latestTracking = response.data.trackings[response.data.trackings.length - 1];
+          const uploadResult = await mediaAPI.uploadMedia(
+            statusImage,
+            "OrderTracking",
+            latestTracking.id,
+            "status_update"
+          );
+          if (!uploadResult.success) {
+            showError(
+              uploadResult.message ||
+                "Gagal mengunggah foto status. Status order tetap diperbarui; silakan unggah foto dari log status jika perlu."
+            );
+          }
+        }
         await fetchOrderData();
         handleCloseStatusModal();
         success("Status order berhasil diupdate!");
@@ -617,7 +695,11 @@ export default function ViewOrder() {
                     const isCurrent = index === currentIndex;
                     const isReceived = status === "RECEIVED";
                     // For RECEIVED, use order.created_at; for others, use tracking
-                    const tracking = isReceived ? null : order.trackings.find(t => t.status_to === status);
+                    const tracking = isReceived
+                      ? null
+                      : status === "WASHING_IRONING"
+                        ? findEarliestProcessTracking(order.trackings)
+                        : order.trackings.find((t) => t.status_to === status);
                     const statusTime = isReceived ? order.created_at : tracking?.created_at;
                     const statusStaff = isReceived ? order.created_by : tracking?.staff_id;
                     
@@ -684,7 +766,11 @@ export default function ViewOrder() {
                       const isCompleted = index <= currentIndex;
                       const isCurrent = index === currentIndex;
                       const isReceived = status === "RECEIVED";
-                      const tracking = isReceived ? null : order.trackings.find(t => t.status_to === status);
+                      const tracking = isReceived
+                        ? null
+                        : status === "WASHING_IRONING"
+                          ? findEarliestProcessTracking(order.trackings)
+                          : order.trackings.find((t) => t.status_to === status);
                       const statusTime = isReceived ? order.created_at : tracking?.created_at;
                       const statusStaff = isReceived ? order.created_by : tracking?.staff_id;
                       
@@ -806,7 +892,7 @@ export default function ViewOrder() {
                   Kuota Gratis Digunakan
                 </p>
                 <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                  {order.free_items_used} dari {dailyQuotaLimit} pakaian/hari
+                  {order.free_items_used} dari {weeklyQuotaLimit} pakaian/minggu
                 </p>
               </div>
               <div>
@@ -971,8 +1057,81 @@ export default function ViewOrder() {
               onChange={(e) => setStatusNotes(e.target.value)}
               placeholder="Masukkan catatan untuk perubahan status..."
               rows={3}
+              disabled={isUpdatingStatus || isCompressingStatusImage}
               className="w-full mt-2 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
+          </div>
+
+          <div className="mb-5">
+            <Label>Foto (Opsional)</Label>
+            <div className="mt-2 space-y-3">
+              {statusImagePreview ? (
+                <div className="relative">
+                  <img
+                    src={statusImagePreview}
+                    alt="Preview"
+                    className="h-48 w-full rounded-lg border border-gray-300 object-cover dark:border-gray-700"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveStatusImage}
+                    disabled={isUpdatingStatus || isCompressingStatusImage}
+                    className="absolute right-2 top-2 rounded-full bg-red-500 p-1.5 text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {isCompressingStatusImage && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Memampatkan gambar…</p>
+                  )}
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <label
+                      htmlFor="view-order-status-image-input"
+                      className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Pilih dari Galeri
+                    </label>
+                    <label
+                      htmlFor="view-order-status-camera"
+                      className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-600"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Ambil dari Kamera
+                    </label>
+                  </div>
+                </>
+              )}
+              <input
+                id="view-order-status-image-input"
+                type="file"
+                accept="image/*"
+                onChange={handleStatusImageChange}
+                disabled={isUpdatingStatus || isCompressingStatusImage}
+                className="hidden"
+              />
+              <input
+                id="view-order-status-camera"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleStatusImageChange}
+                disabled={isUpdatingStatus || isCompressingStatusImage}
+                className="hidden"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Foto akan diperkecil (maks. 1024px) dan dikompres ke WebP sebelum diunggah.
+              </p>
+            </div>
           </div>
 
           {error && (
@@ -985,7 +1144,7 @@ export default function ViewOrder() {
             <button
               type="button"
               onClick={handleCloseStatusModal}
-              disabled={isUpdatingStatus}
+              disabled={isUpdatingStatus || isCompressingStatusImage}
               className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
             >
               Batal
@@ -993,10 +1152,14 @@ export default function ViewOrder() {
             <button
               type="button"
               onClick={handleUpdateStatus}
-              disabled={isUpdatingStatus}
+              disabled={isUpdatingStatus || isCompressingStatusImage}
               className="px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isUpdatingStatus ? "Mengupdate..." : "Konfirmasi Update"}
+              {isUpdatingStatus
+                ? "Mengupdate..."
+                : isCompressingStatusImage
+                  ? "Memampatkan gambar…"
+                  : "Konfirmasi Update"}
             </button>
           </div>
         </div>

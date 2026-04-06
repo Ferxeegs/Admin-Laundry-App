@@ -10,7 +10,7 @@ export default function DashboardMetrics() {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<{
     totalStudents: number;
-    dailyQuota: number;
+    weeklyQuota: number;
     pricePerItem: number;
   } | null>(null);
 
@@ -34,12 +34,12 @@ export default function DashboardMetrics() {
             : 0;
 
         const orderSettings = settingsRes.success ? settingsRes.data : {};
-        const dailyQuota =
+        const weeklyQuota =
           typeof orderSettings?.monthly_quota === "number"
             ? orderSettings.monthly_quota
             : typeof orderSettings?.monthly_quota === "string"
-              ? parseInt(orderSettings.monthly_quota, 10) || 4
-              : 4;
+              ? parseInt(orderSettings.monthly_quota, 10) || 28
+              : 28;
         const pricePerItem =
           typeof orderSettings?.price_per_item === "number"
             ? orderSettings.price_per_item
@@ -49,7 +49,7 @@ export default function DashboardMetrics() {
 
         setStats({
           totalStudents,
-          dailyQuota,
+          weeklyQuota,
           pricePerItem,
         });
       } catch (err: unknown) {
@@ -104,9 +104,9 @@ export default function DashboardMetrics() {
       iconColor: "text-blue-600 dark:text-blue-400",
     },
     {
-      label: "Kuota Gratis Harian",
-      value: `${stats.dailyQuota} item`,
-      sub: "per siswa/hari",
+      label: "Kuota Gratis Mingguan",
+      value: `${stats.weeklyQuota} item`,
+      sub: "per siswa/minggu",
       icon: PieChartIcon,
       iconBg: "bg-amber-100 dark:bg-amber-900/30",
       iconColor: "text-amber-600 dark:text-amber-400",

@@ -401,7 +401,7 @@ export default function EditOrder() {
                     disabled={isLoading || isCompressingImages || !canEditOrder(orderStatus)}
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Sistem akan menghitung otomatis: kuota gratis (sesuai pengaturan, reset per hari), pakaian berbayar, dan total biaya sesuai harga per item di pengaturan
+                    Sistem akan menghitung otomatis: kuota gratis cuci per minggu, pakaian di luar kuota berbayar sesuai harga per item, dan layanan tambahan (addon) dihitung terpisah tanpa memakai kuota
                   </p>
                   {!canEditOrder(orderStatus) && (
                     <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">

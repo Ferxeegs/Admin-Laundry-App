@@ -386,7 +386,7 @@ export default function DownloadQRCodes() {
                     disabled={filteredList.length === 0}
                     className="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 disabled:opacity-50"
                   >
-                    Pilih semua tampilan
+                    Pilih semua
                   </button>
                   <button
                     type="button"

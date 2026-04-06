@@ -14,7 +14,7 @@ from app.core.deps_permission import require_permission
 from app.models.auth import User
 from app.models.order import Order, OrderAddon, OrderStatus, OrderTracking, Student, QR
 from app.models.common import Setting
-from app.utils.helpers import get_now_local, get_start_of_day_local
+from app.utils.helpers import get_now_local, get_start_of_day_local, get_week_range_local_monday
 from app.schemas.common import WebResponse
 from app.schemas.order import (
     OrderRead,
@@ -43,12 +43,11 @@ router = APIRouter()
 def get_next_statuses(current_status: OrderStatus) -> List[OrderStatus]:
     """
     Get list of valid next statuses based on current status.
-    Status flow: RECEIVED -> WASHING_DRYING -> IRONING -> COMPLETED -> PICKED_UP
+    Status flow: RECEIVED -> WASHING_IRONING -> COMPLETED -> PICKED_UP
     """
     status_flow = {
-        OrderStatus.RECEIVED: [OrderStatus.WASHING_DRYING],
-        OrderStatus.WASHING_DRYING: [OrderStatus.IRONING],
-        OrderStatus.IRONING: [OrderStatus.COMPLETED],
+        OrderStatus.RECEIVED: [OrderStatus.WASHING_IRONING],
+        OrderStatus.WASHING_IRONING: [OrderStatus.COMPLETED],
         OrderStatus.COMPLETED: [OrderStatus.PICKED_UP],
         OrderStatus.PICKED_UP: [],  # Final status, no next status
     }
@@ -57,12 +56,13 @@ def get_next_statuses(current_status: OrderStatus) -> List[OrderStatus]:
 
 def get_order_settings(db: Session) -> tuple[int, float]:
     """
-    Get free-item quota limit (setting key: monthly_quota) and price_per_item.
-    Quota resets daily; the legacy setting name is kept for DB compatibility.
+    Get free-item laundry quota limit (setting key: monthly_quota) and price_per_item.
+    Quota is per student per calendar week (Mon 00:00–Sun 24:00 WIB); the legacy key name is kept for DB compatibility.
+    Add-on lines are billed separately and do not consume this quota.
     Returns (quota_limit: int, price_per_item: float).
     Falls back to default values if settings not found.
     """
-    default_quota = 4
+    default_quota = 28
     default_price_per_item = 4000.0
 
     quota_setting = db.query(Setting).filter(
@@ -208,9 +208,9 @@ async def create_order(
     """
     Create a new order for a student.
     Staff only inputs total_items, system automatically calculates:
-    - free_items_used (based on daily quota: N free items per day per student)
-    - paid_items_count (items exceeding quota)
-    - additional_fee (paid_items_count * 4000)
+    - free_items_used (weekly quota: N free laundry items per student per week, Mon WIB reset)
+    - paid_items_count (items exceeding quota, charged at price_per_item)
+    - additional_fee (paid_items_count * price_per_item); add-ons are separate
     """
     from sqlalchemy import func
 
@@ -326,21 +326,21 @@ async def create_order(
             "QR tas belum terhubung ke siswa ini. Silakan scan QR tas dan kaitkan ke santri terlebih dahulu."
         )
 
-    # Daily quota usage (UTC calendar day, same window as start_of_day above)
+    # Weekly quota usage (Mon 00:00 WIB → next Mon 00:00 WIB)
     QUOTA_LIMIT, PRICE_PER_ITEM = get_order_settings(db)
-    start_of_next_day = start_of_day + timedelta(days=1)
+    week_start, week_end = get_week_range_local_monday(now)
 
-    free_items_used_today = (
+    free_items_used_this_week = (
         db.query(func.sum(Order.free_items_used))
         .filter(
             Order.student_id == student_id,
-            Order.created_at >= start_of_day,
-            Order.created_at < start_of_next_day,
+            Order.created_at >= week_start,
+            Order.created_at < week_end,
         )
         .scalar() or 0
     )
 
-    remaining_quota = max(0, QUOTA_LIMIT - free_items_used_today)
+    remaining_quota = max(0, QUOTA_LIMIT - free_items_used_this_week)
 
     # Calculate free_items_used and paid_items_count for this order
     free_items_used = min(total_items, remaining_quota)
@@ -430,13 +430,12 @@ def update_order(
     """
     Update order fields (not status tracking).
     Staff only inputs total_items, system automatically recalculates:
-    - free_items_used (based on daily quota: N free items per day per student)
+    - free_items_used (weekly quota per student, Mon WIB reset)
     - paid_items_count (items exceeding quota)
-    - additional_fee (paid_items_count * 4000)
+    - additional_fee (paid_items_count * price_per_item)
     
-    Note: If order status is WASHING_DRYING or later, only notes can be updated.
+    Note: If order status is WASHING_IRONING or later, only notes can be updated.
     """
-    from datetime import datetime, timezone, timedelta
     from sqlalchemy import func
 
     order = (
@@ -452,9 +451,9 @@ def update_order(
     update_data = order_update.model_dump(exclude_unset=True)
     addon_lines = update_data.pop("addon_lines", None)
 
-    # Check if order status is WASHING_DRYING or later
+    # Check if order status is WASHING_IRONING or later
     # If so, only notes can be updated
-    if order.current_status in [OrderStatus.WASHING_DRYING, OrderStatus.IRONING, OrderStatus.COMPLETED, OrderStatus.PICKED_UP]:
+    if order.current_status in [OrderStatus.WASHING_IRONING, OrderStatus.COMPLETED, OrderStatus.PICKED_UP]:
         if addon_lines is not None:
             raise BadRequestException(
                 "Layanan tambahan (addon) hanya dapat diubah saat status pesanan masih DITERIMA (RECEIVED)."
@@ -493,21 +492,20 @@ def update_order(
         QUOTA_LIMIT, PRICE_PER_ITEM = get_order_settings(db)
 
         oc = order.created_at or get_now_local()
-        day_start = get_start_of_day_local(oc)
-        day_end = day_start + timedelta(days=1)
+        week_start, week_end = get_week_range_local_monday(oc)
 
-        free_items_used_today = (
+        free_items_used_this_week = (
             db.query(func.sum(Order.free_items_used))
             .filter(
                 Order.student_id == order.student_id,
                 Order.id != order_id,
-                Order.created_at >= day_start,
-                Order.created_at < day_end,
+                Order.created_at >= week_start,
+                Order.created_at < week_end,
             )
             .scalar() or 0
         )
 
-        remaining_quota = max(0, QUOTA_LIMIT - free_items_used_today)
+        remaining_quota = max(0, QUOTA_LIMIT - free_items_used_this_week)
 
         # Recalculate for updated total_items
         total_items = update_data["total_items"]

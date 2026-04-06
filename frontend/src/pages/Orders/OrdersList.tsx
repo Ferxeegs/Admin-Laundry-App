@@ -129,10 +129,10 @@ export default function OrdersList() {
     switch (status) {
       case "RECEIVED":
         return "Diterima";
+      case "WASHING_IRONING":
       case "WASHING_DRYING":
-        return "Cuci / Kering";
       case "IRONING":
-        return "Setrika";
+        return "Cuci-setrika";
       case "COMPLETED":
         return "Selesai";
       case "PICKED_UP":
@@ -146,6 +146,7 @@ export default function OrdersList() {
     switch (status) {
       case "RECEIVED":
         return "info";
+      case "WASHING_IRONING":
       case "WASHING_DRYING":
       case "IRONING":
         return "warning";
@@ -310,8 +311,7 @@ export default function OrdersList() {
           >
             <option value="">Semua Status</option>
             <option value="RECEIVED">Diterima</option>
-            <option value="WASHING_DRYING">Cuci / Kering</option>
-            <option value="IRONING">Setrika</option>
+            <option value="WASHING_IRONING">Cuci-setrika</option>
             <option value="COMPLETED">Selesai</option>
             <option value="PICKED_UP">Diambil</option>
           </select>

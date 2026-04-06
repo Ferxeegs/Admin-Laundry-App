@@ -487,7 +487,7 @@ export default function CreateOrder() {
                     disabled={isLoading || isCompressingImages}
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Sistem akan menghitung otomatis: kuota gratis (sesuai pengaturan, reset per hari), pakaian berbayar, dan total biaya sesuai harga per item di pengaturan
+                    Sistem akan menghitung otomatis: kuota gratis cuci per minggu, pakaian di luar kuota berbayar sesuai harga per item, dan layanan tambahan (addon) dihitung terpisah tanpa memakai kuota
                   </p>
                 </div>
 

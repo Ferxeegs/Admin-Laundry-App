@@ -31,6 +31,25 @@ def get_start_of_day_local(dt: Optional[datetime] = None) -> datetime:
     return dt.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
+def get_start_of_week_local_monday(dt: Optional[datetime] = None) -> datetime:
+    """
+    Monday 00:00:00 Asia/Jakarta for the week containing `dt` (ISO week: Mon–Sun).
+    Quota resets at this instant (when Sunday becomes Monday in WIB).
+    """
+    if dt is None:
+        dt = get_now_local()
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=ZoneInfo("Asia/Jakarta"))
+    day_start = get_start_of_day_local(dt)
+    return day_start - timedelta(days=day_start.weekday())
+
+
+def get_week_range_local_monday(dt: Optional[datetime] = None) -> tuple[datetime, datetime]:
+    """Return (week_start_monday_00:00, next_monday_00:00) in Asia/Jakarta."""
+    start = get_start_of_week_local_monday(dt)
+    return start, start + timedelta(days=7)
+
+
 def format_datetime(dt: datetime) -> Optional[str]:
     """Format datetime to ISO format string."""
     return dt.isoformat() if dt else None
