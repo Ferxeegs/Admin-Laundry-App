@@ -490,9 +490,15 @@ export default function OrdersList() {
                       {formatStatus(order.current_status)}
                     </Badge>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                    <span>Total Item: {order.total_items}</span>
-                    <span>Berbayar: {order.paid_items_count}</span>
+                  <div className="flex items-center justify-between text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-2">
+                      <span>{order.total_items} Item</span>
+                      <span className="opacity-60">•</span>
+                      <span>{order.paid_items_count} Berbayar</span>
+                    </div>
+                    <p className="font-bold text-gray-900 dark:text-white">
+                      Rp {(order.additional_fee + (order.total_addon_fee ?? 0)).toLocaleString("id-ID")}
+                    </p>
                   </div>
                 </div>
               </div>

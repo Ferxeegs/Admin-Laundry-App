@@ -13,11 +13,18 @@ from app.models.order import Addon, Order, OrderAddon
 from app.schemas.order import OrderAddonLineInput
 
 
-def _merged_counts(lines: Iterable[OrderAddonLineInput]) -> dict[str, int]:
+def _merged_counts(lines: Iterable[OrderAddonLineInput | dict]) -> dict[str, int]:
     counts: dict[str, int] = defaultdict(int)
     for line in lines:
-        aid = line.addon_id.strip()
-        counts[aid] += line.count
+        if isinstance(line, dict):
+            aid = str(line.get("addon_id", "")).strip()
+            cnt = int(line.get("count", 1))
+        else:
+            aid = line.addon_id.strip()
+            cnt = line.count
+        
+        if aid:
+            counts[aid] += cnt
     return dict(counts)
 
 

@@ -275,10 +275,6 @@ export default function ScanQR() {
     setScanError(null);
 
     try {
-      // Auto-advance when scanning the same bag token after an active order exists.
-      const shouldAutoAdvance =
-        canAutoAdvanceRef.current && lastBagTokenRef.current === token;
-
       const qrRes = await qrCodeAPI.lookupQR(token);
       if (!qrRes.success || !qrRes.data) {
         setError(qrRes.message || "QR tas tidak ditemukan.");
@@ -293,105 +289,7 @@ export default function ScanQR() {
         return;
       }
 
-      // Scan ulang token yang sama: lanjutkan alur status (modal untuk Selesai → Diambil)
-      if (shouldAutoAdvance) {
-        const orderSnap = await fetchActiveOrder(qrData.student_id);
-        if (!orderSnap) {
-          canAutoAdvanceRef.current = false;
-          lastBagTokenRef.current = null;
-          // Lanjut ke alur scan normal di bawah
-        } else {
-          const nextStatus = getNextStatus(orderSnap.current_status);
-          if (nextStatus === "PICKED_UP") {
-            handleOpenStatusModal();
-            setIsLoading(false);
-            return;
-          }
-
-          const advRes = await qrCodeAPI.advanceTrackingByQrToken(token, { notes: null });
-          if (!advRes.success) {
-            setError(advRes.message || "Gagal memperbarui status (scan).");
-            canAutoAdvanceRef.current = false;
-            lastBagTokenRef.current = null;
-            setIsLoading(false);
-            return;
-          }
-
-          success("Status order berhasil diperbarui (scan).");
-
-          const studentRes = await studentAPI.getStudentById(qrData.student_id);
-          if (studentRes.success && studentRes.data) {
-            const s = studentRes.data as any;
-            setScannedStudent({
-              id: s.id,
-              national_id_number: s.national_id_number ?? s.student_number ?? "",
-              fullname: s.fullname,
-              phone_number: s.phone_number ?? null,
-              dormitory: null,
-              grade_level: null,
-              unique_code: null,
-              guardian_name: s.guardian_name ?? null,
-              qr_code: null,
-              is_active: typeof s.is_active === "boolean" ? s.is_active : true,
-              created_at: s.created_at ?? null,
-              updated_at: s.updated_at ?? null,
-            });
-          }
-
-          try {
-            const sId = qrData.student_id;
-            if (sId) {
-              const mediaResponse = await mediaAPI.getMediaByModel(
-                "Student",
-                sId,
-                "profile-pictures"
-              );
-
-              let mediaArray: any[] = [];
-              if (mediaResponse.success && mediaResponse.data) {
-                if (Array.isArray(mediaResponse.data)) {
-                  mediaArray = mediaResponse.data;
-                } else if (
-                  (mediaResponse.data as any).media &&
-                  Array.isArray((mediaResponse.data as any).media)
-                ) {
-                  mediaArray = (mediaResponse.data as any).media;
-                }
-              }
-
-              if (mediaArray.length > 0) {
-                const media = mediaArray[0];
-                let mediaUrl = media.url;
-                mediaUrl = mediaUrl.replace(/^\/api\/v1/, "").replace(/^\/api/, "");
-                if (!mediaUrl.startsWith("/")) mediaUrl = `/${mediaUrl}`;
-                setProfileImage(`${getBaseUrl()}${mediaUrl}`);
-              } else {
-                setProfileImage(null);
-              }
-            }
-          } catch {
-            setProfileImage(null);
-          }
-          setProfileImageFailed(false);
-          setOrderImageUrls([]);
-          setOrderNotesExpanded(false);
-          setOrderImageLightbox(null);
-
-          const refreshed = await fetchActiveOrder(qrData.student_id);
-          if (!refreshed) {
-            canAutoAdvanceRef.current = false;
-            lastBagTokenRef.current = null;
-            await fetchRemainingWeeklyQuota(qrData.student_id);
-          } else {
-            canAutoAdvanceRef.current = true;
-            lastBagTokenRef.current = token;
-          }
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      // Normal load setelah scan pertama
+      // Normal load setelah scan
       lastBagTokenRef.current = token;
 
       const studentRes = await studentAPI.getStudentById(qrData.student_id);

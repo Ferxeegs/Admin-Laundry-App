@@ -449,7 +449,10 @@ def update_order(
         raise NotFoundException(f"Order with ID {order_id} not found")
 
     update_data = order_update.model_dump(exclude_unset=True)
-    addon_lines = update_data.pop("addon_lines", None)
+    addon_lines = None
+    if "addon_lines" in update_data:
+        addon_lines = order_update.addon_lines
+        update_data.pop("addon_lines")
 
     # Check if order status is WASHING_IRONING or later
     # If so, only notes can be updated
