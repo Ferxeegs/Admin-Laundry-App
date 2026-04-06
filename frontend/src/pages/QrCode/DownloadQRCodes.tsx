@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
+// import { Link } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -247,11 +247,11 @@ export default function DownloadQRCodes() {
       <PageBreadcrumb pageTitle="Unduh label QR" />
 
       <div className="space-y-6">
-        <div className="text-sm text-gray-600 dark:text-gray-400">
+        {/* <div className="text-sm text-gray-600 dark:text-gray-400">
           <Link to="/qr-codes" className="text-brand-600 hover:text-brand-700 dark:text-brand-400">
             ← Kembali ke QR Tas
           </Link>
-        </div>
+        </div> */}
 
         <ComponentCard title="Pengaturan unduh">
           {dormError && (

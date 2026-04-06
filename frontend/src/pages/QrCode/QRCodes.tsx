@@ -283,87 +283,60 @@ export default function QRCodes() {
               )}
 
               {/* Controls */}
-              <div className="flex flex-col gap-2 sm:gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
-                <div className="relative flex-1 max-w-md">
+              <div className="mb-6 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-4">
+                {/* Search Box */}
+                <div className="relative w-full sm:max-w-xs md:max-w-md group">
                   <input
                     type="text"
-                    placeholder="Cari token QR / nomor / asrama..."
+                    placeholder="Cari asrama/nomor..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full h-10 sm:h-11 rounded-lg border border-gray-200 bg-transparent py-2 pl-10 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                    className="w-full h-10 sm:h-11 rounded-lg border border-gray-200 bg-gray-50/50 py-2 pl-10 pr-4 text-sm text-gray-800 transition-all focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-500/5 dark:border-gray-800 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                   />
-                  <svg
-                    className="absolute -translate-y-1/2 left-3 sm:left-4 top-1/2 fill-gray-500 dark:fill-gray-400"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M3.04175 9.37363C3.04175 5.87693 5.87711 3.04199 9.37508 3.04199C12.8731 3.04199 15.7084 5.87693 15.7084 9.37363C15.7084 12.8703 12.8731 15.7053 9.37508 15.7053C5.87711 15.7053 3.04175 12.8703 3.04175 9.37363ZM9.37508 1.54199C5.04902 1.54199 1.54175 5.04817 1.54175 9.37363C1.54175 13.6991 5.04902 17.2053 9.37508 17.2053C11.2674 17.2053 13.003 16.5344 14.357 15.4176L17.177 18.238C17.4699 18.5309 17.9448 18.5309 18.2377 18.238C18.5306 17.9451 18.5306 17.4703 18.2377 17.1774L15.418 14.3573C16.5365 13.0033 17.2084 11.2669 17.2084 9.37363C17.2084 5.04817 13.7011 1.54199 9.37508 1.54199Z"
-                      fill=""
-                    />
-                  </svg>
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-brand-500 transition-colors">
+                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-3 flex-wrap">
-                  <select
-                    value={assignedFilter}
-                    onChange={(e) => setAssignedFilter(e.target.value as any)}
-                    aria-label="Filter status QR tas"
-                    className="h-10 sm:h-11 px-3 text-xs sm:text-sm rounded-lg border border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-800 dark:text-white/90"
-                  >
-                    <option value="all">Semua</option>
-                    <option value="unassigned">Belum terhubung</option>
-                    <option value="assigned">Terhubung</option>
-                  </select>
+                {/* Filter & Actions - Desktop: Flex row, Mobile: Tight grid/flex */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 sm:overflow-visible">
+                  <div className="shrink-0">
+                    <select
+                      value={assignedFilter}
+                      onChange={(e) => setAssignedFilter(e.target.value as any)}
+                      aria-label="Filter status QR"
+                      className="h-10 sm:h-11 px-3 text-xs sm:text-sm rounded-lg border border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-800 dark:text-white/90 font-medium outline-none focus:border-brand-300 transition-colors"
+                    >
+                      <option value="all">Semua Status</option>
+                      <option value="unassigned">Belum Terhubung</option>
+                      <option value="assigned">Terhubung</option>
+                    </select>
+                  </div>
 
                   <button
                     type="button"
                     onClick={() => navigate("/qr-codes/download")}
-                    className="inline-flex items-center justify-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700 touch-manipulation"
+                    className="shrink-0 inline-flex items-center justify-center gap-2 h-10 sm:h-11 px-4 text-xs sm:text-sm text-gray-600 font-medium bg-white border border-gray-200 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-all dark:bg-gray-900 dark:border-gray-800 dark:text-gray-400"
                   >
-                    <svg
-                      className="w-4 h-4 shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                      />
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    Unduh label
+                    Label
                   </button>
 
                   {canCreateQr && (
                     <button
                       type="button"
                       onClick={() => navigate("/qr-codes/create")}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={isQrCrudLoading}
+                      className="shrink-0 inline-flex items-center justify-center gap-2 h-10 sm:h-11 px-4 text-xs sm:text-sm text-white font-medium bg-brand-500 rounded-lg hover:bg-brand-600 active:scale-95 transition-all shadow-sm disabled:opacity-50"
                     >
-                      <svg
-                        className="w-3.5 h-3.5 sm:w-4 sm:h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 4v16m8-8H4"
-                        />
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
-                      Tambah QR
+                      Tambah
                     </button>
                   )}
                 </div>
@@ -491,10 +464,10 @@ export default function QRCodes() {
                       <div className="flex items-center gap-4">
                         {/* QR Code Container */}
                         <div className="shrink-0 rounded-xl border border-gray-100 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800">
-                          <QRCodeSVG 
-                            value={qr.token_qr} 
-                            size={60} 
-                            level="M" 
+                          <QRCodeSVG
+                            value={qr.token_qr}
+                            size={60}
+                            level="M"
                             className="dark:opacity-90"
                           />
                         </div>
@@ -507,11 +480,11 @@ export default function QRCodes() {
                             </span>
                             {assignedBadge(qr)}
                           </div>
-                          
+
                           <h4 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                             {qr.student ? qr.student.fullname : "Belum ada santri"}
                           </h4>
-                          
+
                           <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                             <span className="truncate">{qr.dormitory || "Tanpa Asrama"}</span>
                             {qr.qr_number && (
