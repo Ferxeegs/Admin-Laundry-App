@@ -547,17 +547,23 @@ export default function UsersList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                  {users.map((user) => (
-                    <TableRow
-                      key={user.id}
-                      className="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors group"
-                    >
+                  {users.map((user) => {
+                    const isClickable = !showDeleted && hasPermission(['view_user', 'view_any_user']);
+                    return (
+                      <TableRow
+                        key={user.id}
+                        className={`transition-colors group ${
+                          isClickable 
+                            ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.02]" 
+                            : "hover:bg-gray-50/50"
+                        }`}
+                        onClick={() => {
+                          if (isClickable) navigate(`/users/${user.id}`);
+                        }}
+                      >
                       {/* Kolom User */}
                       <TableCell className="px-5 py-4 align-middle">
-                        <div
-                          className="flex items-center gap-3 text-left w-full cursor-pointer"
-                          onClick={() => navigate(`/users/${user.id}`)}
-                        >
+                        <div className="flex items-center gap-3 text-left w-full">
                           <div className="shrink-0 h-10 w-10 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-xs border border-gray-100 dark:border-gray-700 relative">
                             {userProfilePictures[user.id] ? (
                               <img
@@ -592,27 +598,21 @@ export default function UsersList() {
 
                       {/* Kolom Email */}
                       <TableCell className="px-5 py-4 text-center align-middle">
-                        <div
-                          className="text-sm text-gray-600 dark:text-gray-400 truncate cursor-pointer hover:underline"
-                          onClick={() => navigate(`/users/${user.id}`)}
-                        >
+                        <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
                           {user.email}
                         </div>
                       </TableCell>
 
                       {/* Kolom Username */}
                       <TableCell className="px-5 py-4 text-center align-middle">
-                        <div
-                          className="text-sm font-mono text-gray-600 dark:text-gray-400 cursor-pointer"
-                          onClick={() => navigate(`/users/${user.id}`)}
-                        >
+                        <div className="text-sm font-mono text-gray-600 dark:text-gray-400">
                           {user.username}
                         </div>
                       </TableCell>
 
                       {/* Kolom Role */}
                       <TableCell className="px-5 py-4 text-center align-middle">
-                        <div className="flex flex-wrap justify-center gap-1.5 cursor-pointer" onClick={() => navigate(`/users/${user.id}`)}>
+                        <div className="flex flex-wrap justify-center gap-1.5">
                           {user.roles && user.roles.length > 0 ? (
                             user.roles.map((role) => (
                               <Badge key={role.id} size="sm" color="primary">
@@ -632,13 +632,13 @@ export default function UsersList() {
 
                       {/* Kolom Aksi */}
                       <TableCell className="px-5 py-4 text-center align-middle">
-                        <div className="flex items-center justify-center gap-1">
+                        <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
                           {!showDeleted ? (
                             <>
                               {hasPermission(['view_user', 'view_any_user']) && (
                                 <button
                                   type="button"
-                                  onClick={(e) => { e.stopPropagation(); navigate(`/users/${user.id}`); }}
+                                  onClick={() => navigate(`/users/${user.id}`)}
                                   className="p-1.5 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
                                   title="Lihat Detail"
                                 >
@@ -648,7 +648,7 @@ export default function UsersList() {
                               {hasPermission(['update_user']) && (
                                 <button
                                   type="button"
-                                  onClick={(e) => { e.stopPropagation(); navigate(`/users/${user.id}/edit`); }}
+                                  onClick={() => navigate(`/users/${user.id}/edit`)}
                                   className="p-1.5 text-gray-500 hover:text-amber-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
                                   title="Edit User"
                                 >
@@ -658,10 +658,7 @@ export default function UsersList() {
                               {hasSuperAdminRole && (
                                 <button
                                   type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleImpersonateClick(user.id, user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username);
-                                  }}
+                                  onClick={() => handleImpersonateClick(user.id, user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username)}
                                   disabled={impersonatingUserId === user.id}
                                   className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors disabled:opacity-50"
                                   title="Impersonate User"
@@ -674,10 +671,7 @@ export default function UsersList() {
                             hasPermission(['force_delete_user', 'force_delete_any_user']) && (
                               <button
                                 type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleForceDeleteClick(user.id, user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username);
-                                }}
+                                onClick={() => handleForceDeleteClick(user.id, user.fullname || `${user.firstname} ${user.lastname}`.trim() || user.username)}
                                 disabled={deletingUserId === user.id}
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
                                 title="Hapus Permanen"
@@ -690,7 +684,8 @@ export default function UsersList() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  );
+                })}
                 </TableBody>
               </Table>
             </div>

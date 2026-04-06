@@ -594,89 +594,99 @@ export default function OrdersList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                  {orders.map((order) => (
-                    <TableRow key={order.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
-                      {canDeleteOrder && isSelectionMode && (
+                  {orders.map((order) => {
+                    const isClickable = canViewOrder && !isSelectionMode;
+                    return (
+                      <TableRow
+                        key={order.id}
+                        className={`transition-colors ${
+                          isClickable 
+                            ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.02]" 
+                            : "hover:bg-gray-50/50"
+                        }`}
+                        onClick={() => {
+                          if (isClickable) navigate(`/orders/${order.id}`);
+                        }}
+                      >
+                        {canDeleteOrder && isSelectionMode && (
+                          <TableCell className="px-5 py-4 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selectedOrders.has(order.id)}
+                              onChange={() => handleToggleSelect(order.id)}
+                              className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-500 cursor-pointer"
+                            />
+                          </TableCell>
+                        )}
                         <TableCell className="px-5 py-4 text-center align-middle">
-                          <input
-                            type="checkbox"
-                            checked={selectedOrders.has(order.id)}
-                            onChange={() => handleToggleSelect(order.id)}
-                            className="w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-500 cursor-pointer"
-                          />
+                          <div className={`inline-block font-mono text-sm font-medium ${isClickable ? "text-brand-600 hover:underline" : "text-gray-800 dark:text-white/90"}`}>
+                            {order.order_number}
+                          </div>
                         </TableCell>
-                      )}
-                      <TableCell className="px-5 py-4 text-center align-middle">
-                        <div
-                          className={`inline-block font-mono text-sm font-medium ${canViewOrder ? "cursor-pointer text-brand-600 hover:underline" : "text-gray-800 dark:text-white/90"}`}
-                          onClick={() => canViewOrder && navigate(`/orders/${order.id}`)}
-                        >
-                          {order.order_number}
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-5 py-4 text-center align-middle">
-                        <div className="flex flex-col items-center">
-                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                            {order.student?.fullname || "-"}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-5 py-4 text-center align-middle text-gray-500 text-sm">
-                        <div className="flex flex-col items-center">
-                          <span className="font-semibold text-gray-700 dark:text-gray-300">{order.total_items} Item</span>
-                          <span className="text-[10px] opacity-75">(F: {order.free_items_used}, P: {order.paid_items_count})</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-5 py-4 text-center align-middle text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Rp{" "}
-                        {(
-                          order.additional_fee + (order.total_addon_fee ?? 0)
-                        ).toLocaleString("id-ID")}
-                      </TableCell>
-                      <TableCell className="px-5 py-4 text-center align-middle">
-                        <div className="flex justify-center">
-                          <Badge size="sm" color={getStatusColor(order.current_status)}>
-                            {formatStatus(order.current_status)}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-5 py-4 text-center align-middle text-xs text-gray-500 dark:text-gray-400">
-                        {formatDate(order.created_at)}
-                      </TableCell>
-                      <TableCell className="px-5 py-4 text-center align-middle">
-                        <div className="flex items-center justify-center gap-1">
-                          {canViewOrder && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); navigate(`/orders/${order.id}`); }}
-                              className="p-1.5 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
-                              title="Lihat Detail"
-                            >
-                              <EyeIcon className="w-4 h-4" />
-                            </button>
-                          )}
-                          {canUpdateOrder && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); navigate(`/orders/${order.id}/edit`); }}
-                              className="p-1.5 text-gray-500 hover:text-amber-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
-                              title="Edit Order"
-                            >
-                              <PencilIcon className="w-4 h-4" />
-                            </button>
-                          )}
-                          {canDeleteOrder && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleDeleteClick(order.id, order.order_number); }}
-                              disabled={deletingOrderId === order.id}
-                              className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md disabled:opacity-50"
-                              title="Delete Order"
-                            >
-                              <TrashBinIcon className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        <TableCell className="px-5 py-4 text-center align-middle">
+                          <div className="flex flex-col items-center">
+                            <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                              {order.student?.fullname || "-"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="px-5 py-4 text-center align-middle text-gray-500 text-sm">
+                          <div className="flex flex-col items-center">
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">{order.total_items} Item</span>
+                            <span className="text-[10px] opacity-75">(F: {order.free_items_used}, P: {order.paid_items_count})</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="px-5 py-4 text-center align-middle text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Rp{" "}
+                          {(
+                            order.additional_fee + (order.total_addon_fee ?? 0)
+                          ).toLocaleString("id-ID")}
+                        </TableCell>
+                        <TableCell className="px-5 py-4 text-center align-middle">
+                          <div className="flex justify-center">
+                            <Badge size="sm" color={getStatusColor(order.current_status)}>
+                              {formatStatus(order.current_status)}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className="px-5 py-4 text-center align-middle text-xs text-gray-500 dark:text-gray-400">
+                          {formatDate(order.created_at)}
+                        </TableCell>
+                        <TableCell className="px-5 py-4 text-center align-middle">
+                          <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            {canViewOrder && (
+                              <button
+                                onClick={() => navigate(`/orders/${order.id}`)}
+                                className="p-1.5 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
+                                title="Lihat Detail"
+                              >
+                                <EyeIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                            {canUpdateOrder && (
+                              <button
+                                onClick={() => navigate(`/orders/${order.id}/edit`)}
+                                className="p-1.5 text-gray-500 hover:text-amber-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
+                                title="Edit Order"
+                              >
+                                <PencilIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                            {canDeleteOrder && (
+                              <button
+                                onClick={() => handleDeleteClick(order.id, order.order_number)}
+                                disabled={deletingOrderId === order.id}
+                                className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md disabled:opacity-50"
+                                title="Delete Order"
+                              >
+                                <TrashBinIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

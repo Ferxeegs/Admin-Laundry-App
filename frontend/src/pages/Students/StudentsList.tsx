@@ -523,124 +523,129 @@ export default function StudentsList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                  {students.map((student) => (
-                    <TableRow
-                      key={student.id}
-                      className="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors"
-                    >
-                      {/* Kolom Siswa - Centered Block */}
-                      <TableCell className="px-5 py-4 align-middle">
-                        <div
-                          className={`flex items-center gap-3 text-left w-full ${!showDeleted && canViewStudent ? "cursor-pointer group" : ""}`}
-                          onClick={() => {
-                            if (!showDeleted && canViewStudent) navigate(`/students/${student.id}`);
-                          }}
-                        >
-                          <div className="shrink-0">
-                            {student.profile_picture ? (
-                              <img
-                                src={`${getBaseUrl()}${student.profile_picture.url}`}
-                                alt={student.fullname}
-                                className="h-10 w-10 overflow-hidden rounded-full object-cover border border-gray-100 dark:border-gray-700"
-                              />
+                  {students.map((student) => {
+                    const isClickable = !showDeleted && canViewStudent;
+                    return (
+                      <TableRow
+                        key={student.id}
+                        className={`transition-colors ${
+                          isClickable 
+                            ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.02]" 
+                            : "hover:bg-gray-50/50"
+                        }`}
+                        onClick={() => {
+                          if (isClickable) navigate(`/students/${student.id}`);
+                        }}
+                      >
+                        {/* Kolom Siswa - Centered Block */}
+                        <TableCell className="px-5 py-4 align-middle">
+                          <div className="flex items-center gap-3 text-left w-full">
+                            <div className="shrink-0">
+                              {student.profile_picture ? (
+                                <img
+                                  src={`${getBaseUrl()}${student.profile_picture.url}`}
+                                  alt={student.fullname}
+                                  className="h-10 w-10 overflow-hidden rounded-full object-cover border border-gray-100 dark:border-gray-700"
+                                />
+                              ) : (
+                                <div className="h-10 w-10 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-xs">
+                                  {getInitials(student)}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <p className="font-medium text-theme-sm truncate text-gray-800 dark:text-white/90">
+                                {student.fullname}
+                              </p>
+                              {student.phone_number && (
+                                <span className="text-gray-500 text-[11px] dark:text-gray-400 truncate">
+                                  {student.phone_number}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="px-5 py-4 text-center align-middle">
+                          <span className="text-sm font-mono text-gray-600 dark:text-gray-400">
+                            {student.student_number || "—"}
+                          </span>
+                        </TableCell>
+
+                        <TableCell className="px-5 py-4 text-center align-middle">
+                          <div className="flex justify-center">
+                            <Badge size="sm" color={student.is_active ? "success" : "error"}>
+                              {student.is_active ? "Aktif" : "Tidak Aktif"}
+                            </Badge>
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="px-5 py-4 text-center align-middle text-gray-500 text-sm">
+                          {formatDate(student.created_at)}
+                        </TableCell>
+
+                        <TableCell className="px-5 py-4 text-center align-middle">
+                          <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            {!showDeleted ? (
+                              <>
+                                {canViewStudent && (
+                                  <button
+                                    onClick={() => navigate(`/students/${student.id}`)}
+                                    className="p-1.5 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                                    title="Lihat Detail"
+                                  >
+                                    <EyeIcon className="w-4 h-4" />
+                                  </button>
+                                )}
+                                {canUpdateStudent && (
+                                  <button
+                                    onClick={() => navigate(`/students/${student.id}/edit`)}
+                                    className="p-1.5 text-gray-500 hover:text-amber-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                                    title="Edit Siswa"
+                                  >
+                                    <PencilIcon className="w-4 h-4" />
+                                  </button>
+                                )}
+                                {canDeleteStudent && (
+                                  <button
+                                    onClick={() => handleDeleteClick(student.id, student.fullname)}
+                                    disabled={deletingStudentId === student.id}
+                                    className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors disabled:opacity-50"
+                                    title="Hapus Siswa"
+                                  >
+                                    <TrashBinIcon className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </>
                             ) : (
-                              <div className="h-10 w-10 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-xs">
-                                {getInitials(student)}
+                              <div className="flex gap-2">
+                                {canRestoreStudent && (
+                                  <button
+                                    onClick={() => handleRestoreClick(student.id, student.fullname)}
+                                    disabled={restoringStudentId === student.id || deletingStudentId === student.id}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                                  >
+                                    <CheckCircleIcon className="w-3.5 h-3.5" />
+                                    {restoringStudentId === student.id ? "..." : "Pulihkan"}
+                                  </button>
+                                )}
+                                {canForceDeleteStudent && (
+                                  <button
+                                    onClick={() => handleForceDeleteClick(student.id, student.fullname)}
+                                    disabled={deletingStudentId === student.id || restoringStudentId === student.id}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                                  >
+                                    <TrashBinIcon className="w-3.5 h-3.5" />
+                                    {deletingStudentId === student.id ? "..." : "Hapus"}
+                                  </button>
+                                )}
                               </div>
                             )}
                           </div>
-                          <div className="flex flex-col min-w-0">
-                            <p className={`font-medium text-theme-sm truncate ${!showDeleted && canViewStudent ? "text-gray-800 dark:text-white/90" : "text-gray-800 dark:text-white/90"}`}>
-                              {student.fullname}
-                            </p>
-                            {student.phone_number && (
-                              <span className="text-gray-500 text-[11px] dark:text-gray-400 truncate">
-                                {student.phone_number}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="px-5 py-4 text-center align-middle">
-                        <span className="text-sm font-mono text-gray-600 dark:text-gray-400">
-                          {student.student_number || "—"}
-                        </span>
-                      </TableCell>
-
-                      <TableCell className="px-5 py-4 text-center align-middle">
-                        <div className="flex justify-center">
-                          <Badge size="sm" color={student.is_active ? "success" : "error"}>
-                            {student.is_active ? "Aktif" : "Tidak Aktif"}
-                          </Badge>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="px-5 py-4 text-center align-middle text-gray-500 text-sm">
-                        {formatDate(student.created_at)}
-                      </TableCell>
-
-                      <TableCell className="px-5 py-4 text-center align-middle">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {!showDeleted ? (
-                            <>
-                              {canViewStudent && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); navigate(`/students/${student.id}`); }}
-                                  className="p-1.5 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-                                  title="Lihat Detail"
-                                >
-                                  <EyeIcon className="w-4 h-4" />
-                                </button>
-                              )}
-                              {canUpdateStudent && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); navigate(`/students/${student.id}/edit`); }}
-                                  className="p-1.5 text-gray-500 hover:text-amber-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-                                  title="Edit Siswa"
-                                >
-                                  <PencilIcon className="w-4 h-4" />
-                                </button>
-                              )}
-                              {canDeleteStudent && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleDeleteClick(student.id, student.fullname); }}
-                                  disabled={deletingStudentId === student.id}
-                                  className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors disabled:opacity-50"
-                                  title="Hapus Siswa"
-                                >
-                                  <TrashBinIcon className="w-4 h-4" />
-                                </button>
-                              )}
-                            </>
-                          ) : (
-                            <div className="flex gap-2">
-                              {canRestoreStudent && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleRestoreClick(student.id, student.fullname); }}
-                                  disabled={restoringStudentId === student.id || deletingStudentId === student.id}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
-                                >
-                                  <CheckCircleIcon className="w-3.5 h-3.5" />
-                                  {restoringStudentId === student.id ? "..." : "Pulihkan"}
-                                </button>
-                              )}
-                              {canForceDeleteStudent && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleForceDeleteClick(student.id, student.fullname); }}
-                                  disabled={deletingStudentId === student.id || restoringStudentId === student.id}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                                >
-                                  <TrashBinIcon className="w-3.5 h-3.5" />
-                                  {deletingStudentId === student.id ? "..." : "Hapus"}
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

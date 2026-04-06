@@ -25,6 +25,7 @@ export default function GenerateQRCodes() {
   const { success, error: showError } = useToast();
   const location = useLocation();
   const { hasPermission } = useAuth();
+  const [loadingDorms, setLoadingDorms] = useState(true);
 
   const state = (location.state || {}) as LocationState;
 
@@ -35,8 +36,6 @@ export default function GenerateQRCodes() {
   const canGenerate = hasPermission("create_student");
 
   const [dormitories, setDormitories] = useState<DormitoryOption[]>([]);
-  const [isLoadingDormitories, setIsLoadingDormitories] = useState(false);
-
   const [selectedDormitory, setSelectedDormitory] = useState<string>("");
   const [count, setCount] = useState<number>(10);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,7 +44,7 @@ export default function GenerateQRCodes() {
 
   useEffect(() => {
     void (async () => {
-      setIsLoadingDormitories(true);
+      setLoadingDorms(true);
       setError(null);
       try {
         const res = await dormitoryAPI.getAllDormitories({ page: 1, limit: 100 });
@@ -58,7 +57,7 @@ export default function GenerateQRCodes() {
         setError(e?.message || "Gagal memuat data dormitory");
         setDormitories([]);
       } finally {
-        setIsLoadingDormitories(false);
+        setLoadingDorms(false);
       }
     })();
   }, []);
@@ -69,15 +68,8 @@ export default function GenerateQRCodes() {
     }
   }, [mode, state.dormitory]);
 
-  const title =
-    mode === "edit"
-      ? "Tambah QR (append) per Asrama"
-      : "Buat QR Tas (bulk)";
-
-  const placeholder =
-    mode === "edit"
-      ? "Pilih asrama yang akan ditambah QR-nya"
-      : "Pilih asrama untuk membuat QR";
+  const title = mode === "edit" ? "Tambah QR (append)" : "Buat QR Tas (bulk)";
+  const description = mode === "edit" ? "Menambah jumlah QR pada asrama yang sudah ada" : "Membuat set QR baru untuk asrama baru";
 
   const handleSubmit = async () => {
     setError(null);
@@ -89,7 +81,7 @@ export default function GenerateQRCodes() {
 
     const dorm = selectedDormitory.trim();
     if (!dorm) {
-      setError("Dormitory/asrama wajib dipilih.");
+      setError("Silakan pilih asrama terlebih dahulu.");
       return;
     }
 
@@ -128,54 +120,90 @@ export default function GenerateQRCodes() {
       <PageMeta title="QR Tas" description="Buat/tambah QR tas untuk proses laundry" />
       <PageBreadcrumb pageTitle="QR Tas" />
 
-      <div className="space-y-6">
+      <div className="mx-auto max-w-2xl space-y-6">
         <ComponentCard title={title}>
+          <p className="mb-6 -mt-2 text-sm text-gray-500 dark:text-gray-400">
+            {description}
+          </p>
+
           {error && (
-            <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-6 p-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3">
+              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               {error}
             </div>
           )}
 
-          <div className="space-y-4">
-            <div>
-              <Label>Asrama</Label>
-              <select
-                value={selectedDormitory}
-                onChange={(e) => setSelectedDormitory(e.target.value)}
-                disabled={isLoadingDormitories || isSubmitting}
-                className="h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs dark:border-gray-700 dark:bg-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option value="">{placeholder}</option>
-                {dormitories.map((d) => (
-                  <option key={d.id} value={d.name}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+          <div className="space-y-8">
+            {/* Dormitory Selection Grid */}
+            <div className="space-y-3">
+              <Label className="text-sm font-bold text-gray-700 dark:text-gray-300">Pilih Asrama</Label>
+              {loadingDorms ? (
+                <div className="flex flex-wrap gap-2 animate-pulse">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-10 w-24 bg-gray-100 dark:bg-gray-800 rounded-xl" />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {dormitories.map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => setSelectedDormitory(d.name)}
+                      className={`px-4 py-2 text-sm font-bold rounded-xl border transition-all active:scale-95 ${
+                        selectedDormitory === d.name
+                          ? "bg-brand-500 border-brand-500 text-white shadow-lg shadow-brand-500/20"
+                          : "bg-white border-gray-100 text-gray-600 hover:border-brand-300 hover:text-brand-600 dark:bg-gray-900/50 dark:border-white/5 dark:text-gray-400"
+                      }`}
+                    >
+                      {d.name}
+                    </button>
+                  ))}
+                  {dormitories.length === 0 && !loadingDorms && (
+                    <p className="text-sm text-gray-500 italic">Tidak ada data asrama.</p>
+                  )}
+                </div>
+              )}
             </div>
 
-            <div>
-              <Label>Jumlah QR</Label>
-              <Input
-                type="number"
-                value={count}
-                onChange={(e) => setCount(Number(e.target.value))}
-                min="1"
-                placeholder="Contoh: 25"
-                disabled={isSubmitting}
-              />
-              <div className="mt-1 text-xs text-gray-500">
-                Token QR dibuat otomatis. Nomor dan kode unik otomatis berurutan per asrama.
+            {/* Count Input */}
+            <div className="space-y-3">
+              <Label className="text-sm font-bold text-gray-700 dark:text-gray-300">Jumlah QR yang Ingin Dibuat</Label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  value={count}
+                  onChange={(e) => setCount(Number(e.target.value))}
+                  min="1"
+                  placeholder="Contoh: 25"
+                  disabled={isSubmitting}
+                  className="rounded-2xl pl-11 h-12 text-lg font-bold"
+                />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+              </div>
+              <div className="p-4 bg-gray-50 dark:bg-white/[0.03] rounded-2xl border border-gray-100 dark:border-white/5 flex items-start gap-3">
+                <svg className="w-5 h-5 text-gray-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Token QR akan dibuat secara aman oleh sistem. Nomor dan kode unik akan otomatis berurutan berdasarkan data asrama yang dipilih.
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-5 border-t border-gray-200 dark:border-gray-700">
+          <div className="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-6 border-t border-gray-100 dark:border-white/5">
             <button
               type="button"
               onClick={() => navigate("/qr-codes")}
               disabled={isSubmitting}
-              className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 dark:bg-gray-900 dark:border-white/10 dark:text-gray-400 transition-all active:scale-95 disabled:opacity-50"
             >
               Batal
             </button>
@@ -183,9 +211,24 @@ export default function GenerateQRCodes() {
               type="button"
               onClick={() => void handleSubmit()}
               disabled={isSubmitting || !canGenerate}
-              className="px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-3 text-sm font-bold text-white bg-brand-500 rounded-2xl hover:bg-brand-600 shadow-xl shadow-brand-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isSubmitting ? "Memproses..." : mode === "edit" ? "Tambah QR" : "Buat QR"}
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {mode === "edit" ? "Tambah Unit QR" : "Generate unit QR"}
+                </>
+              )}
             </button>
           </div>
         </ComponentCard>

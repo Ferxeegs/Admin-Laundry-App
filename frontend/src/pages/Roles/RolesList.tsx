@@ -170,57 +170,59 @@ export default function RolesList() {
             </div>
           </div>
         ) : (
-          roles.map((role) => (
-            <div
-              key={role.id}
-              className="p-4 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
-              onClick={() => {
-                if (hasPermission(['view_role', 'view_any_role'])) {
-                  navigate(`/roles/${String(role.id)}/edit`);
-                }
-              }}
-            >
-              <div className="flex items-start gap-3 mb-3">
-                <div className="h-12 w-12 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                  {role.name.substring(0, 2).toUpperCase()}
+          roles.map((role) => {
+            const isClickable = hasPermission(['view_role', 'view_any_role']);
+            return (
+              <div
+                key={role.id}
+                className={`p-4 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 transition-colors ${
+                  isClickable ? "cursor-pointer active:bg-gray-50 dark:active:bg-gray-700/50" : ""
+                }`}
+                onClick={() => {
+                  if (isClickable) {
+                    navigate(`/roles/${String(role.id)}/edit`);
+                  }
+                }}
+              >
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="h-12 w-12 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                    {role.name.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-800 text-sm dark:text-white/90">
+                      {role.name}
+                    </p>
+                    <div className="mt-1">
+                      <Badge size="sm" color="info">
+                        {role.guard_name}
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-800 text-sm dark:text-white/90">
-                    {role.name}
-                  </p>
-                  <div className="mt-1">
-                    <Badge size="sm" color="info">
-                      {role.guard_name}
+                <div className="space-y-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Badge size="sm" color="primary">
+                      {role.permissions_count} Permissions
+                    </Badge>
+                    <Badge size="sm" color="success">
+                      {role.users_count} Users
                     </Badge>
                   </div>
                 </div>
+                {isClickable && (
+                  <div className="pt-3 border-t border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => navigate(`/roles/${String(role.id)}/edit`)}
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
+                    >
+                      <PencilIcon className="w-3.5 h-3.5" />
+                      Edit Role
+                    </button>
+                  </div>
+                )}
               </div>
-              <div className="space-y-2 mb-3">
-                <div className="flex items-center gap-2">
-                  <Badge size="sm" color="primary">
-                    {role.permissions_count} Permissions
-                  </Badge>
-                  <Badge size="sm" color="success">
-                    {role.users_count} Users
-                  </Badge>
-                </div>
-              </div>
-              {hasPermission(['view_role', 'view_any_role']) && (
-                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/roles/${String(role.id)}/edit`);
-                    }}
-                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation"
-                  >
-                    <PencilIcon className="w-3.5 h-3.5" />
-                    Edit Role
-                  </button>
-                </div>
-              )}
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -258,79 +260,81 @@ export default function RolesList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                  {roles.map((role) => (
-                    <TableRow
-                      key={role.id}
-                      className="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors group"
-                    >
-                      {/* Kolom Role Name */}
-                      <TableCell className="px-5 py-4 align-middle">
-                        <div
-                          className="flex items-center gap-3 text-left w-full cursor-pointer"
-                          onClick={() => {
-                            if (hasPermission(['view_role', 'view_any_role'])) {
-                              navigate(`/roles/${String(role.id)}/edit`);
-                            }
-                          }}
-                        >
-                          <div className="shrink-0 h-10 w-10 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-xs border border-gray-100 dark:border-gray-700">
-                            {role.name.substring(0, 2).toUpperCase()}
+                  {roles.map((role) => {
+                    const isClickable = hasPermission(['view_role', 'view_any_role']);
+                    return (
+                      <TableRow
+                        key={role.id}
+                        className={`transition-colors group ${
+                          isClickable 
+                            ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.02]" 
+                            : "hover:bg-gray-50/50"
+                        }`}
+                        onClick={() => {
+                          if (isClickable) {
+                            navigate(`/roles/${String(role.id)}/edit`);
+                          }
+                        }}
+                      >
+                        {/* Kolom Role Name */}
+                        <TableCell className="px-5 py-4 align-middle">
+                          <div className="flex items-center gap-3 text-left w-full">
+                            <div className="shrink-0 h-10 w-10 overflow-hidden rounded-full bg-brand-500 flex items-center justify-center text-white font-semibold text-xs border border-gray-100 dark:border-gray-700">
+                              {role.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <p className="font-medium text-theme-sm text-gray-800 dark:text-white/90 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                                {role.name}
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex flex-col min-w-0">
-                            <p className="font-medium text-theme-sm text-gray-800 dark:text-white/90 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
-                              {role.name}
-                            </p>
+                        </TableCell>
+
+                        {/* Kolom Guard Name */}
+                        <TableCell className="px-5 py-4 text-center align-middle">
+                          <div className="flex justify-center">
+                            <Badge size="sm" color="info">
+                              {role.guard_name}
+                            </Badge>
                           </div>
-                        </div>
-                      </TableCell>
+                        </TableCell>
 
-                      {/* Kolom Guard Name */}
-                      <TableCell className="px-5 py-4 text-center align-middle">
-                        <div className="flex justify-center">
-                          <Badge size="sm" color="info">
-                            {role.guard_name}
-                          </Badge>
-                        </div>
-                      </TableCell>
+                        {/* Kolom Permissions Count */}
+                        <TableCell className="px-5 py-4 text-center align-middle">
+                          <div className="flex justify-center">
+                            <Badge size="sm" color="primary">
+                              {role.permissions_count} Permissions
+                            </Badge>
+                          </div>
+                        </TableCell>
 
-                      {/* Kolom Permissions Count */}
-                      <TableCell className="px-5 py-4 text-center align-middle">
-                        <div className="flex justify-center">
-                          <Badge size="sm" color="primary">
-                            {role.permissions_count} Permissions
-                          </Badge>
-                        </div>
-                      </TableCell>
+                        {/* Kolom Users Count */}
+                        <TableCell className="px-5 py-4 text-center align-middle">
+                          <div className="flex justify-center">
+                            <Badge size="sm" color="success">
+                              {role.users_count} Users
+                            </Badge>
+                          </div>
+                        </TableCell>
 
-                      {/* Kolom Users Count */}
-                      <TableCell className="px-5 py-4 text-center align-middle">
-                        <div className="flex justify-center">
-                          <Badge size="sm" color="success">
-                            {role.users_count} Users
-                          </Badge>
-                        </div>
-                      </TableCell>
-
-                      {/* Kolom Aksi */}
-                      <TableCell className="px-5 py-4 text-center align-middle">
-                        <div className="flex items-center justify-center">
-                          {hasPermission(['view_role', 'view_any_role']) && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/roles/${String(role.id)}/edit`);
-                              }}
-                              className="p-1.5 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-                              title="Edit Role"
-                            >
-                              <PencilIcon className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        {/* Kolom Aksi */}
+                        <TableCell className="px-5 py-4 text-center align-middle">
+                          <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                            {isClickable && (
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/roles/${String(role.id)}/edit`)}
+                                className="p-1.5 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                                title="Edit Role"
+                              >
+                                <PencilIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

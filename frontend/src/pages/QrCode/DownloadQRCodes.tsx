@@ -255,91 +255,125 @@ export default function DownloadQRCodes() {
 
         <ComponentCard title="Pengaturan unduh">
           {dormError && (
-            <div className="mb-3 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">
+            <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">
               {dormError}
             </div>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="sm:col-span-2">
-              <Label>Asrama</Label>
-              <select
-                value={selectedDormitory}
-                onChange={(e) => setSelectedDormitory(e.target.value)}
-                disabled={loadingDorms}
-                className="mt-1.5 w-full h-11 px-3 text-sm rounded-lg border border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-800 dark:text-white/90"
-                aria-label="Pilih asrama"
+          <div className="space-y-6">
+            {/* Dormitory Selection Grid */}
+            <div>
+              <Label className="mb-3 block text-sm font-bold text-gray-700 dark:text-gray-300">Pilih Asrama</Label>
+              {loadingDorms ? (
+                <div className="flex gap-2 animate-pulse">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-10 w-24 bg-gray-100 dark:bg-gray-800 rounded-lg" />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {dormitories.map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => setSelectedDormitory(d.name)}
+                      className={`px-4 py-2 text-sm font-medium rounded-xl border transition-all ${
+                        selectedDormitory === d.name
+                          ? "bg-brand-500 border-brand-500 text-white shadow-lg shadow-brand-500/20"
+                          : "bg-white border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-400"
+                      }`}
+                    >
+                      {d.name}
+                    </button>
+                  ))}
+                  {dormitories.length === 0 && !loadingDorms && (
+                    <p className="text-sm text-gray-500">Tidak ada data asrama.</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Range Inputs Grid */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Nomor urut dari (opsional)</Label>
+                <Input
+                  value={rangeFrom}
+                  onChange={(e) => setRangeFrom(e.target.value)}
+                  placeholder="Contoh: 1"
+                  error={Boolean(fromParsed.error)}
+                  hint={fromParsed.error ?? undefined}
+                  type="text"
+                  className="rounded-xl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Nomor urut sampai (opsional)</Label>
+                <Input
+                  value={rangeTo}
+                  onChange={(e) => setRangeTo(e.target.value)}
+                  placeholder="Contoh: 50"
+                  error={Boolean(toParsed.error)}
+                  hint={toParsed.error ?? undefined}
+                  type="text"
+                  className="rounded-xl"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => void handleLoadQr()}
+                disabled={loadingQr || !selectedDormitory.trim()}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold text-white bg-brand-500 rounded-xl hover:bg-brand-600 shadow-lg shadow-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
               >
-                <option value="">{loadingDorms ? "Memuat asrama…" : "— Pilih asrama —"}</option>
-                {dormitories.map((d) => (
-                  <option key={d.id} value={d.name}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label>Nomor urut dari (opsional)</Label>
-              <Input
-                value={rangeFrom}
-                onChange={(e) => setRangeFrom(e.target.value)}
-                placeholder="Contoh: 1"
-                className="mt-1.5"
-                error={Boolean(fromParsed.error)}
-                hint={fromParsed.error ?? undefined}
-                type="text"
-              />
-            </div>
-            <div>
-              <Label>Nomor urut sampai (opsional)</Label>
-              <Input
-                value={rangeTo}
-                onChange={(e) => setRangeTo(e.target.value)}
-                placeholder="Contoh: 50"
-                className="mt-1.5"
-                error={Boolean(toParsed.error)}
-                hint={toParsed.error ?? undefined}
-                type="text"
-              />
+                {loadingQr ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Memuat…
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Muat QR asrama
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
-          {rawList.length > 0 && (
-            <p className="mt-2 text-xs text-gray-700 dark:text-gray-300">
-              {inferredPrefix ? (
-                <>
-                  Prefix <span className="font-mono font-semibold">{inferredPrefix}</span> diambil dari data QR
-                  asrama ini (format <span className="font-mono">{inferredPrefix}-001</span>).
-                </>
-              ) : (
-                <span className="text-amber-700 dark:text-amber-400">
-                  Belum terdeteksi prefix 3 huruf dari unique_code — pastikan QR memakai format{" "}
-                  <span className="font-mono">XXX-001</span>.
-                </span>
-              )}
+          <div className="mt-6 border-t border-gray-100 dark:border-white/5 pt-4">
+            {rawList.length > 0 && (
+              <p className="text-xs text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                <svg className="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {inferredPrefix ? (
+                  <span>
+                    Prefix <span className="font-mono font-bold text-brand-600 dark:text-brand-400">{inferredPrefix}</span> terdeteksi (format <span className="font-mono">{inferredPrefix}-001</span>).
+                  </span>
+                ) : (
+                  <span className="text-amber-600">
+                    Prefix 3 huruf tidak terdeteksi. Gunakan format <span className="font-mono">XXX-001</span>.
+                  </span>
+                )}
+              </p>
+            )}
+            <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+              Isi hanya <strong>angka nomor urut</strong>. Huruf awal mengikuti asrama lewat data yang dimuat. Kosongkan kedua field untuk menampilkan semua QR asrama.
             </p>
-          )}
-
-          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            Isi hanya <strong>angka nomor urut</strong> (tanpa tanda hubung atau huruf). Huruf awal mengikuti asrama
-            lewat data yang dimuat. Kosongkan kedua field untuk menampilkan semua QR asrama.
-          </p>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void handleLoadQr()}
-              disabled={loadingQr || !selectedDormitory.trim()}
-              className="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-            >
-              {loadingQr ? "Memuat…" : "Muat QR asrama"}
-            </button>
           </div>
         </ComponentCard>
 
         <ComponentCard title="Pratinjau & unduh">
           {loadError && (
-            <div className="mb-3 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">
+            <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">
               {loadError}
             </div>
           )}
@@ -349,185 +383,217 @@ export default function DownloadQRCodes() {
               <TableSkeleton rows={6} columns={5} />
             </div>
           ) : rawList.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400 py-6 text-center">
-              Pilih asrama lalu klik &quot;Muat QR asrama&quot; untuk melihat daftar.
-            </p>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Pilih asrama lalu klik &quot;Muat QR asrama&quot; untuk melihat daftar.
+              </p>
+            </div>
           ) : (
-            <>
-              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600 dark:text-gray-400">
-                <div>
-                  <span className="font-medium text-gray-800 dark:text-white">{filteredList.length}</span> QR
-                  ditampilkan
-                  {rawList.length !== filteredList.length && (
-                    <span>
-                      {" "}
-                      (dari {rawList.length} total{rangeActive ? ", setelah filter rentang" : ""})
-                    </span>
-                  )}
+            <div className="space-y-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold text-gray-900 dark:text-white">{filteredList.length}</span>
+                    <span className="text-gray-500 dark:text-gray-400">QR siap diunduh</span>
+                  </div>
                   {rangeActive && inferredPrefix && (
-                    <span className="block text-xs mt-1">
-                      Filter nomor →{" "}
-                      <span className="font-mono">
-                        {formatUniquePreview(inferredPrefix, fromParsed.n)} —{" "}
-                        {formatUniquePreview(inferredPrefix, toParsed.n)}
-                      </span>
-                    </span>
-                  )}
-                  {rangeActive && !inferredPrefix && rawList.length > 0 && (
-                    <span className="block text-xs mt-1 text-amber-700 dark:text-amber-400">
-                      Isi nomor membutuhkan prefix dari data — tidak terdeteksi.
-                    </span>
+                    <div className="mt-1 flex items-center gap-1.5 text-xs text-brand-600 dark:text-brand-400 font-mono font-medium">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                      </svg>
+                      {formatUniquePreview(inferredPrefix, fromParsed.n)} — {formatUniquePreview(inferredPrefix, toParsed.n)}
+                    </div>
                   )}
                 </div>
+                
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={selectAllFiltered}
                     disabled={filteredList.length === 0}
-                    className="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 disabled:opacity-50"
+                    className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 transition-all active:scale-[0.98]"
                   >
-                    Pilih semua
+                    Pilih Semua
                   </button>
                   <button
                     type="button"
                     onClick={clearSelection}
                     disabled={selectedIds.size === 0}
-                    className="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 disabled:opacity-50"
+                    className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 transition-all active:scale-[0.98]"
                   >
-                    Kosongkan pilihan
+                    Hapus Pilihan
                   </button>
                   <button
                     type="button"
                     onClick={() => void handleZipSelected()}
                     disabled={zipping || selectedRows.length === 0}
-                    className="px-3 py-2 text-xs font-medium rounded-lg bg-gray-800 text-white hover:bg-gray-900 dark:bg-brand-600 dark:hover:bg-brand-700 disabled:opacity-50"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2 text-xs font-bold rounded-xl bg-gray-900 text-white shadow-lg shadow-gray-900/10 hover:bg-black dark:bg-brand-600 dark:hover:bg-brand-700 transition-all active:scale-[0.98]"
                   >
-                    {zipping ? "Membuat ZIP…" : `Unduh ZIP (${selectedRows.length})`}
+                    {zipping ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Zipping…
+                      </span>
+                    ) : (
+                      <>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Unduh ZIP ({selectedRows.length})
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
 
-              {rangeBlockedNoPrefix && (
-                <p className="mb-3 text-xs text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
-                  Rentang nomor tidak bisa diterapkan: tidak ada prefix unik terdeteksi dari unique_code di asrama ini.
-                </p>
-              )}
+              {/* Info Messages */}
+              <div className="space-y-2">
+                {rangeBlockedNoPrefix && (
+                  <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-lg px-3 py-2 flex items-center gap-2">
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Prefix tidak terdeteksi — filter rentang tidak aktif.
+                  </div>
+                )}
+                {rangeActive && inferredPrefix && someWithoutMatchingPrefix && (
+                  <div className="text-[11px] text-amber-600 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 rounded-lg px-3 py-2 flex items-center gap-2">
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Beberapa QR dilewati karena prefix tidak cocok dengan <span className="font-mono font-bold">{inferredPrefix}</span>.
+                  </div>
+                )}
+              </div>
 
-              {rangeActive && inferredPrefix && someWithoutMatchingPrefix && (
-                <p className="mb-3 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
-                  Beberapa QR tidak memakai prefix <span className="font-mono">{inferredPrefix}</span> sehingga tidak
-                  ikut filter rentang.
-                </p>
-              )}
-
-              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
                 <Table className="w-full table-fixed border-collapse">
                   <TableHeader className="border-b border-gray-100 dark:border-white/[0.05] bg-gray-50/50 dark:bg-white/[0.02]">
                     <TableRow>
-                      {/* Checkbox Column */}
-                      <TableCell isHeader className="px-3 py-4 text-center w-[50px]">
+                      <TableCell isHeader className="px-3 py-4 text-center w-[60px]">
                         <span className="sr-only">Pilih</span>
                       </TableCell>
-
-                      <TableCell isHeader className="px-4 py-4 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400 w-[160px]">
+                      <TableCell isHeader className="px-4 py-4 text-center text-theme-xs font-bold text-gray-500 uppercase tracking-wider w-[160px]">
                         Unique Code
                       </TableCell>
-
-                      <TableCell isHeader className="px-4 py-4 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400 w-[120px]">
+                      <TableCell isHeader className="px-4 py-4 text-center text-theme-xs font-bold text-gray-500 uppercase tracking-wider w-[120px]">
                         Nomor QR
                       </TableCell>
-
-                      <TableCell isHeader className="px-4 py-4 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400">
-                        Token
+                      <TableCell isHeader className="px-4 py-4 text-center text-theme-xs font-bold text-gray-500 uppercase tracking-wider">
+                        Token Preview
                       </TableCell>
-
-                      <TableCell isHeader className="px-4 py-4 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400 w-[100px]">
-                        Unduh
+                      <TableCell isHeader className="px-4 py-4 text-center text-theme-xs font-bold text-gray-500 uppercase tracking-wider w-[100px]">
+                        Aksi
                       </TableCell>
                     </TableRow>
                   </TableHeader>
 
                   <TableBody>
-                    {filteredList.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="px-4 py-10 text-center text-gray-500">
-                          {rangeInvalid
-                            ? "Perbaiki input nomor (hanya angka)."
-                            : rangeBlockedNoPrefix
-                              ? "Tidak bisa memfilter: prefix unique_code tidak terdeteksi."
-                              : "Tidak ada QR yang cocok dengan rentang nomor ini."}
+                    {filteredList.map((qr) => (
+                      <TableRow
+                        key={qr.id}
+                        className="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors cursor-pointer group"
+                        onClick={() => toggleOne(qr.id)}
+                      >
+                        <TableCell className="px-3 py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex justify-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(qr.id)}
+                              onChange={() => toggleOne(qr.id)}
+                              className="h-5 w-5 rounded-md border-gray-300 text-brand-600 focus:ring-brand-500 transition-all cursor-pointer"
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-center align-middle">
+                          <span className="font-mono text-sm font-bold text-gray-900 dark:text-white">
+                            {qr.unique_code || "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-center align-middle">
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                             #{qr.qr_number ?? "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-center align-middle">
+                          <div className="flex justify-center">
+                            <span className="text-[10px] px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-400 font-mono truncate max-w-[200px]">
+                              {qr.token_qr}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => void handleDownloadOne(qr)}
+                            disabled={downloadingId === qr.id}
+                            className="inline-flex items-center justify-center px-4 py-1.5 text-[11px] font-bold text-brand-600 bg-brand-50 dark:bg-brand-500/10 rounded-xl hover:bg-brand-100 dark:hover:bg-brand-500/20 transition-all active:scale-95 disabled:opacity-50"
+                          >
+                            {downloadingId === qr.id ? "…" : "PNG"}
+                          </button>
                         </TableCell>
                       </TableRow>
-                    ) : (
-                      filteredList.map((qr) => (
-                        <TableRow
-                          key={qr.id}
-                          className="hover:bg-gray-50 dark:hover:bg-gray-50/5 transition-colors"
-                        >
-                          {/* Checkbox Cell */}
-                          <TableCell className="px-3 py-3 text-center align-middle">
-                            <div className="flex justify-center">
-                              <input
-                                type="checkbox"
-                                checked={selectedIds.has(qr.id)}
-                                onChange={() => toggleOne(qr.id)}
-                                className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
-                                aria-label={`Pilih ${qr.unique_code || qr.id}`}
-                              />
-                            </div>
-                          </TableCell>
-
-                          {/* Unique Code Cell */}
-                          <TableCell className="px-4 py-3 text-center align-middle">
-                            <span className="font-mono text-sm font-medium text-gray-700 dark:text-gray-300">
-                              {qr.unique_code || "—"}
-                            </span>
-                          </TableCell>
-
-                          {/* Nomor QR Cell */}
-                          <TableCell className="px-4 py-3 text-center align-middle">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
-                              {qr.qr_number ?? "—"}
-                            </span>
-                          </TableCell>
-
-                          {/* Token Cell */}
-                          <TableCell className="px-4 py-3 text-center align-middle">
-                            <div className="flex justify-center">
-                              <code className="text-[10px] px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-gray-500 dark:text-gray-400 font-mono truncate max-w-[180px]" title={qr.token_qr}>
-                                {qr.token_qr.length > 20 ? `${qr.token_qr.slice(0, 20)}...` : qr.token_qr}
-                              </code>
-                            </div>
-                          </TableCell>
-
-                          {/* Download Action Cell */}
-                          <TableCell className="px-4 py-3 text-center align-middle">
-                            <div className="flex justify-center">
-                              <button
-                                type="button"
-                                onClick={() => void handleDownloadOne(qr)}
-                                disabled={downloadingId === qr.id}
-                                className="inline-flex items-center justify-center px-3 py-1 text-xs font-semibold text-brand-600 bg-brand-50 dark:bg-brand-500/10 rounded-md hover:bg-brand-100 dark:hover:bg-brand-500/20 transition-colors disabled:opacity-50"
-                              >
-                                {downloadingId === qr.id ? (
-                                  <span className="flex gap-1">
-                                    <span className="animate-pulse">.</span>
-                                    <span className="animate-pulse delay-75">.</span>
-                                    <span className="animate-pulse delay-150">.</span>
-                                  </span>
-                                ) : (
-                                  "PNG"
-                                )}
-                              </button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
+                    ))}
                   </TableBody>
                 </Table>
               </div>
-            </>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3 px-1">
+                {filteredList.map((qr) => (
+                  <div
+                    key={qr.id}
+                    onClick={() => toggleOne(qr.id)}
+                    className={`relative overflow-hidden rounded-2xl border transition-all p-4 active:scale-[0.98] ${
+                      selectedIds.has(qr.id)
+                        ? "border-brand-500 bg-brand-50/30 dark:bg-brand-500/5 ring-1 ring-brand-500"
+                        : "border-gray-100 bg-white dark:border-white/5 dark:bg-white/[0.03]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(qr.id)}
+                            onChange={() => toggleOne(qr.id)}
+                            className="h-5 w-5 rounded-md border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-bold font-mono text-gray-900 dark:text-white">
+                            {qr.unique_code || "—"}
+                          </div>
+                          <div className="text-[11px] text-gray-500 mt-0.5">
+                            Nomor: #{qr.qr_number ?? "—"}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleDownloadOne(qr);
+                        }}
+                        disabled={downloadingId === qr.id}
+                        className="shrink-0 px-4 py-2 text-xs font-bold text-brand-600 bg-white dark:bg-gray-800 border border-brand-100 dark:border-brand-500/20 rounded-xl shadow-sm active:bg-brand-50"
+                      >
+                        {downloadingId === qr.id ? "…" : "PNG"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </ComponentCard>
       </div>

@@ -476,57 +476,69 @@ export default function QRCodes() {
               </div>
 
               {/* Mobile Cards */}
-              <div className="md:hidden space-y-3">
+              <div className="md:hidden space-y-4 px-1">
                 {qrCodes.length === 0 ? (
-                  <div className="py-10 text-center text-gray-500 text-sm">
+                  <div className="py-12 text-center text-gray-500 dark:text-gray-400 text-sm">
                     {statusText}: tidak ada data
                   </div>
                 ) : (
                   qrCodes.map((qr) => (
                     <div
                       key={qr.id}
-                      className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800"
+                      className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-white/5 dark:bg-white/[0.03] transition-all active:scale-[0.98]"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex gap-3 min-w-0 flex-1">
-                          <div className="shrink-0 flex flex-col items-center gap-1">
-                            <div className="rounded border border-gray-200 bg-white p-1 dark:border-gray-700">
-                              <QRCodeSVG value={qr.token_qr} size={72} level="M" />
-                            </div>
-                            <span className="text-[10px] font-mono text-gray-700 dark:text-gray-300 text-center max-w-[80px] break-all">
+                      {/* Top Section: QR & Primary Info */}
+                      <div className="flex items-center gap-4">
+                        {/* QR Code Container */}
+                        <div className="shrink-0 rounded-xl border border-gray-100 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800">
+                          <QRCodeSVG 
+                            value={qr.token_qr} 
+                            size={60} 
+                            level="M" 
+                            className="dark:opacity-90"
+                          />
+                        </div>
+
+                        {/* Text Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span className="text-xs font-bold font-mono text-brand-600 dark:text-brand-400">
                               {qr.unique_code || "—"}
                             </span>
+                            {assignedBadge(qr)}
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                              QR Token
-                            </div>
-                            <div className="mt-1 font-mono text-xs break-all">
-                              {qr.token_qr}
-                            </div>
+                          
+                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                            {qr.student ? qr.student.fullname : "Belum ada santri"}
+                          </h4>
+                          
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                            <span className="truncate">{qr.dormitory || "Tanpa Asrama"}</span>
+                            {qr.qr_number && (
+                              <>
+                                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                                <span>#{qr.qr_number}</span>
+                              </>
+                            )}
                           </div>
-                        </div>
-                        {assignedBadge(qr)}
-                      </div>
-
-                      <div className="mt-2 text-sm">
-                        <div className="text-gray-700 dark:text-gray-200">
-                          {qr.student ? qr.student.fullname : "Belum ada santri"}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {qr.dormitory ? `Asrama: ${qr.dormitory}` : ""}
-                          {qr.qr_number ? ` • #${qr.qr_number}` : ""}
                         </div>
                       </div>
 
-                      <div className="mt-3 flex gap-2">
+                      {/* Divider */}
+                      <div className="my-4 h-px w-full bg-gray-100 dark:bg-white/5" />
+
+                      {/* Action Buttons Row */}
+                      <div className="flex items-center gap-2">
                         {!qr.student_id ? (
                           <button
                             type="button"
                             onClick={() => openAssignFlow(qr)}
-                            className="flex-1 inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium bg-brand-500 text-white hover:bg-brand-600 touch-manipulation"
+                            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-brand-500/20 active:bg-brand-600 transition-colors touch-manipulation"
                           >
-                            Assign
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            </svg>
+                            Assign Santri
                           </button>
                         ) : (
                           <button
@@ -535,15 +547,17 @@ export default function QRCodes() {
                               setReleaseQrCode(qr);
                               openRelease();
                             }}
-                            className="flex-1 inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 touch-manipulation"
+                            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-xs font-bold text-red-600 active:bg-red-100 dark:bg-red-900/10 dark:text-red-400 transition-colors touch-manipulation"
                           >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
+                            </svg>
                             Release
                           </button>
                         )}
-                      </div>
 
-                      {(canCreateQr && qr.dormitory) || (canDeleteQr && !qr.student_id) ? (
-                        <div className="mt-2 flex items-center gap-2">
+                        {/* Secondary Actions */}
+                        <div className="flex items-center gap-1.5 ml-1">
                           {canCreateQr && qr.dormitory && (
                             <button
                               type="button"
@@ -552,11 +566,10 @@ export default function QRCodes() {
                                   state: { dormitory: qr.dormitory },
                                 })
                               }
-                              disabled={isQrCrudLoading}
-                              className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Tambah QR untuk asrama ini"
+                              className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
+                              title="Tambah QR (Asrama)"
                             >
-                              <PlusIcon className="w-4 h-4" />
+                              <PlusIcon className="w-4.5 h-4.5" />
                             </button>
                           )}
 
@@ -564,15 +577,14 @@ export default function QRCodes() {
                             <button
                               type="button"
                               onClick={() => openDeleteQrFlow(qr)}
-                              disabled={isQrCrudLoading}
-                              className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
                               title="Hapus QR"
                             >
-                              <TrashBinIcon className="w-4 h-4" />
+                              <TrashBinIcon className="w-4.5 h-4.5" />
                             </button>
                           )}
                         </div>
-                      ) : null}
+                      </div>
                     </div>
                   ))
                 )}

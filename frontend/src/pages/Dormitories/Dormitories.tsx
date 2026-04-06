@@ -330,97 +330,107 @@ export default function Dormitories() {
                     </TableRow>
                   </TableHeader>
                   <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                    {dormitories.map((d) => (
-                      <TableRow
-                        key={d.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-50/5 transition-colors"
-                      >
-                        <TableCell className="px-5 py-4 text-center align-middle">
-                          <div className="font-medium text-gray-800 text-sm dark:text-white/90">
-                            {d.name}
-                          </div>
-                        </TableCell>
+                    {dormitories.map((d) => {
+                      const isClickable = !showDeleted && canUpdateDormitory;
+                      return (
+                        <TableRow
+                          key={d.id}
+                          className={`transition-colors ${
+                            isClickable 
+                              ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-50/5" 
+                              : "hover:bg-gray-50/50"
+                          }`}
+                          onClick={() => {
+                            if (isClickable) openEdit(d);
+                          }}
+                        >
+                          <TableCell className="px-5 py-4 text-center align-middle">
+                            <div className="font-medium text-gray-800 text-sm dark:text-white/90">
+                              {d.name}
+                            </div>
+                          </TableCell>
 
-                        <TableCell className="px-5 py-4 text-center align-middle">
-                          <div className="text-gray-500 text-sm dark:text-gray-400 italic">
-                            {d.description || "—"}
-                          </div>
-                        </TableCell>
+                          <TableCell className="px-5 py-4 text-center align-middle">
+                            <div className="text-gray-500 text-sm dark:text-gray-400 italic">
+                              {d.description || "—"}
+                            </div>
+                          </TableCell>
 
-                        <TableCell className="px-5 py-4 text-center align-middle">
-                          <div className="flex justify-center">
-                            <Badge size="sm" color={showDeleted ? "error" : "success"}>
-                              {showDeleted ? "Terhapus" : "Aktif"}
-                            </Badge>
-                          </div>
-                        </TableCell>
+                          <TableCell className="px-5 py-4 text-center align-middle">
+                            <div className="flex justify-center">
+                              <Badge size="sm" color={showDeleted ? "error" : "success"}>
+                                {showDeleted ? "Terhapus" : "Aktif"}
+                              </Badge>
+                            </div>
+                          </TableCell>
 
-                        <TableCell className="px-5 py-4 text-center align-middle">
-                          <div className="flex items-center justify-center gap-2">
-                            {!showDeleted ? (
-                              <>
-                                {canUpdateDormitory && (
-                                  <button
-                                    type="button"
-                                    onClick={() => openEdit(d)}
-                                    className="p-1.5 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-                                    title="Edit Asrama"
-                                  >
-                                    <PencilIcon className="w-4 h-4" />
-                                  </button>
-                                )}
-                                {canDeleteDormitory && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setDeleteTarget(d);
-                                      openDelete();
-                                    }}
-                                    className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                                    title="Hapus Asrama"
-                                  >
-                                    <TrashBinIcon className="w-4 h-4" />
-                                  </button>
-                                )}
-                              </>
-                            ) : (
-                              <div className="flex items-center justify-center gap-2 w-full">
-                                {canRestoreDormitory && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setRestoreTarget(d);
-                                      openRestore();
-                                    }}
-                                    className="inline-flex items-center shrink-0 gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors whitespace-nowrap"
-                                    title="Pulihkan Asrama"
-                                  >
-                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                    Pulihkan
-                                  </button>
-                                )}
-                                {canForceDeleteDormitory && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setForceDeleteTarget(d);
-                                      openForceDelete();
-                                    }}
-                                    className="inline-flex items-center shrink-0 gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
-                                    title="Hapus Permanen"
-                                  >
-                                    <TrashBinIcon className="w-3.5 h-3.5" />
-                                    Hapus
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          <TableCell className="px-5 py-4 text-center align-middle">
+                            <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
+                              {!showDeleted ? (
+                                <>
+                                  {canUpdateDormitory && (
+                                    <button
+                                      type="button"
+                                      onClick={() => openEdit(d)}
+                                      className="p-1.5 text-gray-500 hover:text-brand-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                                      title="Edit Asrama"
+                                    >
+                                      <PencilIcon className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                  {canDeleteDormitory && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setDeleteTarget(d);
+                                        openDelete();
+                                      }}
+                                      className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                                      title="Hapus Asrama"
+                                    >
+                                      <TrashBinIcon className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </>
+                              ) : (
+                                <div className="flex items-center justify-center gap-2 w-full">
+                                  {canRestoreDormitory && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setRestoreTarget(d);
+                                        openRestore();
+                                      }}
+                                      className="inline-flex items-center shrink-0 gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors whitespace-nowrap"
+                                      title="Pulihkan Asrama"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                      </svg>
+                                      Pulihkan
+                                    </button>
+                                  )}
+                                  {canForceDeleteDormitory && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setForceDeleteTarget(d);
+                                        openForceDelete();
+                                      }}
+                                      className="inline-flex items-center shrink-0 gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                                      title="Hapus Permanen"
+                                    >
+                                      <TrashBinIcon className="w-3.5 h-3.5" />
+                                      Hapus
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -428,93 +438,123 @@ export default function Dormitories() {
           </div>
 
           {/* Mobile Cards */}
-          <div className="md:hidden space-y-3">
+          <div className="md:hidden space-y-4 px-1">
             {isLoading && dormitories.length === 0 ? (
-              <div className="p-5">
-                <TableSkeleton rows={6} columns={2} />
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="p-4 bg-white rounded-2xl border border-gray-100 dark:bg-white/[0.03] dark:border-white/5 animate-pulse">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="space-y-2 flex-1">
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                        <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-3/4" />
+                      </div>
+                      <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-16" />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="h-9 bg-gray-100 dark:bg-gray-800 rounded-xl flex-1" />
+                      <div className="h-9 bg-gray-100 dark:bg-gray-800 rounded-xl w-10" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : dormitories.length === 0 ? (
-              <div className="flex items-center justify-center py-12 text-gray-500">
+              <div className="flex items-center justify-center py-12 text-gray-500 dark:text-gray-400 text-sm">
                 {emptyStateText}
               </div>
             ) : (
-              dormitories.map((d) => (
-                <div
-                  key={d.id}
-                  className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                        {d.name}
+              dormitories.map((d) => {
+                const isClickable = !showDeleted && canUpdateDormitory;
+                return (
+                  <div
+                    key={d.id}
+                    className={`relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-white/5 dark:bg-white/[0.03] transition-all ${
+                      isClickable ? "cursor-pointer active:scale-[0.98] active:bg-gray-50/50 dark:active:bg-white/[0.05]" : ""
+                    }`}
+                    onClick={() => {
+                      if (isClickable) openEdit(d);
+                    }}
+                  >
+                    {/* Header: Name & Status */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-base font-bold text-gray-900 dark:text-white truncate">
+                          {d.name}
+                        </h4>
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                          {d.description || "Tidak ada deskripsi"}
+                        </p>
                       </div>
-                      <div className="mt-1 text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
-                        {d.description || "-"}
+                      <div className="shrink-0">
+                        <Badge size="sm" color={showDeleted ? "error" : "success"}>
+                          {showDeleted ? "Terhapus" : "Aktif"}
+                        </Badge>
                       </div>
                     </div>
-                    <Badge size="sm" color={showDeleted ? "error" : "success"}>
-                      {showDeleted ? "Terhapus" : "Aktif"}
-                    </Badge>
-                  </div>
 
-                  <div className="mt-3 flex items-center gap-2">
-                    {!showDeleted ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => openEdit(d)}
-                          className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 touch-manipulation"
-                          title="Edit Dormitory"
-                        >
-                          <PencilIcon className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setDeleteTarget(d);
-                            openDelete();
-                          }}
-                          className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 touch-manipulation"
-                          title="Delete Dormitory"
-                        >
-                          <TrashBinIcon className="w-4 h-4" />
-                        </button>
-                      </>
-                    ) : (
-                      <div className="flex-1 flex gap-2">
-                        {canRestoreDormitory && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setRestoreTarget(d);
-                              openRestore();
-                            }}
-                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            Pulihkan
-                          </button>
-                        )}
-                        {canDeleteDormitory && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setForceDeleteTarget(d);
-                              openForceDelete();
-                            }}
-                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-                          >
-                            <TrashBinIcon className="w-3.5 h-3.5" />
-                            Hapus Permanen
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    {/* Actions Row */}
+                    <div className="mt-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      {!showDeleted ? (
+                        <div className="flex w-full items-center gap-2">
+                          {canUpdateDormitory && (
+                            <button
+                              type="button"
+                              onClick={() => openEdit(d)}
+                              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-50 px-4 py-2.5 text-xs font-bold text-brand-600 active:bg-brand-100 dark:bg-brand-900/10 dark:text-brand-400 transition-colors touch-manipulation"
+                            >
+                              <PencilIcon className="w-4 h-4" />
+                              Edit
+                            </button>
+                          )}
+                          {canDeleteDormitory && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDeleteTarget(d);
+                                openDelete();
+                              }}
+                              className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-red-500 hover:bg-red-50 active:bg-red-100 dark:text-red-400 dark:active:bg-red-900/20 transition-colors touch-manipulation"
+                              title="Hapus asrama"
+                            >
+                              <TrashBinIcon className="w-4.5 h-4.5" />
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex w-full gap-2">
+                          {canRestoreDormitory && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRestoreTarget(d);
+                                openRestore();
+                              }}
+                              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-600/20 active:bg-emerald-700 transition-colors touch-manipulation"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                              Pulihkan
+                            </button>
+                          )}
+                          {canDeleteDormitory && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setForceDeleteTarget(d);
+                                openForceDelete();
+                              }}
+                              className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-red-500 hover:bg-red-50 active:bg-red-100 dark:text-red-400 dark:active:bg-red-900/20 transition-colors touch-manipulation"
+                              title="Hapus permanen"
+                            >
+                              <TrashBinIcon className="w-4.5 h-4.5" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
