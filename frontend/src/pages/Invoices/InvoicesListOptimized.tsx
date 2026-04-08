@@ -14,6 +14,7 @@ import { useModal } from "../../hooks/useModal";
 import { invoiceAPI } from "../../utils/api";
 import { TrashBinIcon } from "../../icons";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 
 type InvoiceStatus = "unpaid" | "waiting_confirmation" | "paid" | "cancelled";
 
@@ -46,6 +47,8 @@ function monthToBillingPeriod(monthValue: string) {
 
 export default function InvoicesListOptimized() {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
+  const hasCreateInvoicePermission = hasPermission("create_invoice");
   const { success: toastSuccess, error: toastError } = useToast();
   const { isOpen, openModal, closeModal } = useModal();
 
@@ -122,11 +125,6 @@ export default function InvoicesListOptimized() {
       month: "short",
       day: "numeric",
     });
-  };
-
-  const formatMonthLabel = (dateString: string) => {
-    const d = new Date(dateString);
-    return d.toLocaleDateString("id-ID", { year: "numeric", month: "long" });
   };
 
   const totalAmount = useMemo(
@@ -235,40 +233,40 @@ export default function InvoicesListOptimized() {
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Bulan
+      {/* Header Actions & Filters */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 bg-gray-50/50 dark:bg-white/[0.02] p-4 rounded-2xl border border-gray-100 dark:border-white/[0.05]">
+        <div className="space-y-1.5 w-full md:w-64 shrink-0">
+          <label className="text-sm font-bold text-gray-700 dark:text-gray-300">
+            Bulan Tagihan
           </label>
           <input
             type="month"
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-800 dark:border-gray-800 dark:bg-gray-900 dark:text-white/90"
+            className="w-full h-10 rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-800 dark:border-gray-800 dark:bg-gray-900 dark:text-white/90 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium"
           />
-          <div className="text-xs text-gray-500 dark:text-gray-400 pt-1">
-            {billingPeriod ? formatMonthLabel(billingPeriod) : "-"}
-          </div>
         </div>
 
-        <div className="md:col-span-2 flex flex-col justify-end gap-3">
-          <div className="flex items-center gap-3 flex-wrap">
-            <Badge size="sm" color="primary">
-              {invoices.length} Invoice
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Badge size="md" color="light">
+              <span className="font-bold">{invoices.length}</span> Invoice
             </Badge>
-            <Badge size="sm" color="success">
-              Total: {formatRupiah(totalAmount)}
+            <Badge size="md" color="success">
+              Total <span className="font-bold">{formatRupiah(totalAmount)}</span>
             </Badge>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate("/invoices/create")}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Buat Invoice
-          </button>
+          {hasCreateInvoicePermission && (
+            <button
+              type="button"
+              onClick={() => navigate("/invoices/create")}
+              className="inline-flex shrink-0 items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-brand-500 rounded-xl hover:bg-brand-600 shadow-lg shadow-brand-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/></svg>
+              Buat Invoice
+            </button>
+          )}
         </div>
       </div>
 

@@ -75,7 +75,7 @@ const sidebarGroups: NavGroup[] = [
         icon: <ListIcon />,
         name: "Warna",
         path: "/colors",
-        requiredPermission: ["view_qr_code"],
+        requiredPermission: ["view_color"],
       },
     ],
   },

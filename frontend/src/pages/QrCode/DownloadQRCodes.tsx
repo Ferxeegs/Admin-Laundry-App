@@ -488,6 +488,9 @@ export default function DownloadQRCodes() {
                       <TableCell isHeader className="px-4 py-4 text-center text-theme-xs font-bold text-gray-500 uppercase tracking-wider w-[120px]">
                         Nomor QR
                       </TableCell>
+                      <TableCell isHeader className="px-4 py-4 text-center text-theme-xs font-bold text-gray-500 uppercase tracking-wider w-[130px]">
+                        Warna
+                      </TableCell>
                       <TableCell isHeader className="px-4 py-4 text-center text-theme-xs font-bold text-gray-500 uppercase tracking-wider">
                         Token Preview
                       </TableCell>
@@ -523,6 +526,16 @@ export default function DownloadQRCodes() {
                           <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                              #{qr.qr_number ?? "—"}
                           </span>
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-center align-middle">
+                          {qr.color_details ? (
+                            <div className="flex flex-col items-center justify-center">
+                              <span className="text-xs font-medium dark:text-white/90">{qr.color_details.name}</span>
+                              <span className="text-[10px] font-mono bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 px-1 rounded mt-0.5">{qr.color_details.color_code}</span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400">—</span>
+                          )}
                         </TableCell>
                         <TableCell className="px-4 py-3 text-center align-middle">
                           <div className="flex justify-center">
@@ -573,8 +586,14 @@ export default function DownloadQRCodes() {
                           <div className="text-sm font-bold font-mono text-gray-900 dark:text-white">
                             {qr.unique_code || "—"}
                           </div>
-                          <div className="text-[11px] text-gray-500 mt-0.5">
-                            Nomor: #{qr.qr_number ?? "—"}
+                          <div className="text-[11px] text-gray-500 mt-0.5 flex flex-wrap items-center gap-1.5">
+                            <span>Nomor: #{qr.qr_number ?? "—"}</span>
+                            {qr.color_details && (
+                              <>
+                                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                                <span>{qr.color_details.name} ({qr.color_details.color_code})</span>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>

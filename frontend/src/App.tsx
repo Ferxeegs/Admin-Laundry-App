@@ -224,7 +224,7 @@ export default function App() {
             <Route
               path="/colors"
               element={
-                <ProtectedRoute requiredPermission="view_qr_code">
+                <ProtectedRoute requiredPermission="view_color">
                   <Colors />
                 </ProtectedRoute>
               }
