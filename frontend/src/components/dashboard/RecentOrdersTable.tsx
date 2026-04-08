@@ -13,18 +13,18 @@ import { AngleRightIcon } from "../../icons";
 
 const STATUS_LABEL: Record<string, string> = {
   RECEIVED: "Diterima",
-  WASHING_IRONING: "Cuci-setrika",
-  WASHING_DRYING: "Cuci-setrika",
-  IRONING: "Cuci-setrika",
+  WASHING: "Cuci/Kering",
+  IRONING: "Setrika",
   COMPLETED: "Selesai",
   PICKED_UP: "Diambil",
 };
 
 const STATUS_COLOR: Record<string, "success" | "warning" | "error" | "info"> = {
   RECEIVED: "warning",
+  WASHING: "warning",
+  IRONING: "warning",
   WASHING_IRONING: "warning",
   WASHING_DRYING: "warning",
-  IRONING: "warning",
   COMPLETED: "success",
   PICKED_UP: "info",
 };

@@ -14,8 +14,8 @@ from pydantic import BaseModel
 from app.api.deps import get_db, get_current_active_user
 from app.core.deps_permission import require_permission
 from app.models.auth import User
-from app.models.order import Student, QR, Dormitory, Order, OrderAddon, OrderStatus, OrderTracking
-from app.schemas.qr import QRRead, QRCreate, QRUpdate, QRAssign, QRBulkGenerate
+from app.models.order import Student, QR, Dormitory, Color, Order, OrderAddon, OrderStatus, OrderTracking
+from app.schemas.qr import QRRead, QRCreate, QRUpdate, QRAssign, QRBulkGenerate, ColorRead
 from app.schemas.common import WebResponse
 from app.schemas.order import OrderWithTrackingRead, OrderTrackingCreate
 from app.services.order_serialization import serialize_order_with_tracking
@@ -57,13 +57,44 @@ def _ensure_dormitory_id(
     return dorm.id
 
 
+def _ensure_color_id(
+    db: Session,
+    color_name: Optional[str],
+    created_by: Optional[str] = None,
+):
+    """
+    Convert color name -> color_id.
+    - If color_name is empty/None => returns None
+    - If color doesn't exist => create it
+    """
+    if not color_name:
+        return None
+    name = color_name.strip()
+    if not name:
+        return None
+
+    color = db.query(Color).filter(Color.name.ilike(name)).first()
+    if color:
+        return color.id
+
+    color = Color(
+        name=name,
+        created_by=created_by,
+        updated_by=created_by,
+    )
+    db.add(color)
+    db.flush()
+    return color.id
+
+
 def get_next_statuses(current_status: OrderStatus):
     """
-    Status flow: RECEIVED -> WASHING_IRONING -> COMPLETED -> PICKED_UP
+    Status flow: RECEIVED -> WASHING -> IRONING -> COMPLETED -> PICKED_UP
     """
     status_flow = {
-        OrderStatus.RECEIVED: [OrderStatus.WASHING_IRONING],
-        OrderStatus.WASHING_IRONING: [OrderStatus.COMPLETED],
+        OrderStatus.RECEIVED: [OrderStatus.WASHING],
+        OrderStatus.WASHING: [OrderStatus.IRONING],
+        OrderStatus.IRONING: [OrderStatus.COMPLETED],
         OrderStatus.COMPLETED: [OrderStatus.PICKED_UP],
         OrderStatus.PICKED_UP: [],
     }
@@ -159,9 +190,7 @@ class QRAdvanceStatus(BaseModel):
 
 
 def _qr_to_dict(qr: QR) -> dict:
-    """Convert QR model to dict with nested student info."""
-    # Do not pass the ORM object directly into QRRead: `student` is typed as dict,
-    # but the relationship loads a Student model instance and Pydantic validation fails (500).
+    """Convert QR model to dict with nested student and color info."""
     student_payload = None
     if qr.student is not None:
         student_payload = {
@@ -169,16 +198,28 @@ def _qr_to_dict(qr: QR) -> dict:
             "fullname": qr.student.fullname,
             "student_number": qr.student.student_number,
         }
+    
+    color_payload = None
+    if qr.color_rel is not None:
+        color_payload = {
+            "id": qr.color_rel.id,
+            "name": qr.color_rel.name,
+            "color_code": qr.color_rel.color_code,
+        }
+
     payload = {
         "id": qr.id,
         "token_qr": qr.token_qr,
         "dormitory": qr.dormitory,
+        "color": qr.color,
         "qr_number": qr.qr_number,
         "unique_code": qr.unique_code,
         "student_id": qr.student_id,
+        "color_id": qr.color_id,
         "created_at": qr.created_at,
         "updated_at": qr.updated_at,
         "student": student_payload,
+        "color_details": color_payload,
     }
     return QRRead.model_validate(payload).model_dump()
 
@@ -196,7 +237,10 @@ def get_all_qr_codes(
     """
     Get all QR codes with pagination and filters.
     """
-    query = db.query(QR).options(joinedload(QR.dormitory_rel))
+    query = db.query(QR).options(
+        joinedload(QR.dormitory_rel),
+        joinedload(QR.color_rel)
+    )
     
     # Filter by assignment status
     if assigned is True:
@@ -257,7 +301,10 @@ def lookup_qr_by_token(
     Lookup a QR code by its token value. Used by the ScanQR page.
     Returns QR info including the currently assigned student (if any).
     """
-    qr = db.query(QR).options(joinedload(QR.student)).filter(
+    qr = db.query(QR).options(
+        joinedload(QR.student),
+        joinedload(QR.color_rel)
+    ).filter(
         QR.token_qr == token_qr
     ).first()
     
@@ -368,7 +415,10 @@ def get_qr_by_id(
     """
     Get QR code by ID.
     """
-    qr = db.query(QR).options(joinedload(QR.student)).filter(
+    qr = db.query(QR).options(
+        joinedload(QR.student),
+        joinedload(QR.color_rel)
+    ).filter(
         QR.id == qr_id
     ).first()
     
@@ -397,7 +447,15 @@ def create_qr_code(
     
     qr_dict = qr_data.model_dump()
     dormitory_name = qr_dict.pop("dormitory", None)
+    color_name = qr_dict.pop("color", None)
+    
+    # prioritaskan color_id jika diberikan
+    color_id = qr_dict.get("color_id")
+    if not color_id and color_name:
+        color_id = _ensure_color_id(db, color_name, created_by=current_user.id)
+    
     qr_dict["dormitory_id"] = _ensure_dormitory_id(db, dormitory_name, created_by=current_user.id)
+    qr_dict["color_id"] = color_id
     qr_dict["created_by"] = current_user.id
     
     qr = QR(**qr_dict)
@@ -436,6 +494,7 @@ def bulk_generate_qr_codes(
         raise BadRequestException("Dormitory is required")
 
     dormitory_id = _ensure_dormitory_id(db, dormitory_name, created_by=current_user.id)
+    color_id = payload.color_id if payload.color_id and payload.color_id.strip() else None
 
     existing_numbers = [
         _parse_qr_number_int(row[0])
@@ -471,6 +530,7 @@ def bulk_generate_qr_codes(
         qr = QR(
             token_qr=token,
             dormitory_id=dormitory_id,
+            color_id=color_id,
             qr_number=str(num),
             # Number part must be 3 digits: 1 -> 001, etc.
             unique_code=f"{prefix}-{num:03d}",
@@ -506,6 +566,7 @@ def bulk_generate_qr_codes(
 @router.post("/generate", response_model=WebResponse[dict], status_code=status.HTTP_201_CREATED)
 def generate_qr_code(
     dormitory: Optional[str] = Query(None),
+    color: Optional[str] = Query(None),
     qr_number: Optional[str] = Query(None),
     unique_code: Optional[str] = Query(None),
     db: Session = Depends(get_db),
@@ -531,6 +592,7 @@ def generate_qr_code(
     qr = QR(
         token_qr=token,
         dormitory_id=_ensure_dormitory_id(db, dormitory, created_by=current_user.id),
+        color_id=_ensure_color_id(db, color, created_by=current_user.id),
         qr_number=qr_number,
         unique_code=unique_code,
         created_by=current_user.id,
@@ -565,6 +627,9 @@ def update_qr_code(
         if field == "dormitory":
             # QRUpdate.dormitory is a name; map to dormitory_id.
             qr.dormitory_id = _ensure_dormitory_id(db, value, created_by=current_user.id)
+            continue
+        if field == "color":
+            qr.color_id = _ensure_color_id(db, value, created_by=current_user.id)
             continue
         setattr(qr, field, value)
     

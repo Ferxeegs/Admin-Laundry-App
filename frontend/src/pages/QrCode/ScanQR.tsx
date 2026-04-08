@@ -496,10 +496,10 @@ export default function ScanQR() {
     switch (status) {
       case "RECEIVED":
         return "Diterima";
-      case "WASHING_IRONING":
-      case "WASHING_DRYING":
+      case "WASHING":
+        return "Cuci/Kering";
       case "IRONING":
-        return "Cuci-setrika";
+        return "Setrika";
       case "COMPLETED":
         return "Selesai";
       case "PICKED_UP":
@@ -511,12 +511,14 @@ export default function ScanQR() {
 
   const getNextStatus = (currentStatus: string): string | null => {
     const statusFlow: Record<string, string> = {
-      RECEIVED: "WASHING_IRONING",
-      WASHING_IRONING: "COMPLETED",
+      RECEIVED: "WASHING",
+      WASHING: "IRONING",
+      IRONING: "COMPLETED",
       COMPLETED: "PICKED_UP",
       PICKED_UP: "",
-      WASHING_DRYING: "WASHING_IRONING",
-      IRONING: "COMPLETED",
+      // Legacy data mapping:
+      WASHING_DRYING: "WASHING",
+      WASHING_IRONING: "IRONING",
     };
     const next = statusFlow[currentStatus];
     return next === "" || next === undefined ? null : next;
@@ -526,8 +528,9 @@ export default function ScanQR() {
     switch (status) {
       case "RECEIVED":
         return "info";
-      case "WASHING_IRONING":
+      case "WASHING":
       case "WASHING_DRYING":
+      case "WASHING_IRONING":
       case "IRONING":
         return "warning";
       case "COMPLETED":

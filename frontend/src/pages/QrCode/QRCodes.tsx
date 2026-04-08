@@ -32,6 +32,7 @@ interface QrCode {
   created_at: string | null;
   updated_at: string | null;
   student: { id: string; fullname: string; student_number: string } | null;
+  color_details: { id: string; name: string; color_code: string } | null;
 }
 
 interface Student {
@@ -356,6 +357,9 @@ export default function QRCodes() {
                         Asrama
                       </TableCell>
                       <TableCell isHeader className="px-4 py-4 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center">
+                        Warna
+                      </TableCell>
+                      <TableCell isHeader className="px-4 py-4 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center">
                         Nomor / Kode
                       </TableCell>
                       <TableCell isHeader className="px-4 py-4 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center">
@@ -372,7 +376,7 @@ export default function QRCodes() {
                   <TableBody>
                     {qrCodes.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="px-5 py-10 text-center text-gray-500">
+                        <TableCell colSpan={7} className="px-5 py-10 text-center text-gray-500">
                           {statusText}: tidak ada data
                         </TableCell>
                       </TableRow>
@@ -391,6 +395,17 @@ export default function QRCodes() {
 
                           <TableCell className="px-4 py-4 align-middle text-center">
                             <span className="text-sm dark:text-white/90">{qr.dormitory || "-"}</span>
+                          </TableCell>
+
+                          <TableCell className="px-4 py-4 align-middle text-center">
+                            {qr.color_details ? (
+                              <div className="flex flex-col items-center justify-center">
+                                <span className="text-sm font-medium dark:text-white/90">{qr.color_details.name}</span>
+                                <span className="text-[10px] font-mono bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 px-1 rounded">{qr.color_details.color_code}</span>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-400">-</span>
+                            )}
                           </TableCell>
 
                           <TableCell className="px-4 py-4 align-middle text-center">
@@ -490,6 +505,12 @@ export default function QRCodes() {
 
                           <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                             <span className="truncate">{qr.dormitory || "Tanpa Asrama"}</span>
+                            {qr.color_details && (
+                              <>
+                                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                                <span>{qr.color_details.name} ({qr.color_details.color_code})</span>
+                              </>
+                            )}
                             {qr.qr_number && (
                               <>
                                 <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />

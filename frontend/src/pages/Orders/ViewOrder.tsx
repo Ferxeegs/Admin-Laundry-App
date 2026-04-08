@@ -85,7 +85,7 @@ interface Media {
 }
 
 /** Status proses cuci/setrika (termasuk nilai lawas sebelum migrasi DB). */
-const PROCESS_TRACKING_STATUSES = new Set(["WASHING_IRONING", "WASHING_DRYING", "IRONING"]);
+const PROCESS_TRACKING_STATUSES = new Set(["WASHING", "IRONING"]);
 
 function findEarliestProcessTracking(trackings: OrderTracking[]): OrderTracking | undefined {
   const candidates = trackings.filter((t) => PROCESS_TRACKING_STATUSES.has(t.status_to));
@@ -389,9 +389,12 @@ export default function ViewOrder() {
     switch (status) {
       case "RECEIVED":
         return "Diterima";
-      case "WASHING_IRONING":
+      case "WASHING":
       case "WASHING_DRYING":
+        return "Cuci/Kering";
       case "IRONING":
+        return "Setrika";
+      case "WASHING_IRONING":
         return "Cuci-setrika";
       case "COMPLETED":
         return "Selesai";
@@ -406,10 +409,12 @@ export default function ViewOrder() {
     switch (status) {
       case "RECEIVED":
         return "info";
-      case "WASHING_IRONING":
+      case "WASHING":
       case "WASHING_DRYING":
-      case "IRONING":
+      case "WASHING_IRONING":
         return "warning";
+      case "IRONING":
+        return "warning"; // Or maybe another color if available, but warning (orange/yellow) fits process
       case "COMPLETED":
         return "primary";
       case "PICKED_UP":
@@ -421,25 +426,34 @@ export default function ViewOrder() {
 
   const getNextStatus = (currentStatus: string): string | null => {
     const statusFlow: Record<string, string> = {
-      RECEIVED: "WASHING_IRONING",
-      WASHING_IRONING: "COMPLETED",
+      RECEIVED: "WASHING",
+      WASHING: "IRONING",
+      IRONING: "COMPLETED",
       COMPLETED: "PICKED_UP",
       PICKED_UP: "",
-      // Data lawas sebelum migrasi (jarang):
-      WASHING_DRYING: "WASHING_IRONING",
-      IRONING: "COMPLETED",
+      // Legacy data mapping:
+      WASHING_IRONING: "COMPLETED",
+      WASHING_DRYING: "IRONING",
     };
     const next = statusFlow[currentStatus];
     return next === "" || next === undefined ? null : next;
   };
 
   const getAllStatuses = (): string[] => {
-    return ["RECEIVED", "WASHING_IRONING", "COMPLETED", "PICKED_UP"];
+    return ["RECEIVED", "WASHING", "IRONING", "COMPLETED", "PICKED_UP"];
   };
 
   const getStatusIndex = (status: string): number => {
-    const normalized =
-      status === "WASHING_DRYING" || status === "IRONING" ? "WASHING_IRONING" : status;
+    if (status === "WASHING_IRONING") return 2; // Map legacy to COMPLETED or maybe IRONING? 
+    // Actually, if it's "WASHING_IRONING", it was the last step before "COMPLETED". 
+    // In new flow, WASHING is 1, IRONING is 2, COMPLETED is 3. 
+    // So WASHING_IRONING (old) is roughly equivalent to having finished both, or at least being in the process.
+    // Let's map legacy:
+    const legacyMap: Record<string, string> = {
+      WASHING_DRYING: "WASHING",
+      WASHING_IRONING: "IRONING",
+    };
+    const normalized = legacyMap[status] || status;
     return getAllStatuses().indexOf(normalized);
   };
 

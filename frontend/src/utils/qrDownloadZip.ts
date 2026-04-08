@@ -7,6 +7,7 @@ export interface QrZipRow {
   token_qr: string;
   unique_code: string | null;
   qr_number: string | null;
+  color_details?: { name: string; color_code: string } | null;
 }
 
 export function qrLabelTextForDownload(qr: QrZipRow): string {
@@ -29,7 +30,9 @@ export async function buildQrZipBlob(items: QrZipRow[]): Promise<Blob> {
     const n = usedNames.get(name) ?? 0;
     usedNames.set(name, n + 1);
     if (n > 0) name = `${name}_${n + 1}`;
-    const blob = await createQrLabelPngBlob(qr.token_qr, qrLabelTextForDownload(qr));
+    
+    const colorLabel = qr.color_details ? qr.color_details.name : undefined;
+    const blob = await createQrLabelPngBlob(qr.token_qr, qrLabelTextForDownload(qr), colorLabel);
     zip.file(`${name}.png`, blob);
   }
   return zip.generateAsync({ type: "blob" });
@@ -45,7 +48,8 @@ export function triggerBrowserDownload(blob: Blob, filename: string): void {
 }
 
 export async function downloadSingleQrLabelPng(qr: QrZipRow): Promise<void> {
-  const blob = await createQrLabelPngBlob(qr.token_qr, qrLabelTextForDownload(qr));
+  const colorLabel = qr.color_details ? qr.color_details.name : undefined;
+  const blob = await createQrLabelPngBlob(qr.token_qr, qrLabelTextForDownload(qr), colorLabel);
   const name = `${pngBaseNameForQrDownload(qr, 0)}.png`;
   triggerBrowserDownload(blob, name);
 }

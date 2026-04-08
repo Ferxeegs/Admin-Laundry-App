@@ -4,7 +4,7 @@ from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
 
 from app.models.invoice import InvoiceStatus
-from .order import OrderRead
+from .order import OrderWithTrackingRead
 
 
 class InvoiceBase(BaseModel):
@@ -15,6 +15,7 @@ class InvoiceBase(BaseModel):
 class StudentMiniRead(BaseModel):
     id: str
     fullname: str
+    student_number: Optional[str] = None
     unique_code: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -49,5 +50,5 @@ class InvoiceRead(InvoiceBase):
 
 
 class InvoiceWithOrdersRead(InvoiceRead):
-    orders: List[OrderRead] = []
+    orders: List[OrderWithTrackingRead] = []
 

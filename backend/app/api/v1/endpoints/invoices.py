@@ -22,7 +22,11 @@ from app.schemas.invoice import (
     InvoiceRead,
     InvoiceWithOrdersRead,
 )
-from app.services.order_serialization import serialize_order_read, order_addon_total
+from app.services.order_serialization import (
+    serialize_order_read,
+    serialize_order_with_tracking,
+    order_addon_total,
+)
 
 router = APIRouter()
 
@@ -142,6 +146,7 @@ def get_invoice_by_id(
             joinedload(Invoice.student),
             joinedload(Invoice.orders).joinedload(Order.student),
             joinedload(Invoice.orders).joinedload(Order.addons).joinedload(OrderAddon.addon),
+            joinedload(Invoice.orders).joinedload(Order.trackings),
         )
         .filter(Invoice.id == invoice_id)
         .first()
@@ -152,7 +157,7 @@ def get_invoice_by_id(
 
     inv_payload = InvoiceRead.model_validate(invoice).model_dump()
     inv_payload["orders"] = [
-        serialize_order_read(o).model_dump() for o in (invoice.orders or [])
+        serialize_order_with_tracking(o).model_dump() for o in (invoice.orders or [])
     ]
 
     return WebResponse(

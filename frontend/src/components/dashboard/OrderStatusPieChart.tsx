@@ -10,23 +10,17 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
     bg: "rgba(99,102,241,0.08)",
     icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
   },
-  WASHING_IRONING: {
-    label: "Cuci-setrika",
-    color: "#0ea5e9",
-    bg: "rgba(14,165,233,0.08)",
-    icon: "M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z",
-  },
-  WASHING_DRYING: {
-    label: "Cuci-setrika",
-    color: "#0ea5e9",
-    bg: "rgba(14,165,233,0.08)",
+  WASHING: {
+    label: "Cuci/Kering",
+    color: "#f59e0b",
+    bg: "rgba(245,158,11,0.08)",
     icon: "M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z",
   },
   IRONING: {
-    label: "Cuci-setrika",
+    label: "Setrika",
     color: "#0ea5e9",
     bg: "rgba(14,165,233,0.08)",
-    icon: "M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z",
+    icon: "M13 10V3L4 14h7v7l9-11h-7z", // Svg flash or iron icon
   },
   COMPLETED: {
     label: "Selesai",

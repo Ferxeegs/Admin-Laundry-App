@@ -43,11 +43,12 @@ router = APIRouter()
 def get_next_statuses(current_status: OrderStatus) -> List[OrderStatus]:
     """
     Get list of valid next statuses based on current status.
-    Status flow: RECEIVED -> WASHING_IRONING -> COMPLETED -> PICKED_UP
+    Status flow: RECEIVED -> WASHING -> IRONING -> COMPLETED -> PICKED_UP
     """
     status_flow = {
-        OrderStatus.RECEIVED: [OrderStatus.WASHING_IRONING],
-        OrderStatus.WASHING_IRONING: [OrderStatus.COMPLETED],
+        OrderStatus.RECEIVED: [OrderStatus.WASHING],
+        OrderStatus.WASHING: [OrderStatus.IRONING],
+        OrderStatus.IRONING: [OrderStatus.COMPLETED],
         OrderStatus.COMPLETED: [OrderStatus.PICKED_UP],
         OrderStatus.PICKED_UP: [],  # Final status, no next status
     }
@@ -100,8 +101,9 @@ def get_all_orders(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=1000),
     search: Optional[str] = Query(None),
-    status_filter: Optional[OrderStatus] = Query(None, alias="status"),
+    status: Optional[str] = Query(None),
     student_id: Optional[str] = Query(None),
+    sort: str = Query("desc", regex="^(asc|desc)$"),
     db: Session = Depends(get_db),
     # current_user: User = Depends(get_current_active_user),
 ):
@@ -110,8 +112,23 @@ def get_all_orders(
     """
     query = db.query(Order)
 
-    if status_filter is not None:
-        query = query.filter(Order.current_status == status_filter)
+    if status == "IN_PROGRESS":
+        # Filter for all statuses except PICKED_UP (Diterima hingga Selesai)
+        query = query.filter(Order.current_status.in_([
+            OrderStatus.RECEIVED,
+            OrderStatus.WASHING,
+            OrderStatus.IRONING,
+            OrderStatus.COMPLETED
+        ]))
+    elif status:
+        # Normal single status filter
+        try:
+            # Check if it's a valid enum value
+            enum_val = OrderStatus(status)
+            query = query.filter(Order.current_status == enum_val)
+        except ValueError:
+            # If not a valid enum, just ignore or don't filter (or handle error)
+            pass
 
     if student_id:
         query = query.filter(Order.student_id == student_id)
@@ -133,7 +150,7 @@ def get_all_orders(
             joinedload(Order.student),
             joinedload(Order.addons).joinedload(OrderAddon.addon),
         )
-        .order_by(Order.created_at.desc())
+        .order_by(Order.created_at.asc() if sort == "asc" else Order.created_at.desc())
         .offset(offset)
         .limit(limit)
         .all()
@@ -214,31 +231,9 @@ async def create_order(
     """
     from sqlalchemy import func
 
-    # Generate order number: "{YYMMDD}{sequence}"
-    # Format: 240113001 (where 001 is the order number for that day)
+    # Generate order number: "{YYMMDD}.{sequence}.{color_code}-{unique_code}"
     now = get_now_local()
     date_str = now.strftime("%y%m%d")
-    
-    # Count how many orders were created today
-    start_of_day = get_start_of_day_local(now)
-    orders_today_count = db.query(Order).filter(
-        Order.created_at >= start_of_day
-    ).count()
-    
-    # Generate sequence number (1-based, padded to 3 digits)
-    sequence = orders_today_count + 1
-    order_number = f"{date_str}-{sequence:03d}"
-    
-    # Ensure uniqueness by checking if order_number already exists
-    # If exists, increment sequence until unique
-    while db.query(Order).filter(Order.order_number == order_number).first():
-        sequence += 1
-        order_number = f"{date_str}{sequence:03d}"
-        if sequence > 999:  # Safety limit (3 digits max)
-            # Fallback: add timestamp if too many orders in one day
-            timestamp = now.strftime("%y%m%d-%H%M%S")
-            order_number = f"{timestamp}"
-            break
 
     from app.core.logging_config import root_logger
     logger = root_logger
@@ -325,6 +320,28 @@ async def create_order(
         raise BadRequestException(
             "QR tas belum terhubung ke siswa ini. Silakan scan QR tas dan kaitkan ke santri terlebih dahulu."
         )
+
+    # Calculate sequence logic
+    start_of_day = get_start_of_day_local(now)
+    orders_today_count = db.query(Order).filter(
+        Order.created_at >= start_of_day
+    ).count()
+    
+    sequence = orders_today_count + 1
+    
+    # Extract details for the order number
+    color_code = qr.color_rel.color_code if qr.color_rel else "UNK"
+    unique_code = qr.unique_code if qr.unique_code else "000"
+    
+    order_number = f"{date_str}.{sequence}.{color_code}-{unique_code}"
+    
+    while db.query(Order).filter(Order.order_number == order_number).first():
+        sequence += 1
+        order_number = f"{date_str}.{sequence}.{color_code}-{unique_code}"
+        if sequence > 9999:  # Safety limit
+            timestamp = now.strftime("%H%M%S")
+            order_number = f"{date_str}.{timestamp}.{color_code}-{unique_code}"
+            break
 
     # Weekly quota usage (Mon 00:00 WIB → next Mon 00:00 WIB)
     QUOTA_LIMIT, PRICE_PER_ITEM = get_order_settings(db)
@@ -434,7 +451,7 @@ def update_order(
     - paid_items_count (items exceeding quota)
     - additional_fee (paid_items_count * price_per_item)
     
-    Note: If order status is WASHING_IRONING or later, only notes can be updated.
+    Note: If order status is WASHING or later, only notes can be updated.
     """
     from sqlalchemy import func
 
@@ -454,9 +471,9 @@ def update_order(
         addon_lines = order_update.addon_lines
         update_data.pop("addon_lines")
 
-    # Check if order status is WASHING_IRONING or later
+    # Check if order status is WASHING or later
     # If so, only notes can be updated
-    if order.current_status in [OrderStatus.WASHING_IRONING, OrderStatus.COMPLETED, OrderStatus.PICKED_UP]:
+    if order.current_status in [OrderStatus.WASHING, OrderStatus.IRONING, OrderStatus.COMPLETED, OrderStatus.PICKED_UP]:
         if addon_lines is not None:
             raise BadRequestException(
                 "Layanan tambahan (addon) hanya dapat diubah saat status pesanan masih DITERIMA (RECEIVED)."

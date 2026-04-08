@@ -145,8 +145,18 @@ def init_permissions(db: Session):
         "restore_addon",
         "force_delete_addon",
     ]
+
+    # Permission untuk Color
+    color_permissions = [
+        "view_color",
+        "create_color",
+        "update_color",
+        "delete_color",
+        "restore_color",
+        "force_delete_color",
+    ]
     # Combine all permissions
-    all_permissions = user_permissions + role_permissions + setting_permissions + student_permissions + order_permissions + report_permissions + qr_code_permissions + dormitory_permissions + invoice_permissions + myprofile_permissions + addon_permissions
+    all_permissions = user_permissions + role_permissions + setting_permissions + student_permissions + order_permissions + report_permissions + qr_code_permissions + dormitory_permissions + invoice_permissions + myprofile_permissions + addon_permissions + color_permissions
     
     for perm_name in all_permissions:
         existing_perm = db.query(Permission).filter(Permission.name == perm_name).first()

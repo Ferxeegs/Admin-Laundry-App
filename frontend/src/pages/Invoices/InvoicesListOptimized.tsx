@@ -226,6 +226,13 @@ export default function InvoicesListOptimized() {
     }
   };
 
+  const handleCopyLink = (invoiceId: string) => {
+    const url = `${window.location.origin}/public/invoice/${invoiceId}`;
+    navigator.clipboard.writeText(url)
+      .then(() => toastSuccess("Link publik disalin ke clipboard!"))
+      .catch(() => toastError("Gagal menyalin link"));
+  };
+
   return (
     <div className="space-y-6">
       {/* Filters */}
@@ -352,6 +359,15 @@ export default function InvoicesListOptimized() {
 
                         <button
                           type="button"
+                          onClick={() => handleCopyLink(inv.id)}
+                          className="inline-flex items-center justify-center w-8 h-8 text-blue-500 transition-colors rounded-lg hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/20 dark:hover:text-blue-200"
+                          title="Copy Link Publik"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                        </button>
+
+                        <button
+                          type="button"
                           onClick={() => handleDeleteInvoiceClick(inv)}
                           disabled={deletingInvoiceId === inv.id}
                           className="inline-flex items-center justify-center w-8 h-8 text-red-500 transition-colors rounded-lg hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20 dark:hover:text-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -437,6 +453,15 @@ export default function InvoicesListOptimized() {
                   <option value="paid">Lunas</option>
                   <option value="cancelled">Dibatalkan</option>
                 </select>
+
+                <button
+                  type="button"
+                  onClick={() => handleCopyLink(inv.id)}
+                  className="inline-flex items-center justify-center w-9 h-9 text-blue-500 transition-colors rounded-lg hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/20 dark:hover:text-blue-200"
+                  title="Copy Link Publik"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                </button>
 
                 <button
                   type="button"

@@ -24,59 +24,45 @@ export const getBaseUrl = (): string => {
 
 /**
  * Build correct URL for media files
- * Uses API endpoint: /api/v1/media/serve/{model_type}/{collection}/{filename}
- * This is more reliable than static file mount
  * @param mediaUrl - URL from media record (format: /uploads/{model_type}/{collection}/{filename})
+ * @param useApiServe - If true, uses /api/v1/media/serve/... endpoint. If false, uses direct static mount.
  * @returns Full URL for displaying the image
  */
-export const getMediaUrl = (mediaUrl: string | null | undefined): string | null => {
+export const getMediaUrl = (mediaUrl: string | null | undefined, useApiServe = false): string | null => {
   if (!mediaUrl) return null;
   
-  // Parse URL to extract model_type, collection, and filename
-  // Format: /uploads/{model_type}/{collection}/{filename}
-  const urlMatch = mediaUrl.match(/\/uploads\/([^\/]+)\/([^\/]+)\/(.+)$/);
+  const urlMatch = mediaUrl.match(/\/?uploads\/([^\/]+)\/([^\/]+)\/(.+)$/);
   
-  if (urlMatch) {
-    // Use API endpoint: /api/v1/media/serve/{model_type}/{collection}/{filename}
+  if (urlMatch && useApiServe) {
     const [, modelType, collection, filename] = urlMatch;
-    // Don't double-encode filename - FastAPI :path parameter handles encoding
-    // Just use the filename as-is, but ensure it's properly formatted
     const cleanFilename = filename;
     
-    // Ensure API_BASE_URL ends with /api or /api/v1, then add /media/serve
     let apiUrl: string;
-    if (API_BASE_URL.endsWith('/api/v1')) {
-      apiUrl = `${API_BASE_URL}/media/serve/${modelType}/${collection}/${cleanFilename}`;
-    } else if (API_BASE_URL.endsWith('/api')) {
-      apiUrl = `${API_BASE_URL}/v1/media/serve/${modelType}/${collection}/${cleanFilename}`;
+    const base = API_BASE_URL.replace(/\/+$/, "");
+    
+    if (base.endsWith('/api/v1')) {
+      apiUrl = `${base}/media/serve/${modelType}/${collection}/${cleanFilename}`;
+    } else if (base.endsWith('/api')) {
+      apiUrl = `${base}/v1/media/serve/${modelType}/${collection}/${cleanFilename}`;
     } else {
-      // Fallback: assume /api/v1 structure
-      apiUrl = `${API_BASE_URL}/api/v1/media/serve/${modelType}/${collection}/${cleanFilename}`;
+      const prefix = base === "/" || !base ? "" : base;
+      apiUrl = `${prefix}/api/v1/media/serve/${modelType}/${collection}/${cleanFilename}`;
     }
-    
-    // Debug logging (can be removed in production)
-    if (import.meta.env.DEV) {
-      console.log('Media URL:', { original: mediaUrl, final: apiUrl, apiBaseUrl: API_BASE_URL, filename: cleanFilename });
-    }
-    
     return apiUrl;
   }
   
-  // Fallback: if URL doesn't match expected format, try to use static file mount
-  // Ensure URL starts with /
+  // Direct static fallback (usually more reliable in local dev)
   let imageUrl = mediaUrl.startsWith('/') ? mediaUrl : '/' + mediaUrl;
   
-  // If API_BASE_URL is absolute (http://...), use it to build full URL
-  // Otherwise use relative URL (same origin)
-  if (API_BASE_URL.startsWith('http://') || API_BASE_URL.startsWith('https://')) {
-    // Extract base URL without /api
-    const baseUrl = API_BASE_URL.replace(/\/api\/v1\/?$/, '').replace(/\/api\/?$/, '');
-    imageUrl = `${baseUrl}${imageUrl}`;
-  }
-  
-  // Debug logging (can be removed in production)
-  if (import.meta.env.DEV) {
-    console.log('Media URL (fallback):', { original: mediaUrl, final: imageUrl, apiBaseUrl: API_BASE_URL });
+  // Ensure we use the base URL (e.g. http://localhost:8000 or same origin)
+  const baseUrl = getBaseUrl();
+  if (baseUrl) {
+    // If baseUrl is absolute, prepend it. If relative, ensure no double slash.
+    if (baseUrl.startsWith('http')) {
+      imageUrl = `${baseUrl.replace(/\/+$/, '')}${imageUrl}`;
+    } else {
+      imageUrl = `${baseUrl}${imageUrl}`;
+    }
   }
   
   return imageUrl;
@@ -2215,6 +2201,7 @@ export const orderAPI = {
     search?: string;
     status?: string;
     student_id?: string;
+    sort?: string;
   }) => {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append("page", params.page.toString());
@@ -2222,6 +2209,7 @@ export const orderAPI = {
     if (params?.search) queryParams.append("search", params.search);
     if (params?.status) queryParams.append("status", params.status);
     if (params?.student_id) queryParams.append("student_id", params.student_id);
+    if (params?.sort) queryParams.append("sort", params.sort);
 
     const queryString = queryParams.toString();
     // Backend route didefinisikan di path "/" dengan prefix "/orders" -> butuh trailing slash
@@ -2653,6 +2641,56 @@ export const invoiceAPI = {
       method: "DELETE",
     });
   },
+
+  getInvoiceById: async (invoice_id: string) => {
+    return apiRequest<{
+      id: string;
+      invoice_number: string;
+      student_id: string;
+      billing_period: string;
+      total_amount: number;
+      status: "unpaid" | "waiting_confirmation" | "paid" | "cancelled";
+      paid_at: string | null;
+      created_at: string | null;
+      updated_at: string | null;
+      created_by: string | null;
+      updated_by: string | null;
+      deleted_at: string | null;
+      deleted_by: string | null;
+      student?: {
+        id: string;
+        fullname: string;
+        unique_code?: string | null;
+      };
+      orders?: Array<{
+        id: string;
+        order_number: string;
+        current_status: string;
+        total_items: number;
+        free_items_used: number;
+        paid_items_count: number;
+        additional_fee: number;
+        total_addon_fee: number;
+        created_at: string | null;
+        addons: Array<{
+          name: string;
+          count: number;
+          price: number;
+          subtotal: number;
+        }>;
+        trackings?: Array<{
+          id: string;
+          order_id: string;
+          staff_id: string | null;
+          status_to: string;
+          notes: string | null;
+          created_at: string;
+        }>;
+      }>;
+    }>(`/invoices/${invoice_id}`, {
+      method: "GET",
+    });
+  },
 };
 
 /**
@@ -2886,7 +2924,7 @@ export const qrCodeAPI = {
    * - qr_number sequential per dormitory
    * - unique_code format: {3-letter dormitory prefix}-{qr_number}
    */
-  bulkGenerateQRs: async (payload: { dormitory: string; count: number }) => {
+  bulkGenerateQRs: async (payload: { dormitory: string; count: number; color_id?: string }) => {
     return apiRequest<{
       dormitory: string;
       count: number;
@@ -3048,5 +3086,44 @@ export const dormitoryAPI = {
     }>(`/dormitories/${id}/restore`, {
       method: "POST",
     });
+  },
+};
+
+/**
+ * Color API functions
+ */
+export const colorAPI = {
+  getColors: async () => {
+    return apiRequest<Array<{
+      id: string;
+      name: string;
+      color_code: string;
+    }>>('/colors/', { method: 'GET' });
+  },
+
+  createColor: async (data: { name: string; color_code: string }) => {
+    return apiRequest<{
+      id: string;
+      name: string;
+      color_code: string;
+    }>('/colors/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateColor: async (id: string, data: { name?: string; color_code?: string }) => {
+    return apiRequest<{
+      id: string;
+      name: string;
+      color_code: string;
+    }>(`/colors/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteColor: async (id: string) => {
+    return apiRequest<null>(`/colors/${id}`, { method: 'DELETE' });
   },
 };

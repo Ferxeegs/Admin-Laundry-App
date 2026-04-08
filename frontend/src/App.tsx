@@ -38,8 +38,9 @@ import Reports from "./pages/Reports/Reports";
 import Invoices from "./pages/Invoices/Invoices";
 import CreateInvoice from "./pages/Invoices/CreateInvoice";
 import Addons from "./pages/Addons/Addons";
-
+import Colors from "./pages/Colors/Colors";
 import Settings from "./pages/Settings/Settings";
+import PublicInvoice from "./pages/Public/PublicInvoice";
 
 export default function App() {
   return (
@@ -221,6 +222,14 @@ export default function App() {
               }
             />
             <Route
+              path="/colors"
+              element={
+                <ProtectedRoute requiredPermission="view_qr_code">
+                  <Colors />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/orders/:id"
               element={
                 <ProtectedRoute requiredPermission="view_order">
@@ -339,6 +348,9 @@ export default function App() {
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+
+          {/* Public Page for external access without auth */}
+          <Route path="/public/invoice/:id" element={<PublicInvoice />} />
 
           {/* Fallback Route - Full screen, outside AppLayout */}
           <Route path="*" element={<NotFound />} />

@@ -31,8 +31,17 @@ def get_upload_base_path() -> Path:
     # If relative, make it relative to the backend directory
     # From: backend/app/api/v1/endpoints/media.py
     # To: backend/
-    backend_dir = Path(__file__).parent.parent.parent.parent.parent
-    return backend_dir / upload_base
+    try:
+        # Get absolute path of current file
+        current_file = Path(__file__).resolve()
+        # Go up 5 levels to reach backend/
+        backend_dir = current_file.parent.parent.parent.parent.parent
+        logger.info(f"Resolved backend_dir: {backend_dir}")
+        return backend_dir / upload_base
+    except Exception as e:
+        logger.error(f"Error resolving backend_dir: {e}")
+        # Fallback to simple relative path
+        return Path(os.getcwd()) / upload_base
 
 
 def ensure_upload_dir(model_type: str, collection: str) -> Path:
@@ -47,8 +56,14 @@ def ensure_upload_dir(model_type: str, collection: str) -> Path:
 def get_file_path_from_url(url: str) -> Path:
     """Convert URL to file system path."""
     # URL format: /uploads/{model_type}/{collection}/{filename}
-    # Remove leading /uploads/ to get relative path
-    relative_path = url.lstrip('/uploads/')
+    # Remove leading /uploads/ prefix correctly
+    if url.startswith('/uploads/'):
+        relative_path = url[9:]  # Length of "/uploads/"
+    elif url.startswith('uploads/'):
+        relative_path = url[8:]  # Length of "uploads/"
+    else:
+        # Fallback for other paths, but be careful not to strip directory characters
+        relative_path = url.lstrip('/')
     
     upload_base = get_upload_base_path()
     file_path = upload_base / relative_path
@@ -97,8 +112,11 @@ async def serve_media_file(
         file_path = Path(str(file_path).replace('/', '\\'))
         
         logger.info(f"Upload base: {upload_base} (absolute: {upload_base.resolve()})")
-        logger.info(f"Looking for file at: {file_path} (absolute: {file_path.resolve()})")
-        logger.info(f"File exists: {file_path.exists()}")
+        logger.info(f"Looking for file at: {file_path}")
+        
+        # Check if file exists (try resolution first)
+        resolved_path = file_path.resolve() if file_path.parent.exists() else file_path
+        logger.info(f"Resolved path exists: {resolved_path.exists()} ({resolved_path})")
         
         # Also try alternative path construction
         if not file_path.exists():

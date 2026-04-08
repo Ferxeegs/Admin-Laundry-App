@@ -6,10 +6,11 @@ import QRCode from "qrcode";
 export async function createQrLabelPngBlob(
   tokenQr: string,
   label: string,
+  colorLabel?: string,
 ): Promise<Blob> {
   const padding = 16;
   const qrSize = 200;
-  const labelHeight = 48;
+  const labelHeight = colorLabel ? 64 : 48;
   const w = qrSize + padding * 2;
   const h = padding + qrSize + 12 + labelHeight + padding;
 
@@ -39,6 +40,12 @@ export async function createQrLabelPngBlob(
   const textY = padding + qrSize + 12;
   const line = (label || "-").trim() || "-";
   ctx.fillText(line, w / 2, textY);
+
+  if (colorLabel) {
+    ctx.font = "500 12px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif";
+    ctx.fillStyle = "#6B7280";
+    ctx.fillText(colorLabel, w / 2, textY + 22);
+  }
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(

@@ -6,10 +6,30 @@ from typing import Optional
 from datetime import datetime
 
 
+class ColorBase(BaseModel):
+    """Base schema for Color."""
+    name: str
+    color_code: Optional[str] = None
+
+class ColorCreate(ColorBase):
+    """Schema for creating a new Color."""
+    pass
+
+class ColorUpdate(BaseModel):
+    """Schema for updating a Color."""
+    name: Optional[str] = None
+    color_code: Optional[str] = None
+
+class ColorRead(ColorBase):
+    """Schema for reading Color data."""
+    id: str
+    model_config = ConfigDict(from_attributes=True)
+
 class QRBase(BaseModel):
     """Base schema for QR with common fields."""
     token_qr: str
     dormitory: Optional[str] = None
+    color: Optional[str] = None
     qr_number: Optional[str] = None
     unique_code: Optional[str] = None
 
@@ -23,12 +43,14 @@ class QRBase(BaseModel):
 
 class QRCreate(QRBase):
     """Schema for creating a new QR code."""
-    pass
+    color_id: Optional[str] = None
 
 
 class QRUpdate(BaseModel):
     """Schema for updating a QR code."""
     dormitory: Optional[str] = None
+    color: Optional[str] = None
+    color_id: Optional[str] = None
     qr_number: Optional[str] = None
     unique_code: Optional[str] = None
 
@@ -37,11 +59,13 @@ class QRRead(QRBase):
     """Schema for reading QR data."""
     id: str
     student_id: Optional[str] = None
+    color_id: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
-    # Nested student info (when QR is assigned)
+    # Nested info
     student: Optional[dict] = None
+    color_details: Optional[ColorRead] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -61,14 +85,10 @@ class QRAssign(BaseModel):
 class QRBulkGenerate(BaseModel):
     """
     Bulk-generate QR codes for a dormitory.
-
-    - token_qr will be generated automatically
-    - qr_number will be sequential per dormitory, starting from 1
-      (or max(existing)+1 when appending)
-    - unique_code will be generated as: {3-letter dormitory prefix}-{qr_number}
     """
 
     dormitory: str
+    color_id: Optional[str] = None
     count: int
 
     @field_validator("dormitory")

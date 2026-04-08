@@ -10,7 +10,7 @@ import {
 import Badge from "../../components/ui/badge/Badge";
 import TableSkeleton from "../../components/common/TableSkeleton";
 import { orderAPI } from "../../utils/api";
-import { EyeIcon, PencilIcon, TrashBinIcon } from "../../icons";
+import { EyeIcon, PencilIcon, TrashBinIcon, ChevronUpIcon, ChevronDownIcon } from "../../icons";
 import { ConfirmModal } from "../../components/ui/modal";
 import { useModal } from "../../hooks/useModal";
 import { useAuth } from "../../context/AuthContext";
@@ -48,7 +48,8 @@ export default function OrdersList() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string | "">("");
+  const [statusFilter, setStatusFilter] = useState<string | "">("IN_PROGRESS");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -77,6 +78,7 @@ export default function OrdersList() {
         limit: 10,
         search: search.trim() || undefined,
         status: statusFilter || undefined,
+        sort: sortOrder,
       });
 
       if (response.success && response.data) {
@@ -97,7 +99,7 @@ export default function OrdersList() {
   useEffect(() => {
     fetchOrders(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, statusFilter]);
+  }, [page, statusFilter, sortOrder]);
 
   // Debounce search
   useEffect(() => {
@@ -129,10 +131,10 @@ export default function OrdersList() {
     switch (status) {
       case "RECEIVED":
         return "Diterima";
-      case "WASHING_IRONING":
-      case "WASHING_DRYING":
+      case "WASHING":
+        return "Cuci/Kering";
       case "IRONING":
-        return "Cuci-setrika";
+        return "Setrika";
       case "COMPLETED":
         return "Selesai";
       case "PICKED_UP":
@@ -146,8 +148,7 @@ export default function OrdersList() {
     switch (status) {
       case "RECEIVED":
         return "info";
-      case "WASHING_IRONING":
-      case "WASHING_DRYING":
+      case "WASHING":
       case "IRONING":
         return "warning";
       case "COMPLETED":
@@ -310,8 +311,10 @@ export default function OrdersList() {
             className="h-10 sm:h-11 px-3 text-xs sm:text-sm rounded-lg border border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-800 dark:text-white/90"
           >
             <option value="">Semua Status</option>
+            <option value="IN_PROGRESS">Diproses</option>
             <option value="RECEIVED">Diterima</option>
-            <option value="WASHING_IRONING">Cuci-setrika</option>
+            <option value="WASHING">Cuci/Kering</option>
+            <option value="IRONING">Setrika</option>
             <option value="COMPLETED">Selesai</option>
             <option value="PICKED_UP">Diambil</option>
           </select>
@@ -322,8 +325,8 @@ export default function OrdersList() {
                 type="button"
                 onClick={handleToggleSelectionMode}
                 className={`md:hidden inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg touch-manipulation transition-colors ${isSelectionMode
-                    ? "text-white bg-brand-500 hover:bg-brand-600"
-                    : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
+                  ? "text-white bg-brand-500 hover:bg-brand-600"
+                  : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
                   }`}
               >
                 <svg
@@ -354,8 +357,8 @@ export default function OrdersList() {
                 type="button"
                 onClick={handleToggleSelectionMode}
                 className={`hidden md:inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isSelectionMode
-                    ? "text-white bg-brand-500 hover:bg-brand-600"
-                    : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
+                  ? "text-white bg-brand-500 hover:bg-brand-600"
+                  : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
                   }`}
               >
                 <svg
@@ -447,8 +450,8 @@ export default function OrdersList() {
             <div
               key={order.id}
               className={`p-3 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 transition-colors ${!isSelectionMode && canViewOrder
-                  ? "active:bg-gray-50 dark:active:bg-gray-700/50 cursor-pointer"
-                  : ""
+                ? "active:bg-gray-50 dark:active:bg-gray-700/50 cursor-pointer"
+                : ""
                 }`}
               onClick={
                 !isSelectionMode && canViewOrder
@@ -591,8 +594,24 @@ export default function OrdersList() {
                     <TableCell isHeader className="px-5 py-3 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center w-[130px]">
                       Status
                     </TableCell>
-                    <TableCell isHeader className="px-5 py-3 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center w-[120px]">
-                      Tanggal
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center w-[130px] cursor-pointer hover:text-brand-500 transition-colors select-none group"
+                      onClick={() => {
+                        setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+                        setPage(1);
+                      }}
+                    >
+                      <div className="flex items-center justify-center gap-1">
+                        Tanggal
+                        <span className="text-gray-400 group-hover:text-brand-500 transition-colors">
+                          {sortOrder === "asc" ? (
+                            <ChevronUpIcon className="w-4 h-4" />
+                          ) : (
+                            <ChevronDownIcon className="w-4 h-4" />
+                          )}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell isHeader className="px-5 py-3 text-theme-sm font-semibold text-gray-500 dark:text-gray-400 text-center w-[140px]">
                       Actions
@@ -605,11 +624,10 @@ export default function OrdersList() {
                     return (
                       <TableRow
                         key={order.id}
-                        className={`transition-colors ${
-                          isClickable 
-                            ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.02]" 
+                        className={`transition-colors ${isClickable
+                            ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.02]"
                             : "hover:bg-gray-50/50"
-                        }`}
+                          }`}
                         onClick={() => {
                           if (isClickable) navigate(`/orders/${order.id}`);
                         }}
@@ -625,7 +643,7 @@ export default function OrdersList() {
                           </TableCell>
                         )}
                         <TableCell className="px-5 py-4 text-center align-middle">
-                          <div className={`inline-block font-mono text-sm font-medium ${isClickable ? "text-brand-600 hover:underline" : "text-gray-800 dark:text-white/90"}`}>
+                          <div className={`inline-block font-mono text-sm font-semibold ${isClickable ? "text-gray-600" : "text-gray-800 dark:text-white/90"}`}>
                             {order.order_number}
                           </div>
                         </TableCell>

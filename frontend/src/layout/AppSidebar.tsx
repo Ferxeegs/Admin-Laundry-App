@@ -71,6 +71,12 @@ const sidebarGroups: NavGroup[] = [
         path: "/addons",
         requiredPermission: ["view_addon"],
       },
+      {
+        icon: <ListIcon />,
+        name: "Warna",
+        path: "/colors",
+        requiredPermission: ["view_qr_code"],
+      },
     ],
   },
   {

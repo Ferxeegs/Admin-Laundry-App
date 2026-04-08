@@ -15,6 +15,7 @@ from app.api.v1.endpoints import (
     qr_codes,
     dormitories,
     addons,
+    colors,
 )
 
 api_router = APIRouter()
@@ -32,3 +33,4 @@ api_router.include_router(invoices.router, prefix="/invoices", tags=["Invoices"]
 api_router.include_router(reports.router, prefix="/reports", tags=["Reports"])
 api_router.include_router(qr_codes.router, prefix="/qr-codes", tags=["QR Codes"])
 api_router.include_router(dormitories.router, prefix="/dormitories", tags=["Dormitories"])
+api_router.include_router(colors.router, prefix="/colors", tags=["Colors"])

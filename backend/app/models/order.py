@@ -12,7 +12,8 @@ from .invoice import Invoice
 class OrderStatus(PyEnum):
     """Status order laundry"""
     RECEIVED = "RECEIVED"
-    WASHING_IRONING = "WASHING_IRONING"  # cuci + setrika (satu tahap)
+    WASHING = "WASHING"  # cuci/kering
+    IRONING = "IRONING"  # setrika
     COMPLETED = "COMPLETED"
     PICKED_UP = "PICKED_UP"
 
@@ -59,6 +60,22 @@ class Dormitory(Base, TimestampMixin, AuditMixin):
     def __repr__(self):
         return f"<Dormitory(id={self.id}, name={self.name})>"
 
+# --- Model Color ---
+class Color(Base, TimestampMixin, AuditMixin):
+    """
+    Model untuk kategori warna tas/QR.
+    """
+    __tablename__ = "colors"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(255), nullable=False, unique=True, index=True)
+    color_code = Column(String(7), nullable=True)
+
+    qrs = relationship("QR", back_populates="color_rel")
+
+    def __repr__(self):
+        return f"<Color(id={self.id}, name={self.name})>"
+
 # --- Model QR ---
 class QR(Base, TimestampMixin, AuditMixin):
     """
@@ -70,21 +87,28 @@ class QR(Base, TimestampMixin, AuditMixin):
     student_id = Column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=True, unique=True, index=True)
     token_qr = Column(String(255), unique=True, nullable=False, index=True) # Data unik dari QR
     dormitory_id = Column(String(36), ForeignKey("dormitories.id", ondelete="SET NULL"), nullable=True, index=True)
+    color_id = Column(String(36), ForeignKey("colors.id", ondelete="SET NULL"), nullable=True, index=True)
     qr_number = Column(String(50), nullable=True)
     unique_code = Column(String(50), nullable=True)
 
     # Relationships
     student = relationship("Student", back_populates="qr_code")
     dormitory_rel = relationship("Dormitory", back_populates="qrs")
+    color_rel = relationship("Color", back_populates="qrs")
 
     @property
     def dormitory(self) -> str | None:
         """Backwards-compatible accessor for QRRead.dormitory (asrama name)."""
         return self.dormitory_rel.name if self.dormitory_rel else None
 
+    @property
+    def color(self) -> str | None:
+        """Backwards-compatible accessor for QRRead.color (color name)."""
+        return self.color_rel.name if self.color_rel else None
+
     def __repr__(self):
         return (
-            f"<QR(id={self.id}, token_qr={self.token_qr}, dormitory={self.dormitory}, "
+            f"<QR(id={self.id}, token_qr={self.token_qr}, dormitory={self.dormitory}, color={self.color}, "
             f"qr_number={self.qr_number}, unique_code={self.unique_code})>"
         )
 

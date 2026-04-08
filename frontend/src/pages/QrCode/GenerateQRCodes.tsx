@@ -6,12 +6,18 @@ import ComponentCard from "../../components/common/ComponentCard";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import { useToast } from "../../context/ToastContext";
-import { dormitoryAPI, qrCodeAPI } from "../../utils/api";
+import { dormitoryAPI, qrCodeAPI, colorAPI } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
 
 interface DormitoryOption {
   id: string;
   name: string;
+}
+
+interface ColorOption {
+  id: string;
+  name: string;
+  color_code: string;
 }
 
 type Mode = "create" | "edit";
@@ -36,28 +42,44 @@ export default function GenerateQRCodes() {
   const canGenerate = hasPermission("create_student");
 
   const [dormitories, setDormitories] = useState<DormitoryOption[]>([]);
+  const [colors, setColors] = useState<ColorOption[]>([]);
   const [selectedDormitory, setSelectedDormitory] = useState<string>("");
+  const [selectedColor, setSelectedColor] = useState<string>("");
   const [count, setCount] = useState<number>(10);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingColors, setLoadingColors] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
       setLoadingDorms(true);
+      setLoadingColors(true);
       setError(null);
       try {
-        const res = await dormitoryAPI.getAllDormitories({ page: 1, limit: 100 });
-        if (res.success && res.data) {
-          setDormitories(res.data.dormitories as DormitoryOption[]);
+        const [dormRes, colorRes] = await Promise.all([
+          dormitoryAPI.getAllDormitories({ page: 1, limit: 100 }),
+          colorAPI.getColors()
+        ]);
+        
+        if (dormRes.success && dormRes.data) {
+          setDormitories(dormRes.data.dormitories as DormitoryOption[]);
         } else {
           setDormitories([]);
         }
+
+        if (colorRes.success && colorRes.data) {
+          setColors(colorRes.data);
+        } else {
+          setColors([]);
+        }
       } catch (e: any) {
-        setError(e?.message || "Gagal memuat data dormitory");
+        setError(e?.message || "Gagal memuat data master");
         setDormitories([]);
+        setColors([]);
       } finally {
         setLoadingDorms(false);
+        setLoadingColors(false);
       }
     })();
   }, []);
@@ -85,6 +107,11 @@ export default function GenerateQRCodes() {
       return;
     }
 
+    if (!selectedColor) {
+      setError("Silakan pilih warna terlebih dahulu.");
+      return;
+    }
+
     const c = Number(count);
     if (!Number.isFinite(c) || c < 1) {
       setError("Jumlah QR harus minimal 1.");
@@ -93,7 +120,10 @@ export default function GenerateQRCodes() {
 
     setIsSubmitting(true);
     try {
-      const res = await qrCodeAPI.bulkGenerateQRs({ dormitory: dorm, count: c });
+      const payload: any = { dormitory: dorm, count: c };
+      if (selectedColor) payload.color_id = selectedColor;
+
+      const res = await qrCodeAPI.bulkGenerateQRs(payload);
       if (!res.success) {
         setError(res.message || res.error || "Gagal membuat QR.");
         showError(res.message || res.error || "Gagal membuat QR.");
@@ -167,6 +197,41 @@ export default function GenerateQRCodes() {
                 </div>
               )}
             </div>
+
+            {/* Color Selection Grid */}
+            {selectedDormitory && (
+              <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-300">
+                <Label className="text-sm font-bold text-gray-700 dark:text-gray-300">Pilih Warna (Khusus Asrama Ini)</Label>
+                {loadingColors ? (
+                  <div className="flex flex-wrap gap-2 animate-pulse">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-10 w-24 bg-gray-100 dark:bg-gray-800 rounded-xl" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {colors.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setSelectedColor(c.id)}
+                        className={`px-4 py-2 text-sm font-bold rounded-xl border transition-all active:scale-95 flex items-center gap-2 ${
+                          selectedColor === c.id
+                            ? "bg-brand-500 border-brand-500 text-white shadow-lg shadow-brand-500/20"
+                            : "bg-white border-gray-100 text-gray-600 hover:border-brand-300 hover:text-brand-600 dark:bg-gray-900/50 dark:border-white/5 dark:text-gray-400"
+                        }`}
+                      >
+                        {c.name}
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${selectedColor === c.id ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>{c.color_code}</span>
+                      </button>
+                    ))}
+                    {colors.length === 0 && !loadingColors && (
+                      <p className="text-sm text-gray-500 italic">Tidak ada data warna. Buat daftar warna terlebih dahulu.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Count Input */}
             <div className="space-y-3">
