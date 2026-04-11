@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     # File Upload
     MAX_UPLOAD_SIZE: int = Field(default=10485760, description="Max upload size in bytes (10MB)")
     UPLOAD_DIR: str = Field(default="uploads", description="Upload directory")
+
+    # Xendit Payment Gateway
+    XENDIT_SECRET_KEY: str = Field(default="", description="Xendit secret API key")
+    XENDIT_WEBHOOK_TOKEN: str = Field(default="", description="Xendit webhook verification token")
+    XENDIT_IS_PRODUCTION: bool = Field(default=False, description="Xendit production mode")
+    FRONTEND_BASE_URL: str = Field(default="http://localhost", description="Frontend base URL for redirects")
     
     class Config:
         env_file = ".env"

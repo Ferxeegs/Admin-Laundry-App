@@ -1,0 +1,17 @@
+/* Invoice detail — print & small refinements */
+
+@media print {
+  .invoice-detail-print-hide {
+    display: none !important;
+  }
+
+  .invoice-detail-print {
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+  }
+
+  .invoice-detail-page {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+}

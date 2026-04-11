@@ -24,7 +24,7 @@ def upgrade() -> None:
     sa.Column('invoice_number', sa.String(length=255), nullable=False),
     sa.Column('billing_period', sa.Date(), nullable=False),
     sa.Column('total_amount', sa.Numeric(precision=10, scale=2), nullable=False),
-    sa.Column('status', sa.Enum('UNPAID', 'WAITING_CONFIRMATION', 'PAID', 'CANCELLED', name='invoicestatus', native_enum=False, length=50), nullable=False),
+    sa.Column('status', sa.Enum('UNPAID', 'PAID', 'FAILED', 'CANCELLED', name='invoicestatus', native_enum=False, length=50), nullable=False),
     sa.Column('paid_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),

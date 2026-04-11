@@ -2526,7 +2526,7 @@ export const invoiceAPI = {
         student_id: string;
         billing_period: string;
         total_amount: number;
-        status: "unpaid" | "waiting_confirmation" | "paid" | "cancelled";
+        status: "unpaid" | "paid" | "failed" | "cancelled";
         paid_at: string | null;
         created_at: string | null;
         updated_at: string | null;
@@ -2595,7 +2595,7 @@ export const invoiceAPI = {
       student_id: string;
       billing_period: string;
       total_amount: number;
-      status: "unpaid" | "waiting_confirmation" | "paid" | "cancelled";
+      status: "unpaid" | "paid" | "failed" | "cancelled";
       paid_at: string | null;
       created_at: string | null;
       updated_at: string | null;
@@ -2614,7 +2614,7 @@ export const invoiceAPI = {
 
   updateInvoice: async (
     invoice_id: string,
-    data: { status: "unpaid" | "waiting_confirmation" | "paid" | "cancelled"; paid_at?: string | null }
+    data: { status: "unpaid" | "paid" | "failed" | "cancelled"; paid_at?: string | null }
   ) => {
     return apiRequest<{
       id: string;
@@ -2622,7 +2622,7 @@ export const invoiceAPI = {
       student_id: string;
       billing_period: string;
       total_amount: number;
-      status: "unpaid" | "waiting_confirmation" | "paid" | "cancelled";
+      status: "unpaid" | "paid" | "failed" | "cancelled";
       paid_at: string | null;
       created_at: string | null;
       updated_at: string | null;
@@ -2649,7 +2649,7 @@ export const invoiceAPI = {
       student_id: string;
       billing_period: string;
       total_amount: number;
-      status: "unpaid" | "waiting_confirmation" | "paid" | "cancelled";
+      status: "unpaid" | "paid" | "failed" | "cancelled";
       paid_at: string | null;
       created_at: string | null;
       updated_at: string | null;
@@ -2688,6 +2688,47 @@ export const invoiceAPI = {
         }>;
       }>;
     }>(`/invoices/${invoice_id}`, {
+      method: "GET",
+    });
+  },
+};
+
+/**
+ * Payment API functions (Xendit integration)
+ */
+export const paymentAPI = {
+  /**
+   * Create a payment for an invoice via Xendit.
+   * Returns the Xendit checkout URL to redirect the user to.
+   */
+  createPayment: async (invoice_id: string) => {
+    return apiRequest<{
+      payment_id: string;
+      xendit_invoice_url: string;
+      external_id: string;
+      status: "PENDING" | "PAID" | "EXPIRED" | "FAILED";
+    }>(`/payments/create/${invoice_id}`, {
+      method: "POST",
+    });
+  },
+
+  /**
+   * Get the latest payment status for an invoice.
+   * Used for polling after Xendit redirect.
+   */
+  getPaymentStatus: async (invoice_id: string) => {
+    return apiRequest<{
+      id: string;
+      invoice_id: string;
+      external_id: string;
+      amount: number;
+      status: "PENDING" | "PAID" | "EXPIRED" | "FAILED";
+      xendit_invoice_url: string | null;
+      payment_method: string | null;
+      payment_channel: string | null;
+      paid_at: string | null;
+      created_at: string | null;
+    }>(`/payments/status/${invoice_id}`, {
       method: "GET",
     });
   },

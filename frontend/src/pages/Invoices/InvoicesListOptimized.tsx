@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 import {
   Table,
   TableBody,
@@ -16,7 +16,7 @@ import { TrashBinIcon } from "../../icons";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 
-type InvoiceStatus = "unpaid" | "waiting_confirmation" | "paid" | "cancelled";
+type InvoiceStatus = "unpaid" | "paid" | "failed" | "cancelled";
 
 type Invoice = {
   id: string;
@@ -75,9 +75,6 @@ export default function InvoicesListOptimized() {
     totalPages: 0,
   });
 
-  const [updatingInvoiceId, setUpdatingInvoiceId] = useState<string | null>(
-    null
-  );
   const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
   const [selectedInvoiceForDelete, setSelectedInvoiceForDelete] = useState<{
     id: string;
@@ -88,10 +85,10 @@ export default function InvoicesListOptimized() {
     switch (status) {
       case "unpaid":
         return "Belum Dibayar";
-      case "waiting_confirmation":
-        return "Menunggu Konfirmasi";
       case "paid":
         return "Lunas";
+      case "failed":
+        return "Gagal";
       case "cancelled":
         return "Dibatalkan";
       default:
@@ -103,12 +100,12 @@ export default function InvoicesListOptimized() {
     switch (status) {
       case "unpaid":
         return "warning";
-      case "waiting_confirmation":
-        return "info";
       case "paid":
         return "success";
-      case "cancelled":
+      case "failed":
         return "error";
+      case "cancelled":
+        return "light";
       default:
         return "info";
     }
@@ -166,29 +163,7 @@ export default function InvoicesListOptimized() {
     fetchInvoices();
   }, [billingPeriod, page]);
 
-  const handleUpdateInvoiceStatus = async (
-    invoiceId: string,
-    nextStatus: InvoiceStatus
-  ) => {
-    if (!invoiceId) return;
-    setUpdatingInvoiceId(invoiceId);
-
-    try {
-      const resp = await invoiceAPI.updateInvoice(invoiceId, { status: nextStatus });
-      if (resp.success) {
-        toastSuccess("Status invoice berhasil diperbarui!");
-        await fetchInvoices();
-      } else {
-        throw new Error(resp.message || "Gagal memperbarui status invoice");
-      }
-    } catch (e: unknown) {
-      const msg =
-        e instanceof Error ? e.message : "Gagal memperbarui status invoice";
-      toastError(msg);
-    } finally {
-      setUpdatingInvoiceId(null);
-    }
-  };
+  // Inline status update removed — users must navigate to Invoice Detail to update status.
 
   const handleDeleteInvoiceClick = (invoice: Invoice) => {
     setSelectedInvoiceForDelete({
@@ -336,24 +311,16 @@ export default function InvoicesListOptimized() {
                     </TableCell>
                     <TableCell className="px-5 py-4">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <select
-                          value={inv.status}
-                          onChange={(e) =>
-                            handleUpdateInvoiceStatus(
-                              inv.id,
-                              e.target.value as InvoiceStatus
-                            )
-                          }
-                          disabled={updatingInvoiceId === inv.id}
-                          className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-800 dark:border-gray-800 dark:bg-gray-900 dark:text-white/90"
+                        <Link
+                          to={`/invoices/${inv.id}`}
+                          className="inline-flex items-center justify-center w-8 h-8 text-brand-500 transition-colors rounded-lg hover:bg-brand-50 hover:text-brand-700 dark:bg-brand-900/20 dark:hover:bg-brand-900/40 dark:text-brand-400 dark:hover:text-brand-300 shadow-sm border border-brand-100 dark:border-brand-800/50"
+                          title="Lihat Detail Invoice"
                         >
-                          <option value="unpaid">Belum Dibayar</option>
-                          <option value="waiting_confirmation">
-                            Menunggu Konfirmasi
-                          </option>
-                          <option value="paid">Lunas</option>
-                          <option value="cancelled">Dibatalkan</option>
-                        </select>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </Link>
 
                         <button
                           type="button"
@@ -433,24 +400,16 @@ export default function InvoicesListOptimized() {
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-2">
-                <select
-                  value={inv.status}
-                  onChange={(e) =>
-                    handleUpdateInvoiceStatus(
-                      inv.id,
-                      e.target.value as InvoiceStatus
-                    )
-                  }
-                  disabled={updatingInvoiceId === inv.id}
-                  className="h-9 flex-1 rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-800 dark:border-gray-800 dark:bg-gray-900 dark:text-white/90"
+                <Link
+                  to={`/invoices/${inv.id}`}
+                  className="inline-flex items-center justify-center w-9 h-9 text-brand-600 bg-brand-50 border border-brand-200 rounded-lg hover:bg-brand-100 hover:text-brand-700 dark:bg-brand-900/20 dark:border-brand-800/50 dark:text-brand-400 dark:hover:bg-brand-900/40 transition-colors"
+                  title="Lihat Detail Invoice"
                 >
-                  <option value="unpaid">Belum Dibayar</option>
-                  <option value="waiting_confirmation">
-                    Menunggu Konfirmasi
-                  </option>
-                  <option value="paid">Lunas</option>
-                  <option value="cancelled">Dibatalkan</option>
-                </select>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </Link>
 
                 <button
                   type="button"

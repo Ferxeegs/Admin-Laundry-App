@@ -3,3 +3,4 @@ from .auth import User, Role, Permission, PasswordResetToken, user_roles, role_h
 from .common import Media, Setting
 from .order import OrderStatus, Student, Dormitory, Order, OrderTracking
 from .invoice import InvoiceStatus, Invoice
+from .payment import PaymentStatus, Payment

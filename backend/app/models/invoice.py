@@ -12,8 +12,8 @@ class InvoiceStatus(PyEnum):
     """Status invoice bulanan."""
 
     UNPAID = "unpaid"
-    WAITING_CONFIRMATION = "waiting_confirmation"
     PAID = "paid"
+    FAILED = "failed"
     CANCELLED = "cancelled"
 
 
@@ -53,6 +53,7 @@ class Invoice(Base, TimestampMixin, AuditMixin):
     # ORM relationships
     student = relationship("Student", back_populates="invoices")
     orders = relationship("Order", back_populates="invoice")
+    payments = relationship("Payment", back_populates="invoice", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Invoice(id={self.id}, invoice_number={self.invoice_number}, status={self.status.value})>"

@@ -177,18 +177,6 @@ def create_invoice(
     (Order.invoice_id is NULL, and Order.created_at within billing month).
     """
 
-    existing_invoice = (
-        db.query(Invoice)
-        .filter(
-            Invoice.student_id == invoice_create.student_id,
-            Invoice.billing_period == invoice_create.billing_period,
-        )
-        .first()
-    )
-
-    if existing_invoice and existing_invoice.status != InvoiceStatus.CANCELLED:
-        raise ConflictException("Invoice for this student & month already exists")
-
     period_start, period_end = get_month_range(invoice_create.billing_period)
 
     orders = (
@@ -211,35 +199,26 @@ def create_invoice(
         sum(float(o.additional_fee) + order_addon_total(o) for o in orders)
     )
 
-    if existing_invoice:
-        # Reuse the existing invoice record if it was cancelled.
-        invoice = existing_invoice
-        invoice.total_amount = total_amount
-        invoice.status = InvoiceStatus.UNPAID
-        invoice.paid_at = None
-        invoice.updated_by = current_user.id
-        invoice.updated_at = datetime.now(timezone.utc)
-    else:
-        sequence = (
-            db.query(Invoice)
-            .filter(Invoice.billing_period == invoice_create.billing_period)
-            .count()
-            + 1
-        )
+    sequence = (
+        db.query(Invoice)
+        .filter(Invoice.billing_period == invoice_create.billing_period)
+        .count()
+        + 1
+    )
 
-        invoice_number = f"INV/{invoice_create.billing_period.year}/{invoice_create.billing_period.month:02d}/{sequence:03d}"
+    invoice_number = f"INV/{invoice_create.billing_period.year}/{invoice_create.billing_period.month:02d}/{sequence:03d}"
 
-        invoice = Invoice(
-            student_id=invoice_create.student_id,
-            billing_period=invoice_create.billing_period,
-            invoice_number=invoice_number,
-            total_amount=total_amount,
-            status=InvoiceStatus.UNPAID,
-            created_by=current_user.id,
-        )
+    invoice = Invoice(
+        student_id=invoice_create.student_id,
+        billing_period=invoice_create.billing_period,
+        invoice_number=invoice_number,
+        total_amount=total_amount,
+        status=InvoiceStatus.UNPAID,
+        created_by=current_user.id,
+    )
 
-        db.add(invoice)
-        db.flush()  # Ensure invoice.id is available
+    db.add(invoice)
+    db.flush()  # Ensure invoice.id is available
 
     for order in orders:
         order.invoice_id = invoice.id

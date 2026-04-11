@@ -37,10 +37,12 @@ import Dormitories from "./pages/Dormitories/Dormitories";
 import Reports from "./pages/Reports/Reports";
 import Invoices from "./pages/Invoices/Invoices";
 import CreateInvoice from "./pages/Invoices/CreateInvoice";
+import InvoiceDetail from "./pages/Invoices/InvoiceDetail";
 import Addons from "./pages/Addons/Addons";
 import Colors from "./pages/Colors/Colors";
 import Settings from "./pages/Settings/Settings";
 import PublicInvoice from "./pages/Public/PublicInvoice";
+import PaymentResult from "./pages/Public/PaymentResult";
 
 export default function App() {
   return (
@@ -269,6 +271,14 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/invoices/:id"
+              element={
+                <ProtectedRoute requiredPermission="view_invoice">
+                  <InvoiceDetail />
+                </ProtectedRoute>
+              }
+            />
             {/* <Route
               path="/calendar"
               element={
@@ -351,6 +361,7 @@ export default function App() {
 
           {/* Public Page for external access without auth */}
           <Route path="/public/invoice/:id" element={<PublicInvoice />} />
+          <Route path="/public/payment/result/:id" element={<PaymentResult />} />
 
           {/* Fallback Route - Full screen, outside AppLayout */}
           <Route path="*" element={<NotFound />} />
