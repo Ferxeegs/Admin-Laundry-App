@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent } from "react";
 import { useNavigate, Link, useLocation } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
-import { orderAPI, studentAPI, qrCodeAPI, addonAPI } from "../../utils/api";
+import { orderAPI, studentAPI, qrCodeAPI, addonAPI, getMediaUrl } from "../../utils/api";
 import { compressOrderImage } from "../../utils/compressOrderImage";
 import { AngleLeftIcon } from "../../icons";
 import { useToast } from "../../context/ToastContext";
@@ -23,6 +23,12 @@ interface Student {
   fullname: string;
   student_number: string;
   unique_code?: string | null;
+  phone_number?: string | null;
+  guardian_name?: string | null;
+  is_active?: boolean;
+  profile_picture?: {
+    url: string;
+  } | null;
   // Backward compat: beberapa versi frontend/backend memakai nama field berbeda
   national_id_number?: string | null;
 }
@@ -50,6 +56,8 @@ export default function CreateOrder() {
   const [isCompressingImages, setIsCompressingImages] = useState(false);
   const [catalogAddons, setCatalogAddons] = useState<CatalogAddon[]>([]);
   const [addonCounts, setAddonCounts] = useState<Record<string, number>>({});
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if student_id is passed from navigation state (e.g., from ScanQR)
@@ -144,11 +152,25 @@ export default function CreateOrder() {
     }
   };
 
+  // Synchronize selectedStudent when student_id changes (e.g. from initial state)
+  useEffect(() => {
+    if (formData.student_id && students.length > 0) {
+      const student = students.find((s) => s.id === formData.student_id);
+      if (student) setSelectedStudent(student);
+    }
+  }, [formData.student_id, students]);
+
   const handleFormChange = (name: string, value: string | number) => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
+
+    // If student_id is changed, update the selectedStudent object for profile preview
+    if (name === "student_id") {
+      const student = students.find((s) => s.id === value);
+      setSelectedStudent(student || null);
+    }
   };
 
   const handleTotalItemsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -471,6 +493,65 @@ export default function CreateOrder() {
                       Menampilkan {students.length} siswa aktif
                     </p>
                   )}
+
+                  {/* Student Verification Card (Compact) */}
+                  {selectedStudent && (
+                    <div className="mt-4 p-3 rounded-xl border border-gray-100 bg-white dark:bg-gray-800/40 dark:border-gray-700/50 shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-top-2">
+                      <div className="flex items-center gap-4">
+                        {/* Photo - Zoomable */}
+                        <div 
+                          className="relative flex-shrink-0 cursor-zoom-in group"
+                          onClick={() => {
+                            const url = selectedStudent.profile_picture ? getMediaUrl(selectedStudent.profile_picture.url) : null;
+                            if (url) setFullScreenImage(url);
+                          }}
+                        >
+                          <div className="w-16 h-16 rounded-xl overflow-hidden bg-brand-50 dark:bg-brand-900/20 border border-gray-100 dark:border-gray-700">
+                            {selectedStudent.profile_picture ? (
+                              <img
+                                src={getMediaUrl(selectedStudent.profile_picture.url) || ""}
+                                alt={selectedStudent.fullname}
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-brand-600 dark:text-brand-400 font-bold text-xl uppercase">
+                                {selectedStudent.fullname.charAt(0)}
+                              </div>
+                            )}
+                          </div>
+                          {selectedStudent.profile_picture && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-all rounded-xl">
+                              <svg className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Basic Details */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                            {selectedStudent.fullname}
+                          </h4>
+                          <div className="mt-0.5 flex items-center gap-3">
+                            <span className="text-xs font-mono font-bold text-brand-600 dark:text-brand-400">
+                              {selectedStudent.student_number || selectedStudent.national_id_number || "TNP"}
+                            </span>
+                            {selectedStudent.unique_code && (
+                              <span className="text-xs text-gray-400 dark:text-gray-500">
+                                Bag: <span className="font-bold text-gray-700 dark:text-gray-300">{selectedStudent.unique_code}</span>
+                              </span>
+                            )}
+                          </div>
+                          {selectedStudent.guardian_name && (
+                             <p className="mt-1 text-[10px] text-gray-400 dark:text-gray-500 truncate italic">
+                                Wali: {selectedStudent.guardian_name}
+                             </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="sm:col-span-2">
@@ -676,6 +757,30 @@ export default function CreateOrder() {
           </form>
         </div>
       </div>
+      {/* Lightbox for Student Photo */}
+      {fullScreenImage && (
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-4 transition-all duration-300 animate-in fade-in"
+          onClick={() => setFullScreenImage(null)}
+        >
+          <button 
+            type="button"
+            className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors border border-white/20"
+            onClick={() => setFullScreenImage(null)}
+          >
+             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+          <img 
+            src={fullScreenImage} 
+            alt="Profil Full" 
+            className="max-w-full max-h-[90vh] rounded-xl shadow-2xl animate-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+             <p className="text-white text-xs font-medium">Klik di mana saja untuk menutup</p>
+          </div>
+        </div>
+      )}
     </>
   );
 }
