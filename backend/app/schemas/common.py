@@ -11,6 +11,9 @@ class WebResponse(BaseModel, Generic[T]):
 
 class MediaRead(BaseModel):
     id: int
+    # ORM column names; `protected_namespaces` avoids Pydantic v2 "model_" reserved warnings.
+    model_type: str
+    model_id: str
     url: str
     collection: str
     file_name: str  # Original filename from user
@@ -19,7 +22,7 @@ class MediaRead(BaseModel):
     size: int
     created_at: Optional[datetime] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 class PaginationParams(BaseModel):

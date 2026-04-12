@@ -6,6 +6,7 @@ import uuid
 import mimetypes
 from pathlib import Path
 from typing import Optional
+
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status, Request, Query
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
@@ -44,10 +45,10 @@ def get_upload_base_path() -> Path:
         return Path(os.getcwd()) / upload_base
 
 
-def ensure_upload_dir(model_type: str, collection: str) -> Path:
+def ensure_upload_dir(resource_type: str, collection: str) -> Path:
     """Ensure upload directory exists and return path."""
     upload_base = get_upload_base_path()
-    upload_dir = upload_base / model_type.lower() / collection
+    upload_dir = upload_base / resource_type.lower() / collection
     upload_dir.mkdir(parents=True, exist_ok=True)
     logger.info(f"Upload directory: {upload_dir} (absolute: {upload_dir.resolve()})")
     return upload_dir
@@ -80,9 +81,9 @@ def get_file_path_from_url(url: str) -> Path:
 
 
 # IMPORTANT: This endpoint must be defined BEFORE /{media_id} to avoid route conflicts
-@router.get("/serve/{model_type}/{collection}/{filename:path}")
+@router.get("/serve/{resource_type}/{collection}/{filename:path}")
 async def serve_media_file(
-    model_type: str,
+    resource_type: str,
     collection: str,
     filename: str,
     request: Request
@@ -99,14 +100,14 @@ async def serve_media_file(
         from urllib.parse import unquote
         decoded_filename = unquote(filename)
         
-        logger.info(f"Serve request: model_type={model_type}, collection={collection}, filename={filename}")
+        logger.info(f"Serve request: resource_type={resource_type}, collection={collection}, filename={filename}")
         logger.info(f"Decoded filename: {decoded_filename}")
         logger.info(f"Request URL: {request.url}")
         
         # Construct file path directly
         upload_base = get_upload_base_path()
         # Try with decoded filename first
-        file_path = upload_base / model_type.lower() / collection / decoded_filename
+        file_path = upload_base / resource_type.lower() / collection / decoded_filename
         
         # Normalize path for Windows
         file_path = Path(str(file_path).replace('/', '\\'))
@@ -121,7 +122,7 @@ async def serve_media_file(
         # Also try alternative path construction
         if not file_path.exists():
             # Try with original filename (in case it wasn't encoded)
-            alt_file_path = upload_base / model_type.lower() / collection / filename
+            alt_file_path = upload_base / resource_type.lower() / collection / filename
             alt_file_path = Path(str(alt_file_path).replace('/', '\\'))
             logger.info(f"Trying original filename: {alt_file_path} (absolute: {alt_file_path.resolve()})")
             logger.info(f"Original filename exists: {alt_file_path.exists()}")
@@ -129,7 +130,7 @@ async def serve_media_file(
                 file_path = alt_file_path
             else:
                 # Try using get_file_path_from_url
-                alt_path = get_file_path_from_url(f"/uploads/{model_type.lower()}/{collection}/{decoded_filename}")
+                alt_path = get_file_path_from_url(f"/uploads/{resource_type.lower()}/{collection}/{decoded_filename}")
                 logger.info(f"Alternative path: {alt_path} (absolute: {alt_path.resolve()})")
                 logger.info(f"Alternative path exists: {alt_path.exists()}")
                 if alt_path.exists():
@@ -139,7 +140,7 @@ async def serve_media_file(
             logger.warning(f"File not found: {file_path}")
             logger.warning(f"File path absolute: {file_path.resolve()}")
             # List files in directory for debugging
-            dir_path = upload_base / model_type.lower() / collection
+            dir_path = upload_base / resource_type.lower() / collection
             if dir_path.exists():
                 files = list(dir_path.iterdir())
                 logger.warning(f"Files in directory {dir_path}: {[f.name for f in files]}")
@@ -181,22 +182,32 @@ async def serve_media_file(
 # IMPORTANT: Endpoint with query parameters must be defined BEFORE path parameters
 @router.get("/", response_model=WebResponse[list[MediaRead]])
 def get_media_by_model(
-    model_type: str = Query(..., description="Model type (e.g., 'Student', 'User')"),
-    model_id: str = Query(..., description="Model ID"),
+    resource_type: str = Query(
+        ...,
+        alias="model_type",
+        description="Model type (e.g., 'Student', 'User')",
+    ),
+    resource_id: str = Query(
+        ...,
+        alias="model_id",
+        description="Model ID",
+    ),
     collection: Optional[str] = Query(None, description="Collection name (e.g., 'profile-pictures')"),
     db: Session = Depends(get_db),
     # current_user: User = Depends(get_current_active_user)
 ):
     """
-    Get media by model_type and model_id.
+    Get media by model_type and model_id (query keys remain model_type & model_id).
     Returns a list of media records matching the criteria.
     """
     try:
-        logger.info(f"Get media request: model_type={model_type}, model_id={model_id}, collection={collection}")
-        
+        logger.info(
+            f"Get media request: model_type={resource_type}, model_id={resource_id}, collection={collection}"
+        )
+
         query = db.query(Media).filter(
-            Media.model_type == model_type,
-            Media.model_id == model_id
+            Media.model_type == resource_type,
+            Media.model_id == resource_id,
         )
         
         if collection:
@@ -217,10 +228,10 @@ def get_media_by_model(
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_media(
-    file: UploadFile = File(...),
-    model_type: str = Form(...),
-    model_id: str = Form(...),
+    resource_type: str = Form(..., alias="model_type"),
+    resource_id: str = Form(..., alias="model_id"),
     collection: str = Form("default"),
+    file: UploadFile = File(...),
     db: Session = Depends(get_db),
     # current_user: User = Depends(get_current_active_user)
 ):
@@ -228,10 +239,13 @@ async def upload_media(
     Upload a media file.
     """
     try:
-        logger.info(f"Upload request received: model_type={model_type}, model_id={model_id}, collection={collection}, filename={file.filename}, content_type={file.content_type}")
-        
+        logger.info(
+            f"Upload request received: model_type={resource_type}, model_id={resource_id}, "
+            f"collection={collection}, filename={file.filename}, content_type={file.content_type}"
+        )
+
         # Validate required fields
-        if not model_type or not model_id:
+        if not resource_type or not resource_id:
             raise BadRequestException("model_type and model_id are required")
         
         # Validate file type (only images for now)
@@ -279,7 +293,7 @@ async def upload_media(
     
     # Ensure upload directory exists
     try:
-        upload_dir = ensure_upload_dir(model_type, collection)
+        upload_dir = ensure_upload_dir(resource_type, collection)
         file_path = upload_dir / unique_filename
         logger.info(f"File will be saved to: {file_path.resolve()}")
     except Exception as e:
@@ -311,15 +325,15 @@ async def upload_media(
         raise BadRequestException(f"Failed to save file: {str(e)}")
     
     # Generate URL (relative to uploads directory)
-    # Format: /uploads/{model_type}/{collection}/{filename}
-    relative_url = f"/uploads/{model_type.lower()}/{collection}/{unique_filename}"
+    # Format: /uploads/{resource_type}/{collection}/{filename}
+    relative_url = f"/uploads/{resource_type.lower()}/{collection}/{unique_filename}"
     
     logger.info(f"Media URL: {relative_url}, File path: {file_path.resolve()}")
     
     # Check if media already exists for this model and collection
     existing_media = db.query(Media).filter(
-        Media.model_type == model_type,
-        Media.model_id == model_id,
+        Media.model_type == resource_type,
+        Media.model_id == resource_id,
         Media.collection == collection
     ).first()
     
@@ -367,8 +381,8 @@ async def upload_media(
         # Create new media record
         try:
             media = Media(
-                model_type=model_type,
-                model_id=model_id,
+                model_type=resource_type,
+                model_id=resource_id,
                 collection=collection,
                 url=relative_url,
                 file_name=file.filename or unique_filename,  # Original filename
