@@ -6,12 +6,18 @@ from __future__ import annotations
 
 from datetime import datetime, timezone, date
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_db, get_current_active_user
-from app.core.exceptions import NotFoundException, BadRequestException, ConflictException
+from app.core.config import settings
+from app.core.exceptions import (
+    NotFoundException,
+    BadRequestException,
+    ForbiddenException,
+)
 from app.models.auth import User
 from app.models.invoice import Invoice, InvoiceStatus
 from app.models.order import Order, OrderAddon
@@ -27,21 +33,24 @@ from app.services.order_serialization import (
     serialize_order_with_tracking,
     order_addon_total,
 )
+from app.services.billing_period import (
+    get_month_range,
+    first_day_of_previous_calendar_month,
+    parse_billing_timezone,
+)
+from app.services.monthly_invoice_generation import generate_monthly_invoices
+from app.core.permissions import has_superadmin_role
+from app.schemas.invoice_generation import (
+    MonthlyInvoiceGenerateBody,
+    MonthlyInvoiceGenerateResponse,
+    MonthlyInvoiceStudentOutcomeRead,
+)
 
 router = APIRouter()
 
 
-def get_month_range(billing_period: date) -> tuple[datetime, datetime]:
-    """
-    Convert billing_period date (YYYY-MM-01) to UTC month start/end datetimes.
-    """
-
-    period_start = datetime(billing_period.year, billing_period.month, 1, tzinfo=timezone.utc)
-    if billing_period.month == 12:
-        period_end = datetime(billing_period.year + 1, 1, 1, tzinfo=timezone.utc)
-    else:
-        period_end = datetime(billing_period.year, billing_period.month + 1, 1, tzinfo=timezone.utc)
-    return period_start, period_end
+def _billing_tz() -> ZoneInfo:
+    return parse_billing_timezone(settings.INVOICE_CRON_TIMEZONE)
 
 
 @router.get("/eligible-orders", response_model=WebResponse[dict])
@@ -56,7 +65,7 @@ def get_eligible_orders(
     so creating invoice won't duplicate orders.
     """
 
-    period_start, period_end = get_month_range(billing_period)
+    period_start, period_end = get_month_range(billing_period, _billing_tz())
 
     orders = (
         db.query(Order)
@@ -86,6 +95,66 @@ def get_eligible_orders(
             "orders": orders_data,
             "total_amount": total_amount,
         },
+    )
+
+
+@router.post(
+    "/admin/generate-monthly",
+    response_model=WebResponse[MonthlyInvoiceGenerateResponse],
+    status_code=status.HTTP_200_OK,
+)
+def admin_generate_monthly_invoices(
+    body: MonthlyInvoiceGenerateBody,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Fail-safe / uji coba: jalankan logika yang sama dengan cron (per siswa, commit terpisah).
+    Hanya superadmin. `dry_run=true` tidak menulis database.
+    """
+    if not has_superadmin_role(current_user, db):
+        raise ForbiddenException("Hanya superadmin yang dapat menjalankan generate invoice bulanan.")
+
+    if body.billing_period is not None:
+        bp = body.billing_period
+        if bp.day != 1:
+            raise BadRequestException("billing_period harus tanggal 1 (awal bulan).")
+    else:
+        bp = first_day_of_previous_calendar_month(datetime.now(_billing_tz()).date())
+
+    summary = generate_monthly_invoices(
+        db,
+        billing_period=bp,
+        dry_run=body.dry_run,
+        created_by=current_user.id,
+    )
+
+    payload = MonthlyInvoiceGenerateResponse(
+        billing_period=summary.billing_period,
+        dry_run=summary.dry_run,
+        students_created=summary.students_created,
+        students_skipped=summary.students_skipped,
+        students_errors=summary.students_errors,
+        students_dry_run=summary.students_dry_run,
+        outcomes=[
+            MonthlyInvoiceStudentOutcomeRead(
+                student_id=o.student_id,
+                outcome=o.outcome,
+                invoice_id=o.invoice_id,
+                orders_count=o.orders_count,
+                total_amount=o.total_amount,
+                detail=o.detail,
+            )
+            for o in summary.outcomes
+        ],
+    )
+
+    return WebResponse(
+        status="success",
+        message="Generate invoice bulanan selesai."
+        if not body.dry_run
+        else "Simulasi (dry run) selesai — tidak ada perubahan database.",
+        data=payload,
     )
 
 
@@ -177,7 +246,7 @@ def create_invoice(
     (Order.invoice_id is NULL, and Order.created_at within billing month).
     """
 
-    period_start, period_end = get_month_range(invoice_create.billing_period)
+    period_start, period_end = get_month_range(invoice_create.billing_period, _billing_tz())
 
     orders = (
         db.query(Order)

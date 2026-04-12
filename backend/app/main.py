@@ -5,20 +5,56 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from zoneinfo import ZoneInfo
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+
 from app.core.config import settings
 from app.core.logging_config import root_logger
 from app.core.exceptions import AppException
 from app.api.v1 import api_router
 from app.middleware.logging_middleware import LoggingMiddleware
+from app.services.monthly_invoice_generation import run_scheduled_monthly_generation
 
 logger = root_logger
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     logger.info(f"Starting {settings.PROJECT_NAME} v{settings.PROJECT_VERSION}")
+
+    scheduler: BackgroundScheduler | None = None
+    if settings.INVOICE_CRON_ENABLED:
+        try:
+            tz = ZoneInfo(settings.INVOICE_CRON_TIMEZONE)
+        except Exception:
+            logger.exception(
+                "INVOICE_CRON_TIMEZONE=%r invalid; falling back to UTC for APScheduler",
+                settings.INVOICE_CRON_TIMEZONE,
+            )
+            tz = ZoneInfo("UTC")
+        scheduler = BackgroundScheduler(timezone=tz)
+        scheduler.add_job(
+            run_scheduled_monthly_generation,
+            CronTrigger(day=1, hour=0, minute=0, second=0),
+            id="monthly_invoices",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+        scheduler.start()
+        logger.info(
+            "Monthly invoice cron registered (day=1 00:00:00, timezone=%s)",
+            settings.INVOICE_CRON_TIMEZONE,
+        )
+
     yield
-    # Shutdown
+
+    if scheduler is not None:
+        scheduler.shutdown(wait=False)
+        logger.info("APScheduler shut down")
+
     logger.info(f"Shutting down {settings.PROJECT_NAME}")
 
 app = FastAPI(

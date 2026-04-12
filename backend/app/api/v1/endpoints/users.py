@@ -24,14 +24,9 @@ from app.core.config import settings
 from app.core.exceptions import (
     NotFoundException, BadRequestException, ConflictException, ForbiddenException, UnauthorizedException
 )
+from app.core.permissions import has_superadmin_role
 
 router = APIRouter()
-
-
-def has_superadmin_role(user: User, db: Session) -> bool:
-    """Check if user has superadmin role."""
-    db.refresh(user, ["roles"])
-    return any(role.name == "superadmin" for role in user.roles)
 
 
 @router.get("/", response_model=WebResponse[dict])

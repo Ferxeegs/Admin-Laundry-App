@@ -54,6 +54,19 @@ class Settings(BaseSettings):
     XENDIT_WEBHOOK_TOKEN: str = Field(default="", description="Xendit webhook verification token")
     XENDIT_IS_PRODUCTION: bool = Field(default=False, description="Xendit production mode")
     FRONTEND_BASE_URL: str = Field(default="http://localhost", description="Frontend base URL for redirects")
+
+    # Monthly invoice cron (APScheduler) — tanggal 1 jam 00:00 di timezone ini
+    INVOICE_CRON_ENABLED: bool = Field(
+        default=True,
+        description="Jika false, job terjadwal tidak didaftarkan (manual endpoint tetap ada).",
+    )
+    INVOICE_CRON_TIMEZONE: str = Field(
+        default="Asia/Jakarta",
+        description=(
+            "IANA timezone untuk cron tanggal 1, penentuan 'hari ini' saat generate default, "
+            "dan batas satu bulan penuh untuk memilih Order.created_at (sama dengan bulan tagihan)."
+        ),
+    )
     
     class Config:
         env_file = ".env"
