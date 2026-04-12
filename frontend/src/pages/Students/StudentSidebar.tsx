@@ -237,7 +237,7 @@ export default function StudentSidebar({
             )}
             {studentNik && (
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center">
-                NIK: {studentNik}
+                NIS: {studentNik}
               </p>
             )}
           </>
